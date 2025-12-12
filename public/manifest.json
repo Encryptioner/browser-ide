@@ -1,0 +1,18 @@
+{
+  "name": "Browser IDE Pro",
+  "short_name": "Browser IDE",
+  "description": "Production-ready VS Code-like IDE in the browser with multi-LLM support",
+  "theme_color": "#1e1e1e",
+  "background_color": "#1e1e1e",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
