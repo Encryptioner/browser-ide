@@ -2,6 +2,8 @@
 
 Welcome to the comprehensive documentation for **Browser IDE Pro v2.0** - a complete VS Code-like IDE that runs entirely in your browser with advanced AI capabilities.
 
+> **⚠️ Development Status:** This project is actively under development. Some features described in this documentation may be in progress or planned. See the [main README](../README.md) and [TODO](../TODO.md) for current status.
+
 ## 🚀 Quick Start
 
 | Documentation | Who it's for | What you'll learn |
