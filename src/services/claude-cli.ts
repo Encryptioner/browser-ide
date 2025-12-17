@@ -7,7 +7,6 @@
 
 import { WebContainer } from '@webcontainer/api';
 import { fileSystem } from './filesystem';
-import { gitService } from './git';
 import { ClaudeCodeAgent, createGLMAgent, createAnthropicAgent } from './claude-agent';
 
 export interface CLIOptions {
@@ -156,37 +155,19 @@ dist/
       await this.initialize();
     }
 
-    const startTime = Date.now();
     this.history.push(`${command} ${args.join(' ')}`);
 
     try {
       console.log(`$ ${command} ${args.join(' ')}`);
 
       const process = await this.webContainer!.spawn(command, args);
-      const output: string[] = [];
-
-      process.output.subscribe({
-        onOutput: (data) => {
-          const text = new TextDecoder().decode(data);
-          output.push(text);
-          process.stdout?.write(text);
-        },
-        onError: (error) => {
-          console.error('Command error:', error);
-        }
-      });
-
+      const output = await this.collectProcessOutput(process);
       const exitCode = await process.exit;
-      const duration = Date.now() - startTime;
-      const result = output.join('');
 
       return {
         success: exitCode === 0,
-        output: result,
-        exitCode,
-        artifacts: {
-          commandsExecuted: [`${command} ${args.join(' ')}`]
-        }
+        output,
+        exitCode
       };
 
     } catch (error: any) {
@@ -314,7 +295,7 @@ dist/
             }))
           };
         }
-      } catch (error) {
+      } catch (error: any) {
         gitStatus = { isRepo: false, error: error.message };
       }
 
@@ -354,7 +335,7 @@ dist/
         const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`;
 
         try {
-          const stat = await this.webContainer!.fs.stat(fullPath);
+          const stat = await (this.webContainer!.fs as any).stat(fullPath);
 
           if (entry !== '.' && entry !== '..' && !entry.startsWith('.')) {
             if (stat.isFile()) {
@@ -388,17 +369,19 @@ dist/
    */
   private async collectProcessOutput(process: any): Promise<string> {
     const output: string[] = [];
+    const reader = process.output.getReader();
 
-    return new Promise((resolve) => {
-      process.output.subscribe({
-        onOutput: (data: Uint8Array) => {
-          output.push(new TextDecoder().decode(data));
-        },
-        onDone: () => {
-          resolve(output.join(''));
-        }
-      });
-    });
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        output.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return output.join('');
   }
 
   /**
@@ -450,7 +433,7 @@ dist/
         success: true,
         output: `${projectType} project initialized successfully`,
         artifacts: {
-          filesCreated: commands.map(([cmd, ...args]) => args[0]).filter(Boolean)
+          filesCreated: commands.map(([, ...args]) => args[0]).filter(Boolean)
         }
       };
 
@@ -487,10 +470,7 @@ dist/
       return {
         success: exitCode === 0,
         output,
-        exitCode,
-        artifacts: {
-          commandsExecuted: [`script: ${script.substring(0, 50)}...`]
-        }
+        exitCode
       };
 
     } catch (error: any) {
@@ -537,7 +517,7 @@ dist/
    */
   async changeDirectory(path: string): Promise<void> {
     try {
-      const stat = await this.webContainer!.fs.stat(path);
+      const stat = await (this.webContainer!.fs as any).stat(path);
       if (stat.isDirectory()) {
         this.workingDirectory = path;
         this.environment.PWD = path;

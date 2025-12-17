@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import { ClaudeCLIService, createCLIService, type CLIOptions, type CLIResult } from '../services/claude-cli';
-import { useWorkspaceStore } from '../store/useWorkspaceStore';
-import { useIDEStore } from '../store/useIDEStore';
+import '@xterm/xterm/css/xterm.css';
+import { ClaudeCLIService, createCLIService, type CLIOptions, type CLIResult } from '@/services/claude-cli';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 interface ClaudeCLIProps {
   className?: string;
@@ -14,9 +14,7 @@ interface ClaudeCLIProps {
 
 export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
   const [cliService, setCliService] = useState<ClaudeCLIService | null>(null);
-  const [terminal, setTerminal] = useState<Terminal | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [currentCommand, setCurrentCommand] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -27,15 +25,17 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
   const inputBuffer = useRef('');
   const cursorPosition = useRef(0);
 
-  const { activeProject, currentDirectory } = useWorkspaceStore();
-  const { addNotification } = useIDEStore();
+  const { getActiveWorkspace } = useWorkspaceStore();
 
   // Initialize CLI service
   useEffect(() => {
+    const activeWorkspace = getActiveWorkspace();
+    const workingDirectory = activeWorkspace?.data?.project?.localPath || '/workspace';
+
     const service = createCLIService({
       provider: options?.provider || 'anthropic',
       apiKey: options?.apiKey,
-      workingDirectory: activeProject?.path || currentDirectory || '/workspace'
+      workingDirectory
     });
 
     service.initialize()
@@ -46,17 +46,14 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         // Get initial status
         service.getStatus().then(setWorkspaceStatus);
       })
-      .catch(error => {
-        addNotification({
-          type: 'error',
-          message: `Failed to initialize CLI: ${error.message}`
-        });
+      .catch((error: Error) => {
+        console.error('Failed to initialize CLI:', error.message);
       });
 
     return () => {
       service.cleanup();
     };
-  }, [activeProject?.path, currentDirectory]);
+  }, [getActiveWorkspace, options]);
 
   // Initialize terminal
   useEffect(() => {
@@ -70,8 +67,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       theme: {
         background: '#1a1a1a',
         foreground: '#ffffff',
-        cursor: '#00ff00',
-        selection: '#444444'
+        cursor: '#00ff00'
       },
       cols: 80,
       rows: 24
@@ -88,9 +84,12 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     fitAddon.fit();
 
     // Write welcome message
+    const activeWorkspace = getActiveWorkspace();
+    const workingDir = activeWorkspace?.data?.project?.localPath || '/workspace';
+
     term.writeln(`🚀 Browser IDE Pro - Claude CLI v2.0.0`);
     term.writeln(`🔧 WebContainer environment ready`);
-    term.writeln(`📁 Working directory: ${activeProject?.path || '/workspace'}`);
+    term.writeln(`📁 Working directory: ${workingDir}`);
     term.writeln('');
     term.write('claude> ');
 
@@ -99,7 +98,6 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       handleTerminalInput(data, term);
     });
 
-    setTerminal(term);
     handleResize();
 
     window.addEventListener('resize', handleResize);
@@ -114,7 +112,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         }
       }, 100);
     }
-  }, [isInitialized, activeProject?.path]);
+  }, [isInitialized, getActiveWorkspace]);
 
   const handleTerminalInput = useCallback((data: string, term: Terminal) => {
     if (isExecuting) return;
@@ -615,10 +613,10 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     try {
       term.writeln(`🎯 Executing task: ${task}`);
       const result = await cliService.executeTask(task, {
-        onProgress: (message) => {
+        onProgress: (message: string) => {
           term.writeln(`🔧 ${message}`);
         },
-        onOutput: (output) => {
+        onOutput: (output: string) => {
           term.writeln(output);
         }
       });
