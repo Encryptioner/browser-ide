@@ -192,6 +192,27 @@ class WebContainerService {
     return this.instance;
   }
 
+  // Alias for spawn - for backwards compatibility with terminal tabs
+  async spawnProcess(
+    command: string,
+    args: string[] = [],
+    options: { cwd?: string; env?: Record<string, string> } = {}
+  ): Promise<ProcessResult> {
+    return this.spawn(command, args, options);
+  }
+
+  // Send input to a process's stdin
+  async sendInput(processId: string, input: string): Promise<boolean> {
+    const process = this.processes.get(processId);
+    if (process && process.input) {
+      const writer = process.input.getWriter();
+      await writer.write(input);
+      writer.releaseLock();
+      return true;
+    }
+    return false;
+  }
+
   killProcess(processId: string): boolean {
     const process = this.processes.get(processId);
     if (process) {

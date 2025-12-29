@@ -78,7 +78,7 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ],
-  base: './',
+  base: process.env.NODE_ENV === 'production' ? '/browser-ide/' : './',
   build: {
     outDir: 'dist',
     sourcemap: mode === 'development',

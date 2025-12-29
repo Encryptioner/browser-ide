@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useKeyboardConfig, useKeyboardTestingControls } from '@/hooks/useMobileConfig';
 import { useKeyboardDetection, useIsMobile } from '@/hooks/useKeyboardDetection';
 import { useVirtualKeyboardControls } from '@/hooks/useKeyboardDetection';

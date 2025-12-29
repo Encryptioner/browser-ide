@@ -402,7 +402,7 @@ export function CommandPalette() {
                       </div>
                       {command.shortcut && (
                         <div className="text-gray-500 text-xs font-mono">
-                          {command.shortcut.replace('Ctrl', settings.theme === 'dark' ? '⌃' : 'Ctrl')}
+                          {command.shortcut.replace('Ctrl', settings.theme === 'vs-dark' ? '⌃' : 'Ctrl')}
                         </div>
                       )}
                     </div>

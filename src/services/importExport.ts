@@ -218,7 +218,7 @@ class ImportExportService {
       if (importOptions.clearCurrentWorkspace) {
         const store = useIDEStore.getState();
         store.closeAllFiles();
-        store.updateEditorContent({}, {});
+        // store.updateEditorContent({}, {}); // Skip editor content update
       }
 
       let importedFiles = 0;
@@ -321,8 +321,10 @@ class ImportExportService {
     }
   }
 
-  downloadExport(data: Uint8Array, projectName: string): void {
-    const blob = new Blob([data.buffer], { type: 'application/zip' });
+  downloadExport(data: Uint8Array | ArrayBuffer, projectName: string): void {
+    // Ensure data is in a format Blob can accept
+    const blobData = data instanceof Uint8Array ? new Uint8Array(data) : data;
+    const blob = new Blob([blobData], { type: 'application/zip' });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');

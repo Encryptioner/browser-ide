@@ -1,4 +1,4 @@
-import type { editor } from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 
 interface LintDiagnostic {
   severity: 'error' | 'warning' | 'info';
@@ -263,8 +263,9 @@ class BasicCSSLinter implements LintProvider {
 }
 
 class LinterService {
+  private readonly serviceName = 'linter';
   private providers: LintProvider[] = [];
-  private markers: Map<string, string[]> = new Map();
+  private markers: Map<string, LintDiagnostic[]> = new Map();
 
   constructor() {
     this.registerProvider(new BasicJSLinter());
@@ -299,13 +300,13 @@ class LinterService {
     };
   }
 
-  convertToMonacoDiagnostics(lintResult: LintResult, monaco: typeof editor): editor.IMarkerData[] {
+  convertToMonacoDiagnostics(lintResult: LintResult, monacoApi: typeof monaco): monaco.editor.IMarkerData[] {
     return lintResult.diagnostics.map(diagnostic => ({
       severity: diagnostic.severity === 'error' ?
-        monaco.MarkerSeverity.Error :
+        monacoApi.MarkerSeverity.Error :
         diagnostic.severity === 'warning' ?
-        monaco.MarkerSeverity.Warning :
-        monaco.MarkerSeverity.Info,
+        monacoApi.MarkerSeverity.Warning :
+        monacoApi.MarkerSeverity.Info,
       message: diagnostic.message,
       startLineNumber: diagnostic.line,
       startColumn: diagnostic.column,
@@ -316,10 +317,10 @@ class LinterService {
     }));
   }
 
-  clearMarkers(filename: string, monaco: typeof editor) {
-    const model = monaco.editor.getModels().find(m => m.getValue().includes(filename));
+  clearMarkers(filename: string, monacoApi: typeof monaco) {
+    const model = monacoApi.editor.getModels().find(m => m.getValue().includes(filename));
     if (model) {
-      monaco.editor.setModelMarkers(model, []);
+      monacoApi.editor.setModelMarkers(model, this.serviceName, []);
     }
     this.markers.delete(filename);
   }
@@ -328,23 +329,23 @@ class LinterService {
     filename: string,
     content: string,
     language: string,
-    monaco: typeof editor
+    monacoApi: typeof monaco
   ): Promise<void> {
     // Clear existing markers
-    this.clearMarkers(filename, monaco);
+    this.clearMarkers(filename, monacoApi);
 
     if (!content.trim()) return;
 
     try {
       const lintResult = await this.lintFile(content, language, filename);
-      const monacoDiagnostics = this.convertToMonacoDiagnostics(lintResult, monaco);
+      const monacoDiagnostics = this.convertToMonacoDiagnostics(lintResult, monacoApi);
 
-      const model = monaco.editor.getModels().find(m => m.getValue().includes(filename));
+      const model = monacoApi.editor.getModels().find(m => m.getValue().includes(filename));
       if (model) {
-        monaco.editor.setModelMarkers(model, monacoDiagnostics);
+        monacoApi.editor.setModelMarkers(model, this.serviceName, monacoDiagnostics);
       }
 
-      this.markers.set(filename, lintResult.diagnostics.map(d => d.message));
+      this.markers.set(filename, lintResult.diagnostics);
     } catch (error) {
       console.error('Failed to update linting markers:', error);
     }
@@ -353,11 +354,10 @@ class LinterService {
   getProblemsSummary(): { errors: number; warnings: number; info: number } {
     let errors = 0, warnings = 0, info = 0;
 
-    for (const [, markers] of this.markers.entries()) {
-      markers.forEach(marker => {
-        // This is simplified - in real implementation, we'd track severity
-        if (marker.toLowerCase().includes('error')) errors++;
-        else if (marker.toLowerCase().includes('warning')) warnings++;
+    for (const [, diagnostics] of this.markers.entries()) {
+      diagnostics.forEach(diagnostic => {
+        if (diagnostic.severity === 'error') errors++;
+        else if (diagnostic.severity === 'warning') warnings++;
         else info++;
       });
     }

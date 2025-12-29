@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Play, Pause, Square, RotateCcw, StepForward, ArrowRight, SkipForward, Bug, X, Plus, Settings, ChevronDown, ChevronRight, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Play, Square, RotateCcw, StepForward, ArrowRight, SkipForward, Bug, X, Plus, Settings, ChevronDown, ChevronRight, EyeOff, CheckCircle } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { DebugSession, DebugBreakpoint, DebugThread, DebugStackFrame, DebugVariable, DebugConfiguration, DebugConsoleMessage, DebugScope } from '@/types';
 import { clsx } from 'clsx';
@@ -12,7 +12,6 @@ interface DebuggerProps {
 export function Debugger({ className }: DebuggerProps) {
   const {
     activeProjectId,
-    openFiles,
     setActiveDebugSession,
     addBreakpoint,
     removeBreakpoint,
@@ -322,7 +321,7 @@ export function Debugger({ className }: DebuggerProps) {
     },
     {
       name: 'Globals',
-      presentationHint: 'globals',
+      presentationHint: 'static',
       variablesReference: 2,
       expensive: false,
     },

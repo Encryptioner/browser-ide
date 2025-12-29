@@ -1,3 +1,4 @@
+import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
@@ -14,10 +15,11 @@ import type {
   DebugBreakpoint,
   SplitEditorState,
   SnippetSession,
-  TerminalTab,
   ProblemsFilter,
   WebContainerProcess,
 } from '@/types';
+import { TerminalTab, TerminalProfile } from '@/components/IDE/TerminalTabs';
+import { Terminal } from 'lucide-react';
 
 // RecentProject is defined here since it doesn't exist in types
 export interface RecentProject {
@@ -113,7 +115,7 @@ interface IDEState {
   installPromptEvent: any;
 
   // Services
-  webContainerService: WebContainerService | null;
+  webContainerService: typeof import('@/services/webcontainer').webContainer | null;
   webContainerServer: WebContainerServer | null;
 }
 
@@ -213,15 +215,23 @@ interface IDEActions {
 const DEFAULT_SETTINGS: Settings = {
   theme: 'vs-dark',
   fontSize: 14,
+  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
   tabSize: 2,
   wordWrap: 'on',
   autoSave: true,
   autoSaveDelay: 1000,
   lineNumbers: 'on',
   minimap: true,
-  githubToken: '',
+  formatOnSave: true,
+  bracketPairColorization: true,
   username: '',
+  email: '',
+  githubUsername: '',
   githubEmail: '',
+  githubToken: '',
+  defaultBranch: 'main',
+  autoFetch: true,
+  autoFetchInterval: 60000,
   ai: {
     anthropicKey: '',
     glmKey: '',
@@ -453,7 +463,13 @@ export const useIDEStore = create<IDEState & IDEActions>()(
         const newTab: TerminalTab = {
           id: `tab-${Date.now()}`,
           title: name || `Terminal ${state.terminalTabs.length + 1}`,
-          profile: { id: profileId, name: 'Bash', command: '/bin/bash' },
+          profile: {
+            id: profileId,
+            name: 'Bash',
+            command: '/bin/bash',
+            icon: React.createElement(Terminal, { className: 'w-4 h-4' }),
+            description: 'Bash shell'
+          },
           history: [''],
           historyIndex: 0,
           active: true,
@@ -589,6 +605,17 @@ export const useIDEStore = create<IDEState & IDEActions>()(
     {
       name: 'ide-storage',
       version: 1,
+      partialize: (state) => ({
+        // Only persist these essential fields (excluding runtime state)
+        settings: state.settings,
+        recentProjects: state.recentProjects,
+        sidebarOpen: state.sidebarOpen,
+        terminalOpen: state.terminalOpen,
+        previewOpen: state.previewOpen,
+        activeBottomPanel: state.activeBottomPanel,
+        bottomPanelSize: state.bottomPanelSize,
+        terminalMaximized: state.terminalMaximized,
+      }) as IDEState & IDEActions,
     }
   )
 );

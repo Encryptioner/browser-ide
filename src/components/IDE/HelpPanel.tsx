@@ -800,14 +800,14 @@ Browser IDE Pro provides a complete VS Code experience with enhanced AI capabili
 ];
 
 export function HelpPanel({ className }: { className?: string }) {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('quick');
   const [selectedSection, setSelectedSection] = useState('quick-reference');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [externalMarkdown, setExternalMarkdown] = useState<{ title: string; content: string } | null>(null);
 
-  const { toggleHelp } = useIDEStore((state) => state.helpOpen);
+  const helpOpen = useIDEStore((state) => state.helpOpen);
+  const toggleHelp = useIDEStore((state) => state.toggleHelp);
 
   const filteredCategories = useMemo(() => {
     if (!searchQuery) return DOCUMENTATION_CATEGORIES;
@@ -1348,7 +1348,7 @@ export function HelpPanel({ className }: { className?: string }) {
               {/* External Document Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="prose prose-invert max-w-none prose-lg">
-                  <ReactMarkdown components={markdownComponents}>
+                  <ReactMarkdown components={markdownComponents as any}>
                     {externalMarkdown.content}
                   </ReactMarkdown>
                 </div>
@@ -1372,7 +1372,7 @@ export function HelpPanel({ className }: { className?: string }) {
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 <div className="prose prose-invert max-w-none prose-lg">
-                  <ReactMarkdown components={markdownComponents}>
+                  <ReactMarkdown components={markdownComponents as any}>
                     {currentSection.content}
                   </ReactMarkdown>
                 </div>

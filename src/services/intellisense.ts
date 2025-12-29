@@ -1,17 +1,44 @@
-import type {
-  CompletionItem,
-  CompletionContext,
-  CompletionList,
-  CompletionTriggerKind,
-  Hover,
-  SignatureHelp,
-  Definition,
-  Reference,
-  DocumentSymbol,
-  WorkspaceSymbol,
-  CodeAction,
-  Diagnostic
+import {
+  CompletionItemKind,
+  type CompletionItem,
+  type CompletionContext,
+  type Hover,
+  type SignatureHelp,
+  type Definition,
+  type CodeAction,
+  type Diagnostic
 } from 'vscode-languageserver-protocol';
+
+// Local type definitions for symbols with location support
+interface SymbolLocation {
+  uri: string;
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
+}
+
+interface LocalDocumentSymbol {
+  name: string;
+  kind: number;
+  location: SymbolLocation;
+}
+
+// Reference type (not exported by vscode-languageserver-protocol)
+interface Reference {
+  uri: string;
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
+}
+
+// Workspace symbol type
+interface WorkspaceSymbol {
+  name: string;
+  kind: number;
+  location: SymbolLocation;
+}
 
 export interface IntelliSenseCompletion {
   label: string;
@@ -68,7 +95,7 @@ export interface IntelliSenseProvider {
   ): Promise<Reference[]>;
 
   // Document symbols
-  provideDocumentSymbols(document: string): Promise<DocumentSymbol[]>;
+  provideDocumentSymbols(document: string): Promise<LocalDocumentSymbol[]>;
 
   // Code actions (quick fixes, refactoring)
   provideCodeActions(
@@ -103,7 +130,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
     'throw', 'try', 'true', 'typeof', 'var', 'void', 'while', 'with', 'yield'
   ];
 
-  private fileCache = new Map<string, { content: string; symbols: DocumentSymbol[]; lastModified: number }>();
+  private fileCache = new Map<string, { content: string; symbols: LocalDocumentSymbol[]; lastModified: number }>();
 
   constructor() {
     this.initializeBuiltInObjects();
@@ -208,7 +235,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
     ]);
   }
 
-  private async parseDocument(document: string): Promise<{ content: string; symbols: DocumentSymbol[] }> {
+  private async parseDocument(document: string): Promise<{ content: string; symbols: LocalDocumentSymbol[] }> {
     const cached = this.fileCache.get(document);
     const now = Date.now();
 
@@ -228,12 +255,12 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
       return parsed;
     } catch (error) {
       console.error('Failed to parse document:', error);
-      return { content: '', symbols: [], lastModified: now };
+      return { content: '', symbols: [] };
     }
   }
 
-  private extractSymbols(content: string): DocumentSymbol[] {
-    const symbols: DocumentSymbol[] = [];
+  private extractSymbols(content: string): LocalDocumentSymbol[] {
+    const symbols: LocalDocumentSymbol[] = [];
     const lines = content.split('\n');
 
     lines.forEach((line, index) => {
@@ -403,7 +430,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
             if (symbol.name.toLowerCase().startsWith(currentWord.toLowerCase())) {
               completions.push({
                 label: symbol.name,
-                kind: symbol.kind,
+                kind: symbol.kind as CompletionItemKind,
                 detail: `Local ${this.getSymbolKindName(symbol.kind)}`,
                 insertText: symbol.name,
                 sortText: '2',
@@ -609,7 +636,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
     return [];
   }
 
-  async provideDocumentSymbols(document: string): Promise<DocumentSymbol[]> {
+  async provideDocumentSymbols(document: string): Promise<LocalDocumentSymbol[]> {
     try {
       const { symbols } = await this.parseDocument(document);
       return symbols;
@@ -688,32 +715,32 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
     return [];
   }
 
-  private getCompletionItemKind(kind: string): number {
-    const kindMap: Record<string, number> = {
-      'method': 2,
-      'function': 3,
-      'constructor': 4,
-      'field': 5,
-      'variable': 6,
-      'class': 7,
-      'interface': 8,
-      'module': 9,
-      'property': 10,
-      'unit': 11,
-      'value': 12,
-      'enum': 13,
-      'keyword': 14,
-      'snippet': 15,
-      'text': 1,
-      'color': 16,
-      'file': 17,
-      'reference': 18,
-      'folder': 19,
-      'typeParameter': 20,
-      'user': 21,
+  private getCompletionItemKind(kind: string): CompletionItemKind {
+    const kindMap: Record<string, CompletionItemKind> = {
+      'method': CompletionItemKind.Method,
+      'function': CompletionItemKind.Function,
+      'constructor': CompletionItemKind.Constructor,
+      'field': CompletionItemKind.Field,
+      'variable': CompletionItemKind.Variable,
+      'class': CompletionItemKind.Class,
+      'interface': CompletionItemKind.Interface,
+      'module': CompletionItemKind.Module,
+      'property': CompletionItemKind.Property,
+      'unit': CompletionItemKind.Unit,
+      'value': CompletionItemKind.Value,
+      'enum': CompletionItemKind.Enum,
+      'keyword': CompletionItemKind.Keyword,
+      'snippet': CompletionItemKind.Snippet,
+      'text': CompletionItemKind.Text,
+      'color': CompletionItemKind.Color,
+      'file': CompletionItemKind.File,
+      'reference': CompletionItemKind.Reference,
+      'folder': CompletionItemKind.Folder,
+      'typeParameter': CompletionItemKind.TypeParameter,
+      'user': CompletionItemKind.Text,  // No specific 'user' kind, use Text
     };
 
-    return kindMap[kind] || 1;
+    return kindMap[kind] || CompletionItemKind.Text;
   }
 
   private getSymbolKindName(kind: number): string {
@@ -813,7 +840,7 @@ export function provideCompletionItems(
   return completions.then(results => results.flat());
 }
 
-export function provideHover(
+export async function provideHover(
   document: string,
   position: { line: number; character: number },
   language: string

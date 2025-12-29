@@ -420,7 +420,7 @@ class GitService {
         },
         committer: {
           name: commit.commit.committer.name,
-          email: commit.commit.committer.timestamp,
+          email: commit.commit.committer.email,
           timestamp: commit.commit.committer.timestamp,
         },
       }));

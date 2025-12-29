@@ -115,6 +115,10 @@ export function useMobileConfig(): {
         setConfig(mergedConfig);
         console.log('📱 Mobile config loaded from file and localStorage:', mergedConfig);
         return true;
+      } else {
+        // Response not OK, use defaults
+        setConfig(DEFAULT_CONFIG);
+        return false;
       }
     } catch (error) {
       console.warn('📱 Failed to load config.json, using defaults:', error);

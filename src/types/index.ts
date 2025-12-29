@@ -101,7 +101,7 @@ export interface GitCommit {
   };
   committer: {
     name: string;
-    email: number;
+    email: string;
     timestamp: number;
   };
 }
@@ -130,6 +130,8 @@ export interface EditorSettings {
 export interface GitSettings {
   username: string;
   email: string;
+  githubUsername: string;
+  githubEmail: string;
   githubToken: string;
   defaultBranch: string;
   autoFetch: boolean;
@@ -589,6 +591,8 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
 export const DEFAULT_GIT_SETTINGS: GitSettings = {
   username: '',
   email: '',
+  githubUsername: '',
+  githubEmail: '',
   githubToken: '',
   defaultBranch: 'main',
   autoFetch: false,

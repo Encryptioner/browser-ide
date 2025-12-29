@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, X, Terminal, ChevronDown, Settings, Copy, Trash2, SplitSquareVertical, Monitor, Cpu, Package, FolderOpen, GitBranch, AlertCircle, CheckCircle, Play, Square, RotateCcw } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
-import { WebContainerProcess, WebContainerServer } from '@/types';
+import type { WebContainerServer } from '@/types';
 import { clsx } from 'clsx';
 import { nanoid } from 'nanoid';
 
-interface TerminalProfile {
+export interface TerminalProfile {
   id: string;
   name: string;
   command: string;
@@ -16,10 +16,10 @@ interface TerminalProfile {
   cwd?: string;
 }
 
-interface TerminalTab {
+export interface TerminalTab {
   id: string;
   title: string;
-  process?: WebContainerProcess;
+  processId?: string;  // ID to reference the process in WebContainerService
   profile: TerminalProfile;
   history: string[];
   historyIndex: number;
@@ -163,14 +163,18 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
         t.id === tabId ? { ...t, status: 'pending' } : t
       ));
 
-      const process = await webContainerService.spawnProcess(
+      const result = await webContainerService.spawnProcess(
         tab.profile.command,
         tab.profile.args || []
       );
 
-      // Update tab with process info
+      if (!result.success || !result.processId) {
+        throw new Error(result.error || 'Failed to spawn process');
+      }
+
+      // Update tab with process ID
       setTabs(prev => prev.map(t =>
-        t.id === tabId ? { ...t, process, status: 'running' } : t
+        t.id === tabId ? { ...t, processId: result.processId, status: 'running' } : t
       ));
 
       // Add welcome message
@@ -209,8 +213,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     if (!tab) return;
 
     // Kill the process if running
-    if (tab.process && tab.status === 'running') {
-      webContainerService?.killProcess(tab.process.id);
+    if (tab.processId && tab.status === 'running') {
+      webContainerService?.killProcess(tab.processId);
     }
 
     // Remove tab
@@ -289,8 +293,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     if (!tab) return;
 
     // Kill existing process
-    if (tab.process) {
-      webContainerService?.killProcess(tab.process.id);
+    if (tab.processId) {
+      webContainerService?.killProcess(tab.processId);
     }
 
     // Clear output
@@ -304,7 +308,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
 
   const executeCommand = useCallback(async (tabId: string, command: string) => {
     const tab = tabs.find(t => t.id === tabId);
-    if (!tab || !tab.process || tab.status !== 'running') return;
+    if (!tab || !tab.processId || tab.status !== 'running') return;
 
     try {
       // Add command to output
@@ -317,7 +321,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
       setTerminalInput(prev => ({ ...prev, [tabId]: '' }));
 
       // Send command to process
-      await webContainerService?.sendInput(tab.process.id, command + '\n');
+      await webContainerService?.sendInput(tab.processId, command + '\n');
 
     } catch (error) {
       console.error('Failed to execute command:', error);
@@ -328,7 +332,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     }
   }, [tabs, webContainerService]);
 
-  const handleInputKeyDown = useCallback((e: React.KeyboardEvent, tabId: string) => {
+  const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, tabId: string) => {
     const input = e.currentTarget;
 
     switch (e.key) {
@@ -625,7 +629,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
           <div className="flex-1 flex flex-col">
             {/* Output Area */}
             <div
-              ref={el => terminalRefs.current[activeTab.id] = el}
+              ref={el => { terminalRefs.current[activeTab.id] = el; }}
               className="terminal-output flex-1 overflow-y-auto p-4 font-mono text-sm bg-black"
               style={{ fontFamily: 'Consolas, Monaco, "Courier New", monospace' }}
             >

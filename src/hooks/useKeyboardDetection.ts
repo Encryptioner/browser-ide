@@ -236,8 +236,10 @@ export function useKeyboardDetection(): KeyboardState {
 
     // Visual viewport API events
     if ('visualViewport' in window) {
-      const viewport = (window as any).visualViewport;
-      viewport?.addEventListener('resize', checkVisualViewport);
+      const viewport = (window as any).visualViewport as EventTarget | null;
+      if (viewport) {
+        viewport.addEventListener('resize', checkVisualViewport);
+      }
     }
 
     return () => {
@@ -247,8 +249,10 @@ export function useKeyboardDetection(): KeyboardState {
       document.removeEventListener('focusout', handleFocusOut);
 
       if ('visualViewport' in window) {
-        const viewport = (window as any).visualViewport;
-        viewport?.removeEventListener('resize', checkVisualViewport);
+        const viewport = (window as any).visualViewport as EventTarget | null;
+        if (viewport) {
+          viewport.removeEventListener('resize', checkVisualViewport);
+        }
       }
     };
   }, [initializeVirtualKeyboardAPI, showVirtualKeyboard, hideVirtualKeyboard]);
@@ -277,18 +281,19 @@ export function useViewportHeight() {
 
     updateVh();
 
-    if ('visualViewport' in window) {
-      (window as any).visualViewport?.addEventListener('resize', updateVh);
-    } else {
-      window.addEventListener('resize', updateVh);
+    // Use visualViewport if available, fallback to window resize
+    const viewport = window.visualViewport;
+    if (viewport) {
+      viewport.addEventListener('resize', updateVh);
     }
+    window.addEventListener('resize', updateVh);
 
     return () => {
-      if ('visualViewport' in window) {
-        (window as any).visualViewport?.removeEventListener('resize', updateVh);
-      } else {
-        window.removeEventListener('resize', updateVh);
+      const vp = window.visualViewport;
+      if (vp) {
+        vp.removeEventListener('resize', updateVh);
       }
+      window.removeEventListener('resize', updateVh);
     };
   }, []);
 

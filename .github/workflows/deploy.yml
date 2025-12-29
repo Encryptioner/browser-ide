@@ -2,7 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -10,40 +12,66 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-slim
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - name: Install git and required packages
+        run: |
+          apt-get update
+          apt-get install -y git
+
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          version: 8
-      
-      - name: Setup Node
+          fetch-depth: 1
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22.16.0'
           cache: 'pnpm'
-      
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8.14.0
+
       - name: Install dependencies
-        run: pnpm install
-      
+        run: pnpm install --frozen-lockfile --prefer-frozen-lockfile
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Lint
+        run: pnpm lint
+
       - name: Build
         run: pnpm build
-      
+        env:
+          NODE_ENV: production
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
-  
+          path: ./dist
+
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-slim
     needs: build
+    if: github.ref == 'refs/heads/master'
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import { X, Plus, Copy, CornerLeftUp, CornerRightUp, Columns, Rows, Maximize2, Minimize2, ChevronDown, FileText, GitCompare } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { EditorGroup, EditorInstance, SplitEditorState } from '@/types';
@@ -13,13 +13,26 @@ interface SplitEditorProps {
 export function SplitEditor({ className }: SplitEditorProps) {
   const {
     openFiles,
-    activeTabId,
+    files,
+    editorContent,
+    unsavedChanges,
     closeFile,
     duplicateTab,
     splitEditorState,
     setSplitEditorState,
     setActiveTab,
   } = useIDEStore();
+
+  // Helper to get language from file extension
+  const getLanguage = (filePath: string): string => {
+    const ext = filePath.split('.').pop()?.toLowerCase() || '';
+    const languageMap: Record<string, string> = {
+      'ts': 'typescript', 'tsx': 'typescript', 'js': 'javascript', 'jsx': 'javascript',
+      'html': 'html', 'css': 'css', 'json': 'json', 'md': 'markdown',
+      'py': 'python', 'rs': 'rust', 'go': 'go', 'java': 'java',
+    };
+    return languageMap[ext] || 'plaintext';
+  };
 
   const [draggedFile, setDraggedFile] = useState<string | null>(null);
   const [draggedGroup, setDraggedGroup] = useState<string | null>(null);
@@ -30,7 +43,7 @@ export function SplitEditor({ className }: SplitEditorProps) {
     group?: string;
   } | null>(null);
 
-  const panelRefs = useRef<Record<string, HTMLElement | null>>({});
+  const panelRefs = useRef<Record<string, ImperativePanelHandle | null>>({});
 
   // Initialize split editor state if not present
   useEffect(() => {
@@ -74,14 +87,16 @@ export function SplitEditor({ className }: SplitEditorProps) {
     const newGroups = [...splitEditorState.groups];
     const group = findGroupById(groupId, newGroups);
 
-    if (group && openFiles[filePath]) {
+    const isFileOpen = openFiles.includes(filePath);
+    if (group && isFileOpen) {
+      const content = editorContent[filePath] || files[filePath] || '';
       const newEditor: EditorInstance = {
         id: nanoid(),
         path: filePath,
         title: filePath.split('/').pop() || filePath,
-        content: openFiles[filePath].content,
-        language: openFiles[filePath].language,
-        modified: openFiles[filePath].modified,
+        content,
+        language: getLanguage(filePath),
+        modified: unsavedChanges.has(filePath),
       };
 
       group.editors.push(newEditor);
@@ -178,6 +193,7 @@ export function SplitEditor({ className }: SplitEditorProps) {
             id: groupId,
             orientation: direction,
             size: group.size,
+            editors: [],
             groups: [newGroup1, newGroup2],
           };
         } else if (parent.groups) {
@@ -186,6 +202,7 @@ export function SplitEditor({ className }: SplitEditorProps) {
             id: groupId,
             orientation: direction,
             size: group.size,
+            editors: [],
             groups: [newGroup1, newGroup2],
           };
         }
@@ -236,13 +253,13 @@ export function SplitEditor({ className }: SplitEditorProps) {
     e.dataTransfer.effectAllowed = 'move';
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, groupId: string) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, groupId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDraggedGroup(groupId);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, groupId: string) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>, groupId: string) => {
     e.preventDefault();
 
     if (draggedFile && groupId) {
@@ -417,8 +434,8 @@ export function SplitEditor({ className }: SplitEditorProps) {
             isActive && 'ring-2 ring-blue-500',
             'h-full'
           )}
-          onDragOver={(e) => handleDragOver(e, group.id)}
-          onDrop={(e) => handleDrop(e, group.id)}
+          onDragOver={(e) => handleDragOver(e as unknown as React.DragEvent<HTMLDivElement>, group.id)}
+          onDrop={(e) => handleDrop(e as unknown as React.DragEvent<HTMLDivElement>, group.id)}
         >
           {group.editors.length === 0 ? (
             <div
@@ -513,10 +530,13 @@ export function SplitEditor({ className }: SplitEditorProps) {
 
         <button
           onClick={() => {
-            // Focus active group
+            // Set active group state (focus is managed by the panel itself)
             const activeGroup = splitEditorState.groups.find(g => g.id === splitEditorState.activeGroup);
-            if (activeGroup && panelRefs.current[activeGroup.id]) {
-              panelRefs.current[activeGroup.id]?.focus();
+            if (activeGroup) {
+              setSplitEditorState?.({
+                ...splitEditorState,
+                activeGroup: activeGroup.id,
+              });
             }
           }}
           className="p-2 hover:bg-gray-700 rounded"

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertCircle, AlertTriangle, Info, X, Filter, Search, ChevronDown, ChevronRight, CheckCircle, FileText, Clock, Tag, ExternalLink, RefreshCw, Settings } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { AlertCircle, AlertTriangle, Info, Filter, Search, ChevronDown, ChevronRight, CheckCircle, FileText, ExternalLink, RefreshCw, Settings } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { Problem, ProblemTag, ProblemsFilter, ProblemsCollection } from '@/types';
 import { clsx } from 'clsx';
@@ -312,9 +312,9 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
   const getTagIcon = (tag?: ProblemTag) => {
     switch (tag) {
       case ProblemTag.Unnecessary:
-        return <AlertCircle className="w-3 h-3 text-gray-400" title="Unnecessary code" />;
+        return <AlertCircle className="w-3 h-3 text-gray-400" />;
       case ProblemTag.Deprecated:
-        return <AlertTriangle className="w-3 h-3 text-orange-400" title="Deprecated code" />;
+        return <AlertTriangle className="w-3 h-3 text-orange-400" />;
       default:
         return null;
     }
@@ -576,11 +576,11 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
                                     <span className="text-xs px-1 py-0.5 bg-gray-700 rounded text-gray-300 font-mono">
                                       {typeof problem.code === 'string' ? problem.code : problem.code.value}
                                     </span>
-                                    {typeof problem.code === 'object' && problem.code.target && (
+                                    {typeof problem.code === 'object' && problem.code && 'target' in problem.code && problem.code.target && (
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          window.open(problem.code!.target, '_blank');
+                                          window.open((problem.code as { value: string; target: string }).target, '_blank');
                                         }}
                                         className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
                                       >
@@ -638,9 +638,9 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
           {searchQuery && (
             <span>Filter: "{searchQuery}"</span>
           )}
-          {filter.type !== 'all' && (
+          {filter.type && filter.type !== 'all' && (
             <span className={getSeverityColor(filter.type)}>
-              {filter.type === 'all' ? 'All Severities' : filter.type.charAt(0).toUpperCase() + filter.type.slice(1)}
+              {filter.type.charAt(0).toUpperCase() + filter.type.slice(1)}
             </span>
           )}
         </div>

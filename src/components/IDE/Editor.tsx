@@ -23,7 +23,7 @@ export function Editor() {
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
   const editorRef = useRef<any | null>(null);
-  const lintTimeout = useRef<NodeJS.Timeout | null>(null);
+  const lintTimeout = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (currentFile) {
@@ -226,33 +226,27 @@ async function handleSave() {
               strings: true
             },
             suggestSelection: 'first',
-            suggestInsertBestPractices: true,
-            suggestLicenseHints: true,
             showUnused: true,
             showDeprecated: true,
 
             // Error detection and linting
-            squiggles: true,
             colorDecorators: true,
             codeLens: true,
             lightbulb: {
-              enabled: true
-            },
+              enabled: 'on'
+            } as any,
 
             // Advanced editing features
             multiCursorModifier: 'ctrlCmd',
             multiCursorMergeOverlapping: true,
-            multiCursorPasteOverwrites: false,
             renderWhitespace: 'selection',
             renderControlCharacters: true,
-            renderIndentGuides: true,
 
             // Find/Replace enhancements
             find: {
               addExtraSpaceOnTop: false,
               autoFindInSelection: 'never',
-              seedSearchStringFromSelection: false,
-              globalFindClipboard: false
+              seedSearchStringFromSelection: 'never'
             },
 
             // Folding and outlining
@@ -290,11 +284,6 @@ async function handleSave() {
             links: true,
             gotoLocation: {
               multiple: 'goto'
-            },
-
-            // Code actions
-            codeActionsOnSave: {
-              'source.fixAll': 'explicit'
             },
 
             // Inlay hints
