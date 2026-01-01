@@ -2,7 +2,7 @@
 
 ## What is Claude Code?
 
-Claude Code is a **command-based AI coding assistant** integrated into Browser IDE Pro. Unlike chat interfaces, Claude Code works through direct commands that manipulate your codebase in real-time - just like the official [Anthropic Claude Code CLI](https://github.com/anthropics/claude-code).
+Claude Code is a **command-based AI coding assistant** integrated into Browser IDE. Unlike chat interfaces, Claude Code works through direct commands that manipulate your codebase in real-time - just like the official [Anthropic Claude Code CLI](https://github.com/anthropics/claude-code).
 
 ## Features
 

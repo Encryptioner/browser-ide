@@ -1,4 +1,4 @@
-# TODO - Browser IDE Pro
+# TODO - Browser IDE
 
 Current tasks and development roadmap.
 
@@ -159,4 +159,3 @@ Current tasks and development roadmap.
 ---
 
 **Last Updated:** December 2024
-**Version:** 2.0.0

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Browser IDE Pro - Claude CLI (Simple Version)
+ * Browser IDE - Claude CLI (Simple Version)
  *
  * A standalone Claude Code-like CLI implementation
  * Works like actual Claude Code npm package but without browser dependencies
@@ -39,7 +39,7 @@ class ClaudeCLI {
    */
   showHelp() {
     console.log(`
-Browser IDE Pro - Claude CLI v2.0.0 (Simple)
+Browser IDE - Claude CLI (Simple)
 
 A Claude Code-like CLI that provides agentic coding capabilities.
 
@@ -82,7 +82,7 @@ Run "claude help" for more information.
    * Show version information
    */
   showVersion() {
-    console.log('Browser IDE Pro - Claude CLI v2.0.0 (Simple)');
+    console.log('Browser IDE - Claude CLI (Simple)');
     console.log('Standalone Claude Code-like CLI');
   }
 
@@ -124,7 +124,7 @@ Run "claude help" for more information.
    * Show current status
    */
   async showStatus() {
-    console.log('📊 Browser IDE Pro - Claude CLI Status (Simple)\n');
+    console.log('📊 Browser IDE - Claude CLI Status (Simple)\n');
 
     console.log('📁 Working Directory:');
     console.log(`   ${this.workingDirectory}`);

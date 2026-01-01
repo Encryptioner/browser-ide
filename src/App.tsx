@@ -61,7 +61,7 @@ function App() {
   const [showProblemsPanel, setShowProblemsPanel] = useState(false);
 
   useEffect(() => {
-    logger.info(`Browser IDE Pro v${config.APP_VERSION} - Starting...`);
+    logger.info(`Browser IDE v${config.APP_VERSION} - Starting...`);
 
     // Hide loading screen
     const loading = document.getElementById('loading');

@@ -1,4 +1,4 @@
-# robots.txt for Browser IDE Pro
+# robots.txt for Browser IDE
 User-agent: *
 Allow: /
 

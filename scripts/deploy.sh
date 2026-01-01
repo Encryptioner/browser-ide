@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Browser IDE Pro - Production Deployment Script
+# Browser IDE - Production Deployment Script
 # This script automates the deployment process with pre-flight checks
 
 set -e  # Exit on error
@@ -32,7 +32,7 @@ print_warning() {
 # Header
 echo -e "${BLUE}"
 echo "╔════════════════════════════════════════╗"
-echo "║   Browser IDE Pro Deployment Script   ║"
+echo "║   Browser IDE Deployment Script   ║"
 echo "╚════════════════════════════════════════╝"
 echo -e "${NC}"
 

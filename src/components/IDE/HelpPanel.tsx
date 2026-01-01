@@ -250,7 +250,7 @@ The application works entirely in your browser - no installation required!
 4. **Set Up Git:** Create your first repository
 5. **Join Community:** Get help and share tips with other users
 
-**Welcome to Browser IDE Pro! Happy coding! 🎉**
+**Welcome to Browser IDE! Happy coding! 🎉**
         `,
         estimatedReadTime: '10 min',
         targetAudience: ['New Users']
@@ -544,7 +544,7 @@ These core features provide a complete coding environment that works seamlessly 
 4. **Build Projects:** Apply knowledge with AI guidance
 5. **Get Feedback:** AI review of your implementations
 
-The AI assistant transforms Browser IDE Pro into an intelligent coding companion that accelerates development and enhances learning!
+The AI assistant transforms Browser IDE into an intelligent coding companion that accelerates development and enhances learning!
         `,
         estimatedReadTime: '20 min',
         targetAudience: ['All Users']
@@ -557,7 +557,7 @@ The AI assistant transforms Browser IDE Pro into an intelligent coding companion
         content: `
 # 🎯 VS Code Features - Complete Implementation
 
-Browser IDE Pro implements **100% of the most popular VS Code features**:
+Browser IDE implements **100% of the most popular VS Code features**:
 
 ## ✅ Core VS Code Features
 
@@ -790,7 +790,7 @@ Browser IDE Pro implements **100% of the most popular VS Code features**:
 4. **Install Extensions:** Add equivalent built-in features
 5. **Customize Appearance:** Apply your VS Code theme
 
-Browser IDE Pro provides a complete VS Code experience with enhanced AI capabilities and browser-based convenience!
+Browser IDE provides a complete VS Code experience with enhanced AI capabilities and browser-based convenience!
         `,
         estimatedReadTime: '25 min',
         targetAudience: ['Power Users', 'VS Code Users']
@@ -867,7 +867,7 @@ export function HelpPanel({ className }: { className?: string }) {
     const newWindow = window.open(userGuideUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes,toolbar=yes,menubar=yes');
 
     if (newWindow) {
-      newWindow.document.title = '📚 Browser IDE Pro - User Guide';
+      newWindow.document.title = '📚 Browser IDE - User Guide';
 
       newWindow.addEventListener('load', () => {
         try {
@@ -962,7 +962,7 @@ export function HelpPanel({ className }: { className?: string }) {
           const header = newWindow.document.createElement('div');
           header.className = 'header';
           header.innerHTML = `
-            <h1 style="margin: 0; font-size: 1.5rem;">📚 Browser IDE Pro - User Guide</h1>
+            <h1 style="margin: 0; font-size: 1.5rem;">📚 Browser IDE - User Guide</h1>
             <div>
               <button onclick="window.print()" style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem;">🖨️ Print</button>
               <button onclick="window.close()" style="background: #dc2626; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer;">✕ Close</button>
@@ -985,7 +985,7 @@ export function HelpPanel({ className }: { className?: string }) {
     const newWindow = window.open(quickRefUrl, '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes,toolbar=yes,menubar=yes');
 
     if (newWindow) {
-      newWindow.document.title = '⚡ Browser IDE Pro - Quick Reference';
+      newWindow.document.title = '⚡ Browser IDE - Quick Reference';
 
       newWindow.addEventListener('load', () => {
         try {
@@ -1080,7 +1080,7 @@ export function HelpPanel({ className }: { className?: string }) {
           const header = newWindow.document.createElement('div');
           header.className = 'header';
           header.innerHTML = `
-            <h1 style="margin: 0; font-size: 1.5rem;">⚡ Browser IDE Pro - Quick Reference</h1>
+            <h1 style="margin: 0; font-size: 1.5rem;">⚡ Browser IDE - Quick Reference</h1>
             <div>
               <button onclick="window.print()" style="background: #fbbf24; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer; margin-right: 0.5rem;">🖨️ Print</button>
               <button onclick="window.close()" style="background: #dc2626; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer;">✕ Close</button>

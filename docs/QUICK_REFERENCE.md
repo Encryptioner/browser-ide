@@ -1,4 +1,4 @@
-# ⚡ Browser IDE Pro v2.0 - Quick Reference
+# ⚡ Browser IDE - Quick Reference
 
 ## 🚀 Getting Started
 
@@ -367,7 +367,6 @@ Type prefix + **Tab** to expand:
 
 ---
 
-**🎉 Happy coding with Browser IDE Pro!**
+**🎉 Happy coding with Browser IDE!**
 
 *Last Updated: December 2024*
-*Version: 2.0.0*

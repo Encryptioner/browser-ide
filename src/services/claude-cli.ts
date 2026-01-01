@@ -1,5 +1,5 @@
 /**
- * Browser IDE Pro - Claude CLI Service
+ * Browser IDE - Claude CLI Service
  *
  * WebContainer-based implementation of Claude Code CLI
  * Provides terminal-like experience in browser environment

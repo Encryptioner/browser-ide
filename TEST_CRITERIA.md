@@ -111,7 +111,7 @@ pnpm dev
 
 ### ⬜ Access Application
 1. Open http://localhost:5173/ in browser
-2. Should see Browser IDE Pro interface
+2. Should see Browser IDE interface
 3. No console errors in browser DevTools
 
 **Result:** ⬜ MANUAL TEST REQUIRED (Cannot test browser UI via CLI)

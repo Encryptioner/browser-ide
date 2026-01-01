@@ -1,4 +1,4 @@
-# 🚀 Browser IDE Pro v2.0 - User Guide
+# 🚀 Browser IDE - User Guide
 
 ## 📖 Table of Contents
 
@@ -492,4 +492,3 @@
 *Made with ❤️ for developers who code anywhere, anytime.*
 
 *Last Updated: December 2024*
-*Version: 2.0.0*

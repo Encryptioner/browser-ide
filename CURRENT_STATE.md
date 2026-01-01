@@ -1,7 +1,6 @@
-# Browser IDE Pro - Current State
+# Browser IDE - Current State
 
 **Date:** December 16, 2024
-**Version:** 2.0.0
 **Status:** In Active Development
 
 ---

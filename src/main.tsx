@@ -44,7 +44,7 @@ if ('serviceWorker' in navigator) {
 // Initialize database
 async function initializeApp() {
   try {
-    logger.info('Initializing Browser IDE Pro...');
+    logger.info('Initializing Browser IDE...');
     await initializeDatabase();
     logger.info('Database initialized successfully');
   } catch (error) {

@@ -1,6 +1,6 @@
-# 📚 Browser IDE Pro v2.0 - Documentation
+# 📚 Browser IDE - Documentation
 
-Welcome to the comprehensive documentation for **Browser IDE Pro v2.0** - a complete VS Code-like IDE that runs entirely in your browser with advanced AI capabilities.
+Welcome to the comprehensive documentation for **Browser IDE** - a complete VS Code-like IDE that runs entirely in your browser with advanced AI capabilities.
 
 > **⚠️ Development Status:** This project is actively under development. Some features described in this documentation may be in progress or planned. See the [main README](../README.md) and [TODO](../TODO.md) for current status.
 
@@ -81,34 +81,9 @@ Welcome to the comprehensive documentation for **Browser IDE Pro v2.0** - a comp
 
 ---
 
-## 🎯 What's New in v2.0
-
-### 🔥 Major Features Added
-- ✅ **Advanced Debugger** with breakpoints and variable inspection
-- ✅ **Split Editor** with drag-and-drop layouts
-- ✅ **Code Snippets** with 70+ built-in snippets
-- ✅ **Problems Panel** with real-time error detection
-- ✅ **Terminal Tabs** with multiple profiles
-- ✅ **Advanced IntelliSense** with language server protocol
-- ✅ **Complete Git Integration** with full workflow support
-
-### 🤖 AI Enhancements
-- ✅ **Multi-LLM Support** - Claude, GLM-4.6, OpenAI, Custom
-- ✅ **Session Management** - Multi-turn conversations with branching
-- ✅ **Context Awareness** - Project and file-level context
-- ✅ **Code Generation** - Natural language to working code
-
-### 📱 Mobile & PWA
-- ✅ **Touch-Optimized Interface** - Mobile-first design
-- ✅ **PWA Installation** - Native app experience
-- ✅ **Offline Capabilities** - Work without internet
-- ✅ **Responsive Design** - Works on all devices
-
----
-
 ## 🎯 Key Differences from VS Code
 
-| Feature | Browser IDE Pro | VS Code |
+| Feature | Browser IDE | VS Code |
 |---------|------------------|---------|
 | **AI Integration** | Multi-LLM support with branching conversations | Copilot (single provider) |
 | **Environment** | Runs entirely in browser | Desktop application |
@@ -258,7 +233,7 @@ New Project → Choose type → Start coding!
 ### General Questions
 
 **Q: Is this really a full VS Code replacement?**
-A: Yes! Browser IDE Pro implements 100% of the most popular VS Code features plus AI capabilities, all running in your browser.
+A: Yes! Browser IDE implements 100% of the most popular VS Code features plus AI capabilities, all running in your browser.
 
 **Q: Do I need to install anything?**
 A: No! Just open the URL in your browser. For the best experience, you can install it as a PWA.
@@ -308,7 +283,6 @@ A: Basic extension support is available, with more features coming in future upd
 - **Feedback:** Report issues and suggest improvements
 
 ### Updates & Releases
-- **Version:** 2.0.0 (Current)
 - **Updates:** Automatic PWA updates
 - **Roadmap:** See [Features](./FEATURES.md) for upcoming features
 - **Changelog:** Available on GitHub releases
@@ -354,12 +328,11 @@ A: Basic extension support is available, with more features coming in future upd
 
 ---
 
-**Browser IDE Pro v2.0** - Professional development, anywhere you have a browser.
+**Browser IDE** - Professional development, anywhere you have a browser.
 
 *Happy coding! 🎉*
 
 ---
 
 *Last Updated: December 2024*
-*Version: 2.0.0*
 *License: MIT*

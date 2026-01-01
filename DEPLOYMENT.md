@@ -1,6 +1,6 @@
-# Deployment Guide - Browser IDE Pro v2.0
+# Deployment Guide - Browser IDE
 
-This guide covers deploying Browser IDE Pro to various platforms.
+This guide covers deploying Browser IDE to various platforms.
 
 ## Table of Contents
 
@@ -310,7 +310,7 @@ No environment variables are required for basic deployment. For custom configura
 
 ```bash
 # .env.production (optional)
-VITE_APP_VERSION=2.0.0
+VITE_APP_VERSION=1.0.0
 ```
 
 Access in code:

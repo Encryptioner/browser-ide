@@ -61,7 +61,7 @@ class ImportExportService {
 
       const zip = new JSZip();
       const metadata: ExportMetadata = {
-        version: '2.0.0',
+        version: '1.0.0',
         exportedAt: Date.now(),
         projectName,
         description,

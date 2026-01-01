@@ -87,7 +87,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     const activeWorkspace = getActiveWorkspace();
     const workingDir = activeWorkspace?.data?.project?.localPath || '/workspace';
 
-    term.writeln(`🚀 Browser IDE Pro - Claude CLI v2.0.0`);
+    term.writeln(`🚀 Browser IDE - Claude CLI`);
     term.writeln(`🔧 WebContainer environment ready`);
     term.writeln(`📁 Working directory: ${workingDir}`);
     term.writeln('');
@@ -426,7 +426,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
   }, [cliService, workspaceStatus, onCommand]);
 
   const showHelpCommand = (term: Terminal) => {
-    term.writeln(`🤖 Browser IDE Pro - Claude CLI Commands:
+    term.writeln(`🤖 Browser IDE - Claude CLI Commands:
 
 📁 File Operations:
   ls [path]           List directory contents
@@ -802,7 +802,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <div className="text-gray-400 text-sm">
-            Browser IDE Pro - Claude CLI v2.0.0
+            Browser IDE - Claude CLI
           </div>
           <button
             onClick={() => setShowHelp(!showHelp)}

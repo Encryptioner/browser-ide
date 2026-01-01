@@ -1,6 +1,6 @@
 {
-  "name": "browser-ide-pro",
-  "version": "2.0.0",
+  "name": "browser-ide",
+  "version": "1.0.0",
   "type": "module",
   "description": "Production-ready VS Code-like IDE in the browser with multi-LLM support",
   "author": "Browser IDE Team",

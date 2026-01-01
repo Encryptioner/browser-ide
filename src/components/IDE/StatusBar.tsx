@@ -264,8 +264,7 @@ export function StatusBar() {
       </div>
 
       <div className="statusbar-right flex items-center gap-2">
-        <span className="status-item hidden sm:inline">Browser IDE v2.0</span>
-        <span className="status-item sm:hidden">v2.0</span>
+        <span className="status-item">Browser IDE</span>
       </div>
     </div>
   );

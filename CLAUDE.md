@@ -6,7 +6,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-**Browser IDE Pro** - VS Code-like IDE running in the browser with TypeScript, React, and modern web technologies.
+**Browser IDE** - VS Code-like IDE running in the browser with TypeScript, React, and modern web technologies.
 
 ### Core Capabilities
 - Multi-LLM support (Claude, GLM-4.6, OpenAI)
@@ -227,4 +227,4 @@ Before committing:
 
 ---
 
-**Last Updated:** December 2024 | **Version:** 2.0.0
+**Last Updated:** December 2024

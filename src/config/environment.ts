@@ -36,8 +36,8 @@ export const config: EnvironmentConfig = {
   IS_DEV: env === 'development',
   IS_PROD: env === 'production',
   IS_TEST: env === 'test',
-  APP_NAME: 'Browser IDE Pro',
-  APP_VERSION: import.meta.env.VITE_APP_VERSION || '2.0.0',
+  APP_NAME: 'Browser IDE',
+  APP_VERSION: import.meta.env.VITE_APP_VERSION || '1.0.0',
 
   // API Configuration
   API_TIMEOUT: 30000, // 30 seconds

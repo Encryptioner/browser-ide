@@ -1,4 +1,4 @@
-# Browser IDE Pro
+# Browser IDE
 
 A VS Code-like IDE that runs entirely in the browser, built with TypeScript, React, and modern web technologies.
 
@@ -192,5 +192,5 @@ Built with excellent open-source technologies:
 
 ---
 
-**Version:** 2.0.0 (In Development)
+**Status:** In Development
 **Last Updated:** December 2024

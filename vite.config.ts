@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'robots.txt'],
       manifest: {
-        name: 'Browser IDE Pro',
+        name: 'Browser IDE',
         short_name: 'Browser IDE',
         description: 'Production-ready VS Code-like IDE in the browser with multi-LLM support',
         theme_color: '#1e1e1e',
