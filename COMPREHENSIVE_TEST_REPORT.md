@@ -278,7 +278,7 @@ Status: Running without errors
 **File:** `.github/workflows/deploy.yml`
 
 **Configuration Checklist:**
-- ✅ Ubuntu-slim runner (cost optimized)
+- ✅ ubuntu-latest runner
 - ✅ Node.js 22.16.0
 - ✅ pnpm 8.14.0
 - ✅ pnpm caching enabled

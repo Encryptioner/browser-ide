@@ -235,7 +235,7 @@ pnpm dev:mobile
 
 ### ✅ Workflow File
 - [ ] `.github/workflows/deploy.yml` exists ✅
-- [ ] Uses `ubuntu-slim` runner ✅
+- [ ] Uses `ubuntu-latest` runner ✅
 - [ ] Uses Node.js 22.16.0 ✅
 - [ ] Includes pnpm cache ✅
 - [ ] Runs type-check step ✅
