@@ -56,7 +56,7 @@ export function StatusBar() {
   const loadBranches = async () => {
     setIsLoading(true);
     try {
-      const result = await gitService.getBranches();
+      const result = await gitService.listBranches();
       if (result.success && result.data) {
         setBranches(result.data);
       }
@@ -174,17 +174,26 @@ export function StatusBar() {
 
       <div className="flex items-center gap-4 text-gray-400">
         {/* Git status */}
-        {gitStatus && (
+        {gitStatus && gitStatus.length > 0 && (
           <div className="flex items-center gap-2">
-            {gitStatus.changed > 0 && (
-              <span className="text-yellow-400">M {gitStatus.changed}</span>
-            )}
-            {gitStatus.added > 0 && (
-              <span className="text-green-400">A {gitStatus.added}</span>
-            )}
-            {gitStatus.deleted > 0 && (
-              <span className="text-red-400">D {gitStatus.deleted}</span>
-            )}
+            {(() => {
+              const changed = gitStatus.filter(s => s.status === 'modified').length;
+              const added = gitStatus.filter(s => s.status === 'added' || s.status === 'staged').length;
+              const deleted = gitStatus.filter(s => s.status === 'deleted').length;
+              return (
+                <>
+                  {changed > 0 && (
+                    <span className="text-yellow-400">M {changed}</span>
+                  )}
+                  {added > 0 && (
+                    <span className="text-green-400">A {added}</span>
+                  )}
+                  {deleted > 0 && (
+                    <span className="text-red-400">D {deleted}</span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

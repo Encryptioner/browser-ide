@@ -70,7 +70,7 @@ export function Debugger({ className }: DebuggerProps) {
       name: debugConfig.name,
       type: debugConfig.type,
       request: debugConfig.request,
-      configuration: debugConfig,
+      configuration: debugConfig as unknown as Record<string, unknown>,
       workspaceFolder: '/repo',
       running: true,
       threads: [],

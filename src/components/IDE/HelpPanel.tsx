@@ -131,7 +131,7 @@ export function HelpPanel({ className }: { className?: string }) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {currentSection?.content}
+          {currentSection?.description || 'Select a section from the sidebar to view documentation.'}
         </div>
       </div>
     </div>

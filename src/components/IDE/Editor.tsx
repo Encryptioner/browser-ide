@@ -65,7 +65,7 @@ export function Editor() {
   async function updateLinting(filename: string, fileContent: string, editor: unknown) {
     try {
       const lang = fileSystem.getLanguageFromPath(filename);
-      await linterService.updateMarkers(filename, fileContent, lang, editor);
+      await linterService.updateMarkers(filename, fileContent, lang, editor as typeof import('monaco-editor'));
     } catch (error) {
       logger.error('Failed to update linting:', error);
     }
@@ -237,8 +237,8 @@ export function Editor() {
             colorDecorators: true,
             codeLens: true,
             lightbulb: {
-              enabled: 'on'
-            },
+              enabled: true
+            } as never,
 
             // Advanced editing features
             multiCursorModifier: 'ctrlCmd',
