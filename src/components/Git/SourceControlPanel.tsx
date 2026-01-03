@@ -318,19 +318,23 @@ export function SourceControlPanel() {
 }
 
 // Changes View Component
+
 interface ChangesViewProps {
   stagedFiles: GitStatus[];
   unstagedFiles: GitStatus[];
   commitMessage: string;
-  setCommitMessage: (msg: string) => void;
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  setCommitMessage: (value: string) => void;
   isCommitting: boolean;
-  onStage: (path: string) => void;
-  onUnstage: (path: string) => void;
+  onStage: (filepath: string) => void;
+  onUnstage: (filepath: string) => void;
   onStageAll: () => void;
   onUnstageAll: () => void;
   onCommit: () => void;
-  onShowDiff: (path: string) => void;
+  onShowDiff: (filepath: string) => void;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }
+ 
 
 function ChangesView({
   stagedFiles,

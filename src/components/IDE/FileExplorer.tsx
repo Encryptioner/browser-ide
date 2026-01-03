@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, JSX } from 'react';
 import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
@@ -25,13 +25,17 @@ import {
 } from 'lucide-react';
 import type { FileNode } from '@/types';
 
+ 
 interface ContextMenuProps {
   x: number;
   y: number;
   node: FileNode;
   onClose: () => void;
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   onAction: (action: string, node: FileNode) => void;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }
+ 
 
 function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);

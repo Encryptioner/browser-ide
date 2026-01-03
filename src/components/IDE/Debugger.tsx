@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Square, RotateCcw, StepForward, ArrowRight, SkipForward, Bug, X, Plus, Settings, ChevronDown, ChevronRight, EyeOff, CheckCircle } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
-import { DebugSession, DebugBreakpoint, DebugThread, DebugStackFrame, DebugVariable, DebugConfiguration, DebugConsoleMessage, DebugScope } from '@/types';
+import { DebugBreakpoint, DebugThread, DebugConfiguration, DebugConsoleMessage, DebugScope, DebugVariable, DebugSession } from '@/types';
 import { clsx } from 'clsx';
 import { nanoid } from 'nanoid';
+import { logger } from '@/utils/logger';
 
 interface DebuggerProps {
   className?: string;
@@ -20,10 +21,8 @@ export function Debugger({ className }: DebuggerProps) {
     activeDebugSessionId,
   } = useIDEStore();
 
-  const [sessions, setSessions] = useState<DebugSession[]>([]);
   const [activeSession, setActiveSession] = useState<DebugSession | null>(null);
   const [selectedThread, setSelectedThread] = useState<DebugThread | null>(null);
-  const [selectedFrame, setSelectedFrame] = useState<DebugStackFrame | null>(null);
   const [expandedScopes, setExpandedScopes] = useState<Set<number>>(new Set());
   const [expandedVariables, setExpandedVariables] = useState<Set<number>>(new Set());
   const [consoleMessages, setConsoleMessages] = useState<DebugConsoleMessage[]>([]);
@@ -45,7 +44,6 @@ export function Debugger({ className }: DebuggerProps) {
   useEffect(() => {
     if (activeProjectId && debugSessions) {
       const projectSessions = Object.values(debugSessions).flat();
-      setSessions(projectSessions);
 
       const active = projectSessions.find(s => s.id === activeDebugSessionId);
       if (active) {
@@ -83,7 +81,6 @@ export function Debugger({ className }: DebuggerProps) {
     try {
       setActiveDebugSession?.(activeProjectId, newSession.id);
       setActiveSession(newSession);
-      setSessions(prev => [...prev, newSession]);
 
       // Simulate debug session initialization
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -110,7 +107,7 @@ export function Debugger({ className }: DebuggerProps) {
       setConsoleMessages(prev => [...prev, message]);
 
     } catch (error) {
-      console.error('Failed to start debug session:', error);
+      logger.error('Failed to start debug session:', error);
 
       const errorMessage: DebugConsoleMessage = {
         id: nanoid(),
@@ -139,10 +136,9 @@ export function Debugger({ className }: DebuggerProps) {
       setConsoleMessages(prev => [...prev, message]);
       setActiveSession(null);
       setSelectedThread(null);
-      setSelectedFrame(null);
 
     } catch (error) {
-      console.error('Failed to stop debug session:', error);
+      logger.error('Failed to stop debug session:', error);
     }
   }, [activeSession]);
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
+import { logger } from '@/utils/logger';
 
 interface SearchResult {
   file: string;
@@ -26,7 +27,7 @@ export function SearchPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [replaceMode, setReplaceMode] = useState(false);
 
-  const { currentFile, openFiles, setCurrentFile } = useIDEStore();
+  const { setCurrentFile } = useIDEStore();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Handle keyboard shortcuts
@@ -93,7 +94,7 @@ export function SearchPanel() {
           const lines = contentResult.data.split('\n');
 
           lines.forEach((line, lineIndex) => {
-            let searchRegex;
+            let searchRegex: RegExp;
 
             if (searchOptions.regex) {
               searchRegex = new RegExp(searchTerm, searchOptions.caseSensitive ? 'g' : 'gi');
@@ -121,7 +122,7 @@ export function SearchPanel() {
         }
       }
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error:', error);
     } finally {
       setIsSearching(false);
       setResults(searchResults);
@@ -149,7 +150,7 @@ export function SearchPanel() {
 
         results
           .filter(r => r.file === filePath)
-          .forEach(result => {
+          .forEach(() => {
             // Simple string replace for now
             if (searchOptions.regex) {
               const regex = new RegExp(searchTerm, searchOptions.caseSensitive ? 'g' : 'gi');
@@ -225,7 +226,7 @@ export function SearchPanel() {
               onClick={() => setIsOpen(false)}
               className="px-3 py-2 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded text-sm"
             >
-              ✕
+              &#10005;
             </button>
           </div>
         </div>
@@ -358,14 +359,14 @@ export function SearchPanel() {
                 disabled={currentResultIndex === 0}
                 className="px-2 py-1 bg-gray-700 rounded disabled:opacity-50"
               >
-                ↑ Previous
+                &#8593; Previous
               </button>
               <button
                 onClick={() => setCurrentResultIndex(Math.min(results.length - 1, currentResultIndex + 1))}
                 disabled={currentResultIndex === results.length - 1}
                 className="px-2 py-1 bg-gray-700 rounded disabled:opacity-50"
               >
-                ↓ Next
+                &#8595; Next
               </button>
             </div>
           </div>

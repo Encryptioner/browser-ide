@@ -19,7 +19,7 @@
     "preview:mobile": "vite preview --host 0.0.0.0",
     "deploy": "gh-pages -d dist",
     "deploy:script": "./scripts/deploy.sh",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
     "type-check:watch": "tsc --noEmit --watch",

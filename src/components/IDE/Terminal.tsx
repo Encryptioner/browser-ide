@@ -1098,7 +1098,7 @@ export function Terminal() {
               }
             }
           }
-        } catch (err) {
+        } catch {
           // Ignore fit errors during resize
         }
       }

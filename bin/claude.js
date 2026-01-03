@@ -9,7 +9,7 @@
 
 import { createInterface } from 'readline';
 import { readFile, writeFile, access, readdir, stat } from 'fs/promises';
-import { join, resolve } from 'path';
+import { join, resolve, relative } from 'path';
 import { execSync } from 'child_process';
 
 class ClaudeCLI {
@@ -143,7 +143,7 @@ For more information, see the project documentation.
     try {
       const configData = await readFile(this.configFile, 'utf8');
       return JSON.parse(configData);
-    } catch (error) {
+    } catch {
       // Return default config if file doesn't exist
       return {
         anthropic: {
@@ -178,7 +178,7 @@ For more information, see the project documentation.
     try {
       await access(join(dir, '.git'));
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -262,7 +262,7 @@ For more information, see the project documentation.
         // Then alphabetically
         return a.name.localeCompare(b.name);
       });
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -487,8 +487,8 @@ describe('Login Component', () => {
   });
 });`;
 
-      const result = await this.writeFile('src/components/__tests__/Login.test.js', testFile);
-      if (result.success) {
+      const testResult = await this.writeFile('src/components/__tests__/Login.test.js', testFile);
+      if (testResult.success) {
         artifacts.filesCreated.push('src/components/__tests__/Login.test.js');
         console.log('   ✅ Created src/components/__tests__/Login.test.js');
       }
@@ -819,7 +819,7 @@ export default LoginAPI;`;
         await this.showStatus();
         break;
 
-      case 'exec':
+      case 'exec': {
         const task = process.argv.slice(3).join(' ');
         if (!task) {
           console.error('❌ No task provided for exec command');
@@ -828,6 +828,7 @@ export default LoginAPI;`;
         }
         await this.executeTask(task);
         break;
+      }
 
       case 'chat':
       default:
@@ -843,7 +844,7 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason, _promise) => {
   console.error('❌ Unhandled promise rejection:', reason);
   process.exit(1);
 });

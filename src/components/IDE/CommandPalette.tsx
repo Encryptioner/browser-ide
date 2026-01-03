@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { importExportService } from '@/services/importExport';
 
@@ -63,9 +63,8 @@ export function CommandPalette() {
       } else {
         alert(`Export failed: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Export failed - please check console for details');
+    } catch {
+      alert('Export failed - please try again');
     } finally {
       setIsExporting(false);
       setShowExportDialog(false);
@@ -93,6 +92,7 @@ export function CommandPalette() {
       // Proceed directly with import
       await executeImport(file);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importOptions]);
 
   const executeImport = useCallback(async (file: File) => {
@@ -106,9 +106,8 @@ export function CommandPalette() {
       } else {
         alert(`❌ Import failed: ${result.error}`);
       }
-    } catch (error) {
-      console.error('Import error:', error);
-      alert('❌ Import failed - please check console for details');
+    } catch {
+      alert('❌ Import failed - please try again');
     } finally {
       setIsImporting(false);
       setShowImportDialog(false);

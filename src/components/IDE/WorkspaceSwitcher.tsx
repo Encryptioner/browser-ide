@@ -5,7 +5,7 @@
  * Shows active workspace with indicator
  */
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 export function WorkspaceSwitcher() {

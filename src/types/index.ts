@@ -1,4 +1,5 @@
 // Core Type Definitions for Browser IDE
+import React from 'react';
 
 // ============= AI Provider Types =============
 export type AIProvider = 'anthropic' | 'glm' | 'openai' | 'custom';
@@ -303,7 +304,7 @@ export interface DebugSession {
   name: string;
   type: string;
   request: 'launch' | 'attach';
-  configuration: any;
+  configuration: Record<string, unknown>;
   workspaceFolder?: string;
   running: boolean;
   threads: DebugThread[];
@@ -332,6 +333,7 @@ export interface DebugConfiguration {
   timeout?: number;
 }
 
+ 
 export interface DebugAdapter {
   type: string;
   start: (session: DebugSession) => Promise<void>;
@@ -350,6 +352,7 @@ export interface DebugAdapter {
   variables: (variablesReference: number) => Promise<DebugVariable[]>;
   evaluate: (expression: string, frameId?: number) => Promise<DebugVariable>;
 }
+ 
 
 export interface DebugScope {
   name: string;
@@ -391,8 +394,8 @@ export interface EditorInstance {
   viewState?: {
     cursorPosition: { line: number; column: number };
     scrollPosition: { scrollTop: number; scrollLeft: number };
-    viewZones?: any[];
-    decorations?: any[];
+    viewZones?: unknown[];
+    decorations?: unknown[];
   };
 }
 
@@ -460,10 +463,12 @@ export interface ProblemRelatedInformation {
   endColumn: number;
 }
 
+ 
 export enum ProblemTag {
   Unnecessary = 1,
   Deprecated = 2,
 }
+ 
 
 export interface ProblemsCollection {
   resource: string;

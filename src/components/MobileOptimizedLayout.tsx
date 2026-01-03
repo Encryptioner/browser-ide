@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { useKeyboardDetection, useViewportHeight, useIsMobile } from '@/hooks/useKeyboardDetection';
 
 interface MobileOptimizedLayoutProps {
@@ -208,37 +208,34 @@ export function MobileButton({
   disabled = false,
   ariaLabel,
 }: MobileButtonProps) {
-  const isMobile = useIsMobile();
-
-  const sizeClasses = {
-    sm: 'px-3 py-2 text-xs min-h-[36px]',
-    md: 'px-4 py-3 text-sm min-h-[44px]',
-    lg: 'px-6 py-4 text-base min-h-[52px]',
-  };
-
+  const baseClasses = 'mobile-button touch-manipulation transition-all';
   const variantClasses = {
-    primary: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white',
-    secondary: 'bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-100',
-    icon: 'bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-100 p-3',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    secondary: 'bg-gray-700 hover:bg-gray-600 text-white',
+    icon: 'bg-gray-700 hover:bg-gray-600 text-white p-2',
   };
-
-  const buttonClasses = `
-    mobile-button
-    ${sizeClasses[size]}
-    ${variantClasses[variant]}
-    ${isMobile ? 'touch-manipulation' : ''}
-    ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-    ${className}
-  `.trim();
+  const sizeClasses = {
+    sm: 'px-3 py-1.5 text-sm min-h-[36px]',
+    md: 'px-4 py-2 text-base min-h-[44px]',
+    lg: 'px-6 py-3 text-lg min-h-[48px]',
+  };
 
   return (
     <button
-      onClick={disabled ? undefined : onClick}
+      onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={buttonClasses}
+      className={`
+        ${baseClasses}
+        ${variantClasses[variant]}
+        ${sizeClasses[size]}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+        ${className}
+      `.trim()}
     >
       {children}
     </button>
   );
 }
+
+export default MobileOptimizedLayout;

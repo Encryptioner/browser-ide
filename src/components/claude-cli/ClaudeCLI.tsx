@@ -107,7 +107,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       setTimeout(() => {
         try {
           fitAddon.fit();
-        } catch (error) {
+        } catch {
           // Ignore resize errors
         }
       }, 100);
@@ -118,7 +118,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     if (isExecuting) return;
 
     switch (data) {
-      case '\r': // Enter
+      case '\r': { // Enter
         const command = inputBuffer.current.trim();
         if (command) {
           executeCommand(command, term);
@@ -128,6 +128,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         inputBuffer.current = '';
         cursorPosition.current = 0;
         break;
+      }
 
       case '\u007F': // Backspace
         if (cursorPosition.current > 0) {

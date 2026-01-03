@@ -116,7 +116,7 @@ export function useKeyboardDetection(): KeyboardState {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let initialViewportHeight = (window as any).innerHeight;
+    const initialViewportHeight = (window as any).innerHeight;
 
     // Check if device is likely mobile - more comprehensive detection
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertCircle, AlertTriangle, Info, Filter, Search, ChevronDown, ChevronRight, CheckCircle, FileText, ExternalLink, RefreshCw, Settings } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
-import { Problem, ProblemTag, ProblemsFilter, ProblemsCollection } from '@/types';
+import { Problem, ProblemTag, ProblemsFilter } from '@/types';
 import { clsx } from 'clsx';
+import { logger } from '@/utils/logger';
 
 interface ProblemsPanelProps {
   className?: string;
@@ -16,25 +17,17 @@ interface ProblemGroup {
   expanded: boolean;
 }
 
-interface ProblemSource {
-  name: string;
-  count: number;
-  problems: Problem[];
-}
-
 export function ProblemsPanel({ className }: ProblemsPanelProps) {
   const [problems, setProblems] = useState<Problem[]>([]);
-  const [collections, setCollections] = useState<ProblemsCollection[]>([]);
   const [filter, setFilter] = useState<ProblemsFilter>({ type: 'all' });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedResources, setExpandedResources] = useState<Set<string>>(new Set());
   const [selectedProblem, setSelectedProblem] = useState<Problem | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [showSourceMenu, setShowSourceMenu] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
 
-  const { openFiles, activeTabId, diagnostics, getDiagnostics } = useIDEStore();
+  const { openFiles, diagnostics, getDiagnostics } = useIDEStore();
 
   // Refresh problems when files change
   useEffect(() => {
@@ -197,40 +190,6 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
     });
   }, [problems, filter, searchQuery, expandedResources]);
 
-  // Group problems by source
-  const problemSources = useMemo(() => {
-    const sources = new Map<string, ProblemSource>();
-
-    const filteredProblems = problems.filter(problem => {
-      // Apply same filters as above
-      if (filter.type && filter.type !== 'all' && problem.severity !== filter.type) {
-        return false;
-      }
-      if (searchQuery && !problem.message.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !problem.resource.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      return true;
-    });
-
-    filteredProblems.forEach(problem => {
-      const sourceName = problem.source || 'unknown';
-      if (!sources.has(sourceName)) {
-        sources.set(sourceName, {
-          name: sourceName,
-          count: 0,
-          problems: [],
-        });
-      }
-
-      const source = sources.get(sourceName)!;
-      source.problems.push(problem);
-      source.count++;
-    });
-
-    return Array.from(sources.values()).sort((a, b) => b.count - a.count);
-  }, [problems, filter, searchQuery]);
-
   // Get problem statistics
   const problemStats = useMemo(() => {
     const stats = { errors: 0, warnings: 0, infos: 0, total: 0 };
@@ -259,29 +218,15 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
 
   const goToProblem = useCallback((problem: Problem) => {
     // This would integrate with the editor to navigate to the problem location
-    console.log('Navigate to problem:', problem);
+    logger.debug('Navigate to problem:', problem);
     setSelectedProblem(problem);
-  }, []);
-
-  const applyQuickFix = useCallback(async (problem: Problem, fixIndex: number) => {
-    // This would integrate with code actions to apply quick fixes
-    console.log('Apply quick fix:', problem, fixIndex);
   }, []);
 
   const clearFilter = useCallback(() => {
     setFilter({ type: 'all' });
     setSearchQuery('');
     setShowFilterMenu(false);
-    setShowSourceMenu(false);
   }, []);
-
-  const refreshProblems = useCallback(() => {
-    setLastRefresh(Date.now());
-    // Trigger re-diagnostics
-    if (getDiagnostics) {
-      getDiagnostics();
-    }
-  }, [getDiagnostics]);
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -534,7 +479,7 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
                 {/* Problem details */}
                 {group.expanded && (
                   <div className="bg-gray-900">
-                    {group.problems.map((problem, index) => (
+                    {group.problems.map((problem) => (
                       <div
                         key={problem.id}
                         className={clsx(

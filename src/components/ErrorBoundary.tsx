@@ -3,7 +3,6 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -32,15 +31,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    if (import.meta.env.DEV) {
-      console.error('🔴 Error Boundary caught an error:', error);
-      console.error('Error Info:', errorInfo);
-    }
-
-    // Call custom error handler if provided
-    this.props.onError?.(error, errorInfo);
-
     // Update state with error details
     this.setState({
       error,

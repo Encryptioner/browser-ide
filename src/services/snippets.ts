@@ -657,7 +657,7 @@ export class SnippetManager {
     const placeholders: SnippetPlaceholder[] = [];
     const placeholderRegex = /\$(\d+)(?::([^$]*))?\$/g;
     let match;
-    let index = 0;
+    const index = 0;
 
     for (const line of body) {
       while ((match = placeholderRegex.exec(line)) !== null) {

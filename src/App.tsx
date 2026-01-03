@@ -83,19 +83,14 @@ function App() {
         const stats = await fs.promises.stat(currentDir).catch(() => null);
 
         if (stats && stats.isDirectory()) {
-          console.log('📂 Found existing repository, initializing git state...');
           const result = await gitService.initializeRepository(currentDir);
 
           if (result.success && result.data) {
-            console.log(`✅ Git initialized: branch=${result.data.currentBranch}, files=${result.data.gitStatus.length}, commits=${result.data.commits.length}`);
-          } else {
-            console.warn('⚠️ Git initialization failed:', result.error);
+            logger.info(`Git initialized: branch=${result.data.currentBranch}, files=${result.data.gitStatus.length}, commits=${result.data.commits.length}`);
           }
-        } else {
-          console.log('ℹ️ No repository found at /repo');
         }
       } catch (error) {
-        console.error('❌ Error checking for repository:', error);
+        logger.error('Error checking for repository:', error);
       }
     }
 
@@ -119,24 +114,31 @@ function App() {
       setShowSettingsDialog(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       setInstalled(true);
       setShowInstallPrompt(false);
-    });
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
     window.addEventListener('show-clone-dialog', handleOpenCloneDialog);
     window.addEventListener('open-settings-dialog', handleOpenSettingsDialog);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('show-clone-dialog', handleOpenCloneDialog);
       window.removeEventListener('open-settings-dialog', handleOpenSettingsDialog);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInstallClick = async () => {
     if (installPromptEvent) {
-      const promptEvent = installPromptEvent as any;
+      const promptEvent = installPromptEvent as Event & {
+        prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
+        userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+      };
       promptEvent.prompt();
       const { outcome } = await promptEvent.userChoice;
       if (outcome === 'accepted') {

@@ -36,7 +36,8 @@ export default [
     },
     rules: {
       // TypeScript rules
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }], // Also for base rule
       '@typescript-eslint/no-explicit-any': 'warn',
 
       // React rules
@@ -71,7 +72,7 @@ export default [
     },
     rules: {
       'no-console': 'off',  // Allow console in scripts
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
   {

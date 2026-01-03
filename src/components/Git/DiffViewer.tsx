@@ -32,6 +32,7 @@ export function DiffViewer({ filepath, onClose }: DiffViewerProps) {
 
   useEffect(() => {
     loadDiff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filepath]);
 
   const loadDiff = async () => {

@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import { fileSystem } from '@/services/filesystem';
 import { useIDEStore } from '@/store/useIDEStore';
 import { linterService } from '@/services/linter';
+import { logger } from '@/utils/logger';
 
 export function Editor() {
   const {
@@ -17,21 +18,12 @@ export function Editor() {
     setCurrentFile,
   } = useIDEStore();
 
-  // Get the full store to access other functions for welcome screen
-  const store = useIDEStore() as any;
-
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const editorRef = useRef<any | null>(null);
+  const editorRef = useRef<unknown | null>(null);
   const lintTimeout = useRef<number | undefined>(undefined);
 
-  useEffect(() => {
-    if (currentFile) {
-      loadFile(currentFile);
-    }
-  }, [currentFile]);
-
-  async function loadFile(path: string) {
+  const loadFile = useCallback(async (path: string) => {
     // Check if already in memory
     if (editorContent[path] !== undefined) {
       setContent(editorContent[path]);
@@ -45,7 +37,13 @@ export function Editor() {
     // Detect language
     const lang = fileSystem.getLanguageFromPath(path);
     setLanguage(lang);
-  }
+  }, [editorContent, updateEditorContent]);
+
+  useEffect(() => {
+    if (currentFile) {
+      loadFile(currentFile);
+    }
+  }, [currentFile, loadFile]);
 
   function handleChange(value: string | undefined) {
     const newValue = value || '';
@@ -64,20 +62,19 @@ export function Editor() {
     }
   }
 
-  async function updateLinting(filename: string, fileContent: string, editor: any) {
-  try {
-    const language = fileSystem.getLanguageFromPath(filename);
-    await linterService.updateMarkers(filename, fileContent, language, editor);
-  } catch (error) {
-    console.error('Failed to update linting:', error);
+  async function updateLinting(filename: string, fileContent: string, editor: unknown) {
+    try {
+      const lang = fileSystem.getLanguageFromPath(filename);
+      await linterService.updateMarkers(filename, fileContent, lang, editor);
+    } catch (error) {
+      logger.error('Failed to update linting:', error);
+    }
   }
-}
 
-async function handleSave() {
+  async function handleSave() {
     if (currentFile) {
       await fileSystem.writeFile(currentFile, content);
       markFileSaved(currentFile);
-      console.log('✅ File saved:', currentFile);
 
       // Update linting after save
       if (editorRef.current) {
@@ -86,17 +83,24 @@ async function handleSave() {
     }
   }
 
-  function handleEditorDidMount(editor: any) {
+  function handleEditorDidMount(editor: unknown) {
     editorRef.current = editor;
 
     // Add save shortcut
-    editor.addCommand(
+
+    if (editor && typeof editor === 'object' && 'addCommand' in editor) {
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      const monacoEditor = editor as { addCommand: (shortcut: number, callback: () => void) => void };
+      /* eslint-enable @typescript-eslint/no-unused-vars */
       // Cmd+S or Ctrl+S
-      (window.navigator.platform.match('Mac') ? 2048 : 2048) | 49, // KeyMod.CtrlCmd | KeyCode.KeyS
-      () => {
-        handleSave();
-      }
-    );
+      monacoEditor.addCommand(
+        (window.navigator.platform.match('Mac') ? 2048 : 2048) | 49, // KeyMod.CtrlCmd | KeyCode.KeyS
+        () => {
+          handleSave();
+        }
+      );
+    }
+
   }
 
   // Handlers for welcome screen buttons
@@ -112,34 +116,34 @@ async function handleSave() {
     return (
       <div className="editor-empty flex items-center justify-center h-full bg-gray-900 text-gray-100 px-4 py-8">
         <div className="welcome max-w-4xl text-center">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-4">🚀 Welcome to Browser IDE</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-4">Welcome to Browser IDE</h1>
           <p className="text-base sm:text-xl text-gray-400 mb-6 sm:mb-8">
             A full-featured IDE that runs entirely in your browser
           </p>
           <div className="features grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="feature p-4 sm:p-6 bg-gray-800 rounded-lg touch-manipulation hover:bg-gray-750 transition-colors">
-              <span className="emoji text-3xl sm:text-4xl block mb-2">📁</span>
+              <span className="emoji text-3xl sm:text-4xl block mb-2">File Management</span>
               <h3 className="text-base sm:text-lg font-semibold mb-2">File Management</h3>
               <p className="text-xs sm:text-sm text-gray-400">
                 Browse and edit files with a VS Code-like interface
               </p>
             </div>
             <div className="feature p-4 sm:p-6 bg-gray-800 rounded-lg touch-manipulation hover:bg-gray-750 transition-colors">
-              <span className="emoji text-3xl sm:text-4xl block mb-2">🔗</span>
+              <span className="emoji text-3xl sm:text-4xl block mb-2">Git Integration</span>
               <h3 className="text-base sm:text-lg font-semibold mb-2">Git Integration</h3>
               <p className="text-xs sm:text-sm text-gray-400">
                 Clone, commit, and push directly to GitHub
               </p>
             </div>
             <div className="feature p-4 sm:p-6 bg-gray-800 rounded-lg touch-manipulation hover:bg-gray-750 transition-colors">
-              <span className="emoji text-3xl sm:text-4xl block mb-2">▶️</span>
+              <span className="emoji text-3xl sm:text-4xl block mb-2">Run Code</span>
               <h3 className="text-base sm:text-lg font-semibold mb-2">Run Code</h3>
               <p className="text-xs sm:text-sm text-gray-400">
                 Execute Node.js apps with WebContainers
               </p>
             </div>
             <div className="feature p-4 sm:p-6 bg-gray-800 rounded-lg touch-manipulation hover:bg-gray-750 transition-colors">
-              <span className="emoji text-3xl sm:text-4xl block mb-2">🤖</span>
+              <span className="emoji text-3xl sm:text-4xl block mb-2">AI Assistant</span>
               <h3 className="text-base sm:text-lg font-semibold mb-2">AI Assistant</h3>
               <p className="text-xs sm:text-sm text-gray-400">
                 Get coding help from multiple AI providers
@@ -151,13 +155,13 @@ async function handleSave() {
               onClick={handleCloneClick}
               className="btn-primary px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium touch-manipulation min-w-[44px] min-h-[44px]"
             >
-              📥 Clone Repository
+              Clone Repository
             </button>
             <button
               onClick={handleSettingsClick}
               className="btn-secondary px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium touch-manipulation min-w-[44px] min-h-[44px]"
             >
-              ⚙️ Open Settings
+              Open Settings
             </button>
           </div>
         </div>
@@ -234,7 +238,7 @@ async function handleSave() {
             codeLens: true,
             lightbulb: {
               enabled: 'on'
-            } as any,
+            },
 
             // Advanced editing features
             multiCursorModifier: 'ctrlCmd',

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, X, Terminal, ChevronDown, Settings, Copy, Trash2, SplitSquareVertical, Monitor, Cpu, Package, FolderOpen, GitBranch, AlertCircle, CheckCircle, Play, Square, RotateCcw } from 'lucide-react';
+import { Plus, X, Terminal, Settings, Copy, Trash2, SplitSquareVertical, Monitor, Cpu, Package, FolderOpen, GitBranch, AlertCircle, Square, RotateCcw } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
-import type { WebContainerServer } from '@/types';
-import { clsx } from 'clsx';
+import { logger } from '@/utils/logger';
 import { nanoid } from 'nanoid';
 
 export interface TerminalProfile {
@@ -98,6 +97,7 @@ const DEFAULT_PROFILES: TerminalProfile[] = [
   },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function TerminalTabs({ className }: TerminalTabsProps) {
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
@@ -106,7 +106,6 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
   const [customProfiles, setCustomProfiles] = useState<TerminalProfile[]>([]);
   const [terminalOutput, setTerminalOutput] = useState<Record<string, string[]>>({});
   const [terminalInput, setTerminalInput] = useState<Record<string, string>>({});
-  const [serverInfo, setServerInfo] = useState<Record<string, WebContainerServer | null>>({});
   const terminalRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const { webContainerService } = useIDEStore();
@@ -116,6 +115,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     if (tabs.length === 0) {
       createNewTab('bash');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createNewTab = useCallback((profileId: string, customName?: string) => {
@@ -152,7 +152,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     setTimeout(() => {
       startTerminalProcess(newTab.id);
     }, 100);
-  }, [DEFAULT_PROFILES, customProfiles]);
+  }, [customProfiles]);
 
   const startTerminalProcess = useCallback(async (tabId: string) => {
     const tab = tabs.find(t => t.id === tabId);
@@ -188,7 +188,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
       }));
 
     } catch (error) {
-      console.error('Failed to start terminal process:', error);
+      logger.error('Failed to start terminal process:', error);
       setTabs(prev => prev.map(t =>
         t.id === tabId ? {
           ...t,
@@ -264,7 +264,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     setShowTabMenu(null);
   }, []);
 
-  const splitTab = useCallback((tabId: string, direction: 'horizontal' | 'vertical' = 'horizontal') => {
+   
+  const splitTab = useCallback((tabId: string, _direction: 'horizontal' | 'vertical' = 'horizontal') => {
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;
 
@@ -324,7 +325,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
       await webContainerService?.sendInput(tab.processId, command + '\n');
 
     } catch (error) {
-      console.error('Failed to execute command:', error);
+      logger.error('Failed to execute command:', error);
       setTerminalOutput(prev => ({
         ...prev,
         [tabId]: [...(prev[tabId] || []), `Error: ${error}`]
@@ -336,7 +337,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     const input = e.currentTarget;
 
     switch (e.key) {
-      case 'Enter':
+      case 'Enter': {
         e.preventDefault();
         const command = input.value.trim();
         if (command) {
@@ -358,6 +359,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
           }));
         }
         break;
+      }
 
       case 'ArrowUp':
         e.preventDefault();
@@ -401,7 +403,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     const output = terminalOutput[tabId]?.join('\n') || '';
     navigator.clipboard.writeText(output).then(() => {
       // Show toast notification (would need toast implementation)
-      console.log('Terminal output copied to clipboard');
+      logger.debug('Terminal output copied to clipboard');
     });
   }, [terminalOutput]);
 
@@ -414,12 +416,12 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
   const showTabBar = tabs.length > 0;
 
   return (
-    <div className={clsx('terminal-tabs flex flex-col h-full bg-gray-900 text-gray-100', className)}>
+    <div className="terminal-tabs flex flex-col h-full bg-gray-900 text-gray-100">
       {/* Tab Bar */}
       {showTabBar && (
         <div className="terminal-tab-bar flex items-center bg-gray-800 border-b border-gray-700">
           <div className="flex items-center overflow-x-auto">
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <div key={tab.id} className="relative">
                 <button
                   onClick={() => switchTab(tab.id)}
@@ -427,24 +429,14 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
                     e.preventDefault();
                     setShowTabMenu(tab.id === showTabMenu ? null : tab.id);
                   }}
-                  className={clsx(
-                    'flex items-center gap-2 px-3 py-2 border-t-2 border-transparent hover:bg-gray-700 transition-colors whitespace-nowrap min-w-0',
-                    tab.active
-                      ? 'bg-gray-900 border-t-blue-500 text-white'
-                      : 'text-gray-300 hover:text-white'
-                  )}
+                  className="flex items-center gap-2 px-3 py-2 border-t-2 border-transparent hover:bg-gray-700 transition-colors whitespace-nowrap min-w-0"
                 >
                   {tab.profile.icon}
                   <span className="text-sm truncate max-w-32">{tab.title}</span>
 
                   {/* Status indicator */}
-                  <div className={clsx(
-                    'w-2 h-2 rounded-full flex-shrink-0',
-                    tab.status === 'running' && 'bg-green-400',
-                    tab.status === 'stopped' && 'bg-gray-400',
-                    tab.status === 'error' && 'bg-red-400',
-                    tab.status === 'pending' && 'bg-yellow-400'
-                  )}></div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 bg-gray-400 data-[status=running]:bg-green-400 data-[status=stopped]:bg-gray-400 data-[status=error]:bg-red-400 data-[status=pending]:bg-yellow-400"
+                    data-status={tab.status}></div>
 
                   {/* Close button */}
                   <button
@@ -633,8 +625,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
               className="terminal-output flex-1 overflow-y-auto p-4 font-mono text-sm bg-black"
               style={{ fontFamily: 'Consolas, Monaco, "Courier New", monospace' }}
             >
-              {terminalOutput[activeTab.id]?.map((line, index) => (
-                <div key={index} className="whitespace-pre-wrap break-all">
+              {terminalOutput[activeTab.id]?.map((line, idx) => (
+                <div key={idx} className="whitespace-pre-wrap break-all">
                   {line}
                 </div>
               ))}

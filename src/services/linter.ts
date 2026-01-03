@@ -41,8 +41,8 @@ class BasicJSLinter implements LintProvider {
   }
 
   private checkUnbalancedBrackets(line: string, lineNumber: number, diagnostics: LintDiagnostic[]) {
-    const openBrackets = (line.match(/[\{\[]]/g) || []).length;
-    const closeBrackets = (line.match(/[\}\]]/g) || []).length;
+    const openBrackets = (line.match(/[{[]/g) || []).length;
+    const closeBrackets = (line.match(/[}]]/g) || []).length;
 
     if (openBrackets !== closeBrackets) {
       const bracketType = openBrackets > closeBrackets ? 'opening' : 'closing';
@@ -168,7 +168,7 @@ class BasicHTMLLinter implements LintProvider {
   }
 
   private checkUnclosedTags(line: string, lineNumber: number, diagnostics: LintDiagnostic[]) {
-    const openTags = line.match(/<[^\/][^>]*>/g) || [];
+    const openTags = line.match(/<[^/][^>]*>/g) || [];
     const closeTags = line.match(/<\/[^>]*>/g) || [];
 
     // Simple check - might have false positives

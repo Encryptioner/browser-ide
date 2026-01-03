@@ -34,6 +34,7 @@ export interface Workspace {
   lastActive: number;
 }
 
+
 interface WorkspaceState {
   // Active workspace
   activeWorkspaceId: string | null;

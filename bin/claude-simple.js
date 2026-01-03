@@ -8,7 +8,7 @@
  */
 
 import { createInterface } from 'readline';
-import { readFile, writeFile, access } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { execSync } from 'child_process';
 
@@ -93,7 +93,7 @@ Run "claude help" for more information.
     try {
       const configData = await readFile(this.configFile, 'utf8');
       return JSON.parse(configData);
-    } catch (error) {
+    } catch {
       return {
         anthropic: {
           baseUrl: 'https://api.anthropic.com',
@@ -160,7 +160,7 @@ Run "claude help" for more information.
       } else {
         console.log('   Working tree clean ✅');
       }
-    } catch (error) {
+    } catch {
       console.log('   Not a git repository');
     }
 
@@ -351,7 +351,7 @@ export function ${lowerTask.includes('login') ? 'LoginForm' : 'App'}() {
     }
 
     switch (options.command) {
-      case 'exec':
+      case 'exec': {
         const task = options.taskArgs;
         if (!task) {
           console.error('❌ No task provided for exec command');
@@ -360,6 +360,7 @@ export function ${lowerTask.includes('login') ? 'LoginForm' : 'App'}() {
         }
         await this.executeTask(task);
         break;
+      }
 
       case 'status':
         await this.showStatus();
@@ -379,7 +380,7 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason, _promise) => {
   console.error('❌ Unhandled promise rejection:', reason);
   process.exit(1);
 });

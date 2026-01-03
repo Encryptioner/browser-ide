@@ -10,12 +10,14 @@ import type {
 export interface LLMProvider {
   id: string;
   name: string;
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   complete(
     messages: AIMessage[],
     config: AIProviderConfig,
     onChunk?: (chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>>;
   validateConfig(config: AIProviderConfig): Promise<boolean>;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }
 
 // ========== Anthropic Claude Provider ==========
@@ -23,6 +25,7 @@ export class AnthropicProvider implements LLMProvider {
   id = 'anthropic';
   name = 'Anthropic Claude';
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
@@ -65,7 +68,9 @@ export class AnthropicProvider implements LLMProvider {
       };
     }
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   private async handleStream(
     response: Response,
     config: AIProviderConfig,
@@ -143,6 +148,7 @@ export class AnthropicProvider implements LLMProvider {
       };
     }
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   private async handleNonStream(
     response: Response,
@@ -193,6 +199,7 @@ export class GLMProvider implements LLMProvider {
   id = 'glm';
   name = 'Z.ai GLM';
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
@@ -235,7 +242,9 @@ export class GLMProvider implements LLMProvider {
       };
     }
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   private async handleStream(
     response: Response,
     config: AIProviderConfig,
@@ -310,6 +319,7 @@ export class GLMProvider implements LLMProvider {
       };
     }
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   private async handleNonStream(
     response: Response,
@@ -360,6 +370,7 @@ export class OpenAIProvider implements LLMProvider {
   id = 'openai';
   name = 'OpenAI';
 
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,

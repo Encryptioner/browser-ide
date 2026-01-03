@@ -30,7 +30,7 @@ export interface RecentProject {
 }
 
 // Services will be added later when needed
-let webContainerServer: WebContainerServer | null = null;
+const webContainerServer: WebContainerServer | null = null;
 
 // Settings interface combines editor, git, and AI settings
 export interface Settings extends EditorSettings, GitSettings {

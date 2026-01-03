@@ -4,7 +4,7 @@
  * VS Code extensions marketplace and management UI
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { extensionManager, VSCodeExtension, POPULAR_EXTENSIONS } from '@/services/vscode-extensions';
 
 export function ExtensionsPanel() {
