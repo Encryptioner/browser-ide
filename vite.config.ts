@@ -27,11 +27,11 @@ export default defineConfig(({ mode }) => ({
         background_color: '#1e1e1e',
         display: 'standalone',
         orientation: 'any',
-        scope: '/',
-        start_url: '/',
+        scope: '/browser-ide/',
+        start_url: '/browser-ide/',
         icons: [
           {
-            src: '/icon.svg',
+            src: '/browser-ide/icon.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'any maskable',

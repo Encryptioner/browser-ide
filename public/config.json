@@ -1,0 +1,35 @@
+{
+  "mobile": {
+    "keyboard": {
+      "enabled": true,
+      "virtualKeyboardAPI": {
+        "enabled": true,
+        "overlaysContent": true,
+        "autoHideOnBlur": true,
+        "experimentalFeatures": true
+      },
+      "detection": {
+        "heightThreshold": 100,
+        "debounceDelay": 150,
+        "visualViewportAPI": true
+      },
+      "ui": {
+        "adjustBottomPanel": true,
+        "adjustEditorHeight": true,
+        "preventZoomOnInput": true,
+        "minimumTouchTargetSize": 44,
+        "safeAreaSupport": true
+      },
+      "testing": {
+        "showKeyboardControls": true,
+        "enableDebugLogs": true,
+        "forceShowKeyboard": false
+      }
+    }
+  },
+  "experimental": {
+    "mobileKeyboardEnhancements": true,
+    "advancedViewportHandling": true,
+    "touchOptimizations": true
+  }
+}

@@ -33,6 +33,19 @@ class WebContainerService {
       return this.bootPromise;
     }
 
+    // Check for required COOP/COEP headers
+    if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
+      const errorMsg = 'WebContainers require COOP/COEP headers (Cross-Origin-Opener-Policy: same-origin and Cross-Origin-Embedder-Policy: require-corp). ' +
+        'GitHub Pages does not support these headers. Please use a hosting provider that supports custom headers like Netlify, Vercel, or Cloudflare Pages. ' +
+        'See: https://webcontainers.io/guides/coop-coep';
+
+      console.error('❌ WebContainer Error:', errorMsg);
+      return {
+        success: false,
+        error: errorMsg
+      };
+    }
+
     // Start new boot process
     this.bootPromise = (async () => {
       try {
