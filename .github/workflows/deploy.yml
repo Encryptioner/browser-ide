@@ -21,11 +21,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install git and required packages
-        run: |
-          apt-get update
-          apt-get install -y git
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
