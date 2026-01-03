@@ -837,4 +837,4 @@ Browser IDE implements all the most popular VS Code features:
 
 **Browser IDE** delivers a complete VS Code-like experience in your browser, enhanced with AI capabilities and optimized for modern web development workflows.
 
-*Last Updated: December 2024*
+*Last Updated: December 2025*

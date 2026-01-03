@@ -369,4 +369,4 @@ Type prefix + **Tab** to expand:
 
 **🎉 Happy coding with Browser IDE!**
 
-*Last Updated: December 2024*
+*Last Updated: December 2025*

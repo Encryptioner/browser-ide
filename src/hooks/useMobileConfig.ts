@@ -98,7 +98,8 @@ export function useMobileConfig(): {
       setIsLoading(true);
 
       // Try to load from config.json file (public folder)
-      const response = await fetch('/config.json');
+      // Use relative path to work with base: '/browser-ide/' in GitHub Pages
+      const response = await fetch('./config.json');
       if (response.ok) {
         const fileConfig: AppMobileConfig = await response.json();
 

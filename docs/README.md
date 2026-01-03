@@ -334,5 +334,5 @@ A: Basic extension support is available, with more features coming in future upd
 
 ---
 
-*Last Updated: December 2024*
+*Last Updated: December 2025*
 *License: MIT*
