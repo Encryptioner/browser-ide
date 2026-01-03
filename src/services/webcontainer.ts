@@ -49,8 +49,8 @@ class WebContainerService {
     // Start new boot process
     this.bootPromise = (async () => {
       try {
-        this.instance = await WebContainer.boot();
-        console.log('✅ WebContainer booted successfully');
+        this.instance = await WebContainer.boot({ coep: 'credentialless' });
+        console.log('✅ WebContainer booted successfully (credentialless mode)');
 
         // Listen for server events
         this.instance.on('server-ready', (port, url) => {

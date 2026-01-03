@@ -41,6 +41,9 @@ dependencies:
   clsx:
     specifier: ^2.1.0
     version: 2.1.1
+  coi-serviceworker:
+    specifier: ^0.1.7
+    version: 0.1.7
   date-fns:
     specifier: ^3.0.6
     version: 3.6.0
@@ -112,6 +115,9 @@ dependencies:
     version: 4.5.7(@types/react@19.2.7)(react@18.3.1)
 
 devDependencies:
+  '@types/node':
+    specifier: ^25.0.3
+    version: 25.0.3
   '@types/react':
     specifier: ^19.2.7
     version: 19.2.7
@@ -162,7 +168,7 @@ devDependencies:
     version: 5.9.3
   vite:
     specifier: ^5.0.8
-    version: 5.4.21
+    version: 5.4.21(@types/node@25.0.3)
   vite-plugin-pwa:
     specifier: ^0.17.4
     version: 0.17.5(vite@5.4.21)(workbox-build@7.4.0)(workbox-window@7.4.0)
@@ -2293,6 +2299,12 @@ packages:
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
     dev: false
 
+  /@types/node@25.0.3:
+    resolution: {integrity: sha512-W609buLVRVmeW693xKfzHeIV6nJGGz98uCPfeXI1ELMLXVeKYZ9m15fAMSaUPBHYLGFsVRcMmSCksQOrZV9BYA==}
+    dependencies:
+      undici-types: 7.16.0
+    dev: true
+
   /@types/prop-types@15.7.15:
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
     dev: true
@@ -2489,7 +2501,7 @@ packages:
     dependencies:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@swc/core': 1.15.3
-      vite: 5.4.21
+      vite: 5.4.21(@types/node@25.0.3)
     transitivePeerDependencies:
       - '@swc/helpers'
     dev: true
@@ -2923,6 +2935,10 @@ packages:
   /clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
+    dev: false
+
+  /coi-serviceworker@0.1.7:
+    resolution: {integrity: sha512-bjSUqEngCPOkErY2vbyWsaIGCNRODYzlNycaREVw5s12/C8SM+RnRUUeX6pZbTtov6C52ZLY/+tvHK+BDxuUuA==}
     dev: false
 
   /color-convert@2.0.1:
@@ -6291,6 +6307,10 @@ packages:
       which-boxed-primitive: 1.1.1
     dev: true
 
+  /undici-types@7.16.0:
+    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+    dev: true
+
   /unicode-canonical-property-names-ecmascript@2.0.1:
     resolution: {integrity: sha512-dA8WbNeb2a6oQzAQ55YlT5vQAWGV9WXOsi3SskE3bcCdM0P4SDd+24zS/OCacdRq5BkdsRj9q3Pg6YyQoxIGqg==}
     engines: {node: '>=4'}
@@ -6429,14 +6449,14 @@ packages:
       debug: 4.4.3
       fast-glob: 3.3.3
       pretty-bytes: 6.1.1
-      vite: 5.4.21
+      vite: 5.4.21(@types/node@25.0.3)
       workbox-build: 7.4.0
       workbox-window: 7.4.0
     transitivePeerDependencies:
       - supports-color
     dev: true
 
-  /vite@5.4.21:
+  /vite@5.4.21(@types/node@25.0.3):
     resolution: {integrity: sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -6467,6 +6487,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 25.0.3
       esbuild: 0.21.5
       postcss: 8.5.6
       rollup: 4.53.3

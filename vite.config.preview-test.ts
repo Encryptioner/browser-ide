@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'cdn-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },
@@ -90,24 +90,22 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
       },
-      // Disable PWA service worker - conflicts with coi-serviceworker needed for GitHub Pages
-      // To enable WebContainers on GitHub Pages, we use coi-serviceworker instead
-      // For other hosting (Netlify, Vercel, Cloudflare), you can use their header support
-      disable: process.env.GITHUB_PAGES === 'true' || mode === 'production',
+      // Disable PWA for GitHub Pages (conflicts with coi-serviceworker)
+      disable: true,
       devOptions: {
         enabled: false,
       },
     }),
   ],
-  base: process.env.NODE_ENV === 'production' ? '/browser-ide/' : './',
+  base: './', // Use relative path for local testing
   build: {
     outDir: 'dist',
     sourcemap: mode === 'development',
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: mode === 'production',
-        drop_debugger: mode === 'production',
+        drop_console: false, // Keep console for testing
+        drop_debugger: false,
       },
     },
     rollupOptions: {
@@ -129,22 +127,15 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ['@webcontainer/api'],
-    include: [
-      'react',
-      'react-dom',
-      'zustand',
-      'dexie',
-      'dexie-react-hooks',
-    ],
+    include: ['react', 'react-dom', 'zustand', 'dexie', 'dexie-react-hooks'],
   },
+  // IMPORTANT: NO COOP/COEP headers - simulates GitHub Pages environment
+  // This allows testing coi-serviceworker functionality locally
   server: {
     host: '0.0.0.0',
     port: 5173,
     strictPort: false,
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    },
+    // NO HEADERS - simulating GitHub Pages
     hmr: {
       overlay: true,
     },
@@ -153,12 +144,6 @@ export default defineConfig(({ mode }) => ({
     host: '0.0.0.0',
     port: 4173,
     strictPort: false,
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'credentialless',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
-      'X-XSS-Protection': '1; mode=block',
-    },
+    // NO HEADERS - simulating GitHub Pages
   },
 }));

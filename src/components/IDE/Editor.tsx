@@ -55,9 +55,9 @@ export function Editor() {
       // Update linting in real-time (debounced)
       if (editorRef.current) {
         clearTimeout(lintTimeout.current);
-        lintTimeout.current = setTimeout(async () => {
+        lintTimeout.current = window.setTimeout(async () => {
           await updateLinting(currentFile, newValue, editorRef.current);
-        }, 500); // 500ms debounce
+        }, 500) as unknown as number; // 500ms debounce
       }
     }
   }

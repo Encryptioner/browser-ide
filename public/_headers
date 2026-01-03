@@ -1,0 +1,23 @@
+# Cloudflare Pages headers configuration
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+# COOP/COEP headers for WebContainers (SharedArrayBuffer support)
+/*
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Opener-Policy: same-origin
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+
+# Cache headers for static assets
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.svg
+  Cache-Control: public, max-age=86400

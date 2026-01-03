@@ -47,6 +47,19 @@
     <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
 
     <title>Browser IDE - Production-Ready Web IDE with AI</title>
+
+    <!-- coi-serviceworker: Enables COOP/COEP headers for WebContainers on static hosting (GitHub Pages) -->
+    <!-- Must be loaded before any other scripts that need SharedArrayBuffer -->
+    <script>
+      // Configure coi-serviceworker to use credentialless mode
+      window.coi = {
+        // Use credentialless mode (more permissive than require-corp)
+        coepCredentialless: () => true,
+        // Quiet mode to reduce console noise
+        quiet: false,
+      };
+    </script>
+    <script src="/coi-serviceworker.min.js"></script>
   </head>
   <body>
     <noscript>
