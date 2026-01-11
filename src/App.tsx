@@ -157,7 +157,7 @@ function App() {
       {/* Title Bar */}
       <div className="titlebar flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-800 border-b border-gray-700 flex-shrink-0">
         <div className="titlebar-drag flex items-center gap-2 sm:gap-4 overflow-hidden flex-1 min-w-0">
-          <span className="title font-semibold text-xs sm:text-sm truncate">🚀 IDE v{config.APP_VERSION}</span>
+          <span className="title font-semibold text-xs sm:text-sm truncate">🚀 Browser IDE v{config.APP_VERSION}</span>
           <WorkspaceSwitcher />
         </div>
 
