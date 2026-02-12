@@ -749,6 +749,65 @@ export function Terminal() {
       }
     }
 
+    /**
+     * Parse stderr redirection from command line
+     * Returns { cleanedCommand, stderrRedirect, append }
+     * Examples:
+     *   "npm install 2>errors.txt" -> { cleanedCommand: "npm install", stderrRedirect: "errors.txt", append: false }
+     *   "npm run build 2>>errors.txt" -> { cleanedCommand: "npm run build", stderrRedirect: "errors.txt", append: true }
+     *   "npm install" -> { cleanedCommand: "npm install", stderrRedirect: null, append: false }
+     */
+    function parseStderrRedirection(command: string): {
+      cleanedCommand: string;
+      stderrRedirect: string | null;
+      append: boolean;
+    } {
+      // Match 2>> or 2> followed by filename
+      // Handles spaces around the operator
+      const stderrMatch = command.match(/(.+?)\s*2(>>?)\s*(\S+)$/);
+
+      if (stderrMatch) {
+        const [, cmdPart, operator, filePath] = stderrMatch;
+        return {
+          cleanedCommand: cmdPart.trim(),
+          stderrRedirect: filePath,
+          append: operator === '>>',
+        };
+      }
+
+      return {
+        cleanedCommand: command,
+        stderrRedirect: null,
+        append: false,
+      };
+    }
+
+    /**
+     * Write error output to file
+     */
+    async function writeStderrToFile(
+      filePath: string,
+      content: string,
+      append: boolean
+    ): Promise<boolean> {
+      try {
+        let finalContent = content;
+
+        if (append) {
+          const readResult = await fileSystem.readFile(filePath);
+          if (readResult.success && readResult.data) {
+            finalContent = readResult.data + content;
+          }
+        }
+
+        const result = await fileSystem.writeFile(filePath, finalContent);
+        return result.success;
+      } catch (error) {
+        console.error('Failed to write stderr to file:', error);
+        return false;
+      }
+    }
+
     // Execute command
     async function executeCommand(command: string) {
       if (!command.trim()) {
@@ -756,14 +815,27 @@ export function Terminal() {
         return;
       }
 
-      // Add to command history
-      commandHistoryRef.current.push(command.trim());
+      // Parse stderr redirection
+      const { cleanedCommand, stderrRedirect, append } = parseStderrRedirection(command);
+      const stderrBuffer: string[] = [];
+
+      // Helper to write error (either to buffer or terminal)
+      const writeError = (error: string) => {
+        if (stderrRedirect) {
+          stderrBuffer.push(error);
+        } else {
+          xterm.writeln(error);
+        }
+      };
+
+      // Add to command history (use cleaned command)
+      commandHistoryRef.current.push(cleanedCommand.trim());
       historyIndexRef.current = commandHistoryRef.current.length;
 
       xterm.write('\r\n');
 
-      // Parse command
-      const parts = command.trim().split(/\s+/);
+      // Parse command (use cleaned command without redirection)
+      const parts = cleanedCommand.trim().split(/\s+/);
       const cmd = parts[0];
       const args = parts.slice(1);
 
@@ -905,7 +977,7 @@ export function Terminal() {
 
         // Default case - unknown command
         if (!cmd?.trim()) {
-          xterm.writeln(`Command not found: ${cmd}. Type 'help' for available commands.`);
+          writeError(`Command not found: ${cmd}. Type 'help' for available commands.`);
           xterm.write('$ ');
           return;
         }
@@ -913,7 +985,7 @@ export function Terminal() {
         // Execute via WebContainer - check actual boot status, not local state
         if (!webContainer.isBooted()) {
           console.log('⚠️ Command blocked: WebContainer not booted yet');
-          xterm.writeln('⚠️  WebContainer is still booting...');
+          writeError('⚠️  WebContainer is still booting...');
           xterm.write('$ ');
           return;
         }
@@ -930,7 +1002,7 @@ export function Terminal() {
           const abortController = new AbortController();
           const timeoutId = setTimeout(() => {
             abortController.abort();
-            xterm.writeln('\r\n⚠️  Command timeout after 5 minutes');
+            writeError('\r\n⚠️  Command timeout after 5 minutes');
             if (currentProcessRef.current) {
               webContainer.killProcess(currentProcessRef.current);
               currentProcessRef.current = null;
@@ -962,23 +1034,34 @@ export function Terminal() {
             currentProcessRef.current = null;
 
             if (exitCode !== 0) {
-              xterm.writeln(`\r\n❌ Process exited with code ${exitCode}`);
+              writeError(`\r\n❌ Process exited with code ${exitCode}`);
             }
           } catch (streamError: any) {
             clearTimeout(timeoutId);
             currentProcessRef.current = null;
             if (streamError.name !== 'AbortError') {
-              xterm.writeln(`\r\n❌ Stream error: ${streamError.message}`);
+              writeError(`\r\n❌ Stream error: ${streamError.message}`);
             }
           }
         } else {
-          xterm.writeln(`❌ Error: ${result.error || 'Command failed'}`);
+          writeError(`❌ Error: ${result.error || 'Command failed'}`);
         }
       } catch (error: any) {
-        xterm.writeln(`❌ Error: ${error.message}`);
+        writeError(`❌ Error: ${error.message}`);
         if (currentProcessRef.current) {
           webContainer.killProcess(currentProcessRef.current);
           currentProcessRef.current = null;
+        }
+      }
+
+      // Write stderr to file if redirection was specified
+      if (stderrRedirect && stderrBuffer.length > 0) {
+        const stderrContent = stderrBuffer.join('\n') + '\n';
+        const success = await writeStderrToFile(stderrRedirect, stderrContent, append);
+        if (!success) {
+          xterm.writeln(`\r\n❌ Failed to write stderr to ${stderrRedirect}`);
+        } else {
+          xterm.writeln(`\r\n📝 Stderr written to ${stderrRedirect}`);
         }
       }
 
