@@ -9,8 +9,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Project Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    // Wait for the app to fully load
-    await page.waitForLoadState('networkidle');
+    // Wait for DOM content to be loaded (networkidle is too strict for SPAs)
+    await page.waitForLoadState('domcontentloaded');
+    // Additional wait for React to render
+    await page.waitForTimeout(1000);
   });
 
   test('should display the new project button', async ({ page }) => {

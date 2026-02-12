@@ -115,6 +115,9 @@ dependencies:
     version: 4.5.7(@types/react@19.2.7)(react@18.3.1)
 
 devDependencies:
+  '@playwright/cli':
+    specifier: ^0.1.0
+    version: 0.1.0
   '@playwright/test':
     specifier: ^1.58.2
     version: 1.58.2
@@ -2190,6 +2193,15 @@ packages:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  /@playwright/cli@0.1.0:
+    resolution: {integrity: sha512-w/JvYm/6qYVIxB1tyN7dgKjCDTAYvD/3ZNEZ1s6SIRTkGtZnbDtJ4IzGAayEa/Fc6U4Crm2WfV64G3w08aulgg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dependencies:
+      minimist: 1.2.8
+      playwright: 1.59.0-alpha-1770426101000
+    dev: true
 
   /@playwright/test@1.58.2:
     resolution: {integrity: sha512-akea+6bHYBBfA9uQqSYmlJXn61cTa+jbO87xVLCWbTqbWadRVmhxlXATaOjOgcBaWU4ePo0wB41KMFv3o35IXA==}
@@ -5839,7 +5851,6 @@ packages:
 
   /minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
-    dev: false
 
   /minimisted@2.0.1:
     resolution: {integrity: sha512-1oPjfuLQa2caorJUM8HV8lGgWCc0qqAO1MNv/k05G4qslmsndV/5WdNZrqCiyqiz3wohia2Ij2B7w2Dr7/IyrA==}
@@ -6149,12 +6160,28 @@ packages:
     hasBin: true
     dev: true
 
+  /playwright-core@1.59.0-alpha-1770426101000:
+    resolution: {integrity: sha512-tkCTC2sL3Nss+rjgtAKhAuWI3l6om6NB2R7RAiKrdX2oEqqYg2WWwL7cRZDerh20ihON6f+pvCC19AoV+NkjUg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dev: true
+
   /playwright@1.58.2:
     resolution: {integrity: sha512-vA30H8Nvkq/cPBnNw4Q8TWz1EJyqgpuinBcHET0YVJVFldr8JDNiU9LaWAE1KqSkRYazuaBhTpB5ZzShOezQ6A==}
     engines: {node: '>=18'}
     hasBin: true
     dependencies:
       playwright-core: 1.58.2
+    optionalDependencies:
+      fsevents: 2.3.2
+    dev: true
+
+  /playwright@1.59.0-alpha-1770426101000:
+    resolution: {integrity: sha512-v4XyNo3twOFpLTJteJb0LTxFC6MRVDuebk8XFjpMZKYk1c/z0+x+ABfoHnLaomJv50GN3KbwAeWCqifcUX2Wgg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dependencies:
+      playwright-core: 1.59.0-alpha-1770426101000
     optionalDependencies:
       fsevents: 2.3.2
     dev: true

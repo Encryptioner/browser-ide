@@ -79,6 +79,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/cli": "^0.1.0",
     "@playwright/test": "^1.58.2",
     "@sentry/react": "^10.38.0",
     "@sentry/tracing": "^7.120.4",
