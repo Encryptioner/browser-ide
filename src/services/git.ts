@@ -1056,4 +1056,8 @@ class GitService {
   }
 }
 
+// Export class for testing purposes
+export { GitService };
+
+// Export singleton
 export const gitService = new GitService();

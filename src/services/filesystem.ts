@@ -434,5 +434,8 @@ class FileSystemService {
   }
 }
 
+// Export class for testing purposes
+export { FileSystemService };
+
 // Export singleton
 export const fileSystem = new FileSystemService();
