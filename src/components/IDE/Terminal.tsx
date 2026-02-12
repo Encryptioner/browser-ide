@@ -23,6 +23,15 @@ export function Terminal() {
   const currentProcessRef = useRef<string | null>(null);
   const isMobile = useIsMobile();
 
+  // Background process tracking
+  const backgroundProcessesRef = useRef<Map<number, {
+    processId: string;
+    command: string;
+    startTime: number;
+    exit: Promise<number>;
+  }>>(new Map());
+  const nextJobIdRef = useRef(1);
+
   // Nano editor state
   const [nanoActive, setNanoActive] = useState(false);
   const nanoActiveRef = useRef(false);
@@ -808,6 +817,83 @@ export function Terminal() {
       }
     }
 
+    /**
+     * Parse background operator (&) from command
+     * Returns { cleanedCommand, isBackground }
+     */
+    function parseBackgroundOperator(command: string): {
+      cleanedCommand: string;
+      isBackground: boolean;
+    } {
+      const trimmed = command.trim();
+      if (trimmed.endsWith('&')) {
+        return {
+          cleanedCommand: trimmed.slice(0, -1).trim(),
+          isBackground: true,
+        };
+      }
+      return {
+        cleanedCommand: command,
+        isBackground: false,
+      };
+    }
+
+    /**
+     * Handle 'jobs' command - list background processes
+     */
+    async function handleJobsCommand(): Promise<void> {
+      const jobs = Array.from(backgroundProcessesRef.current.entries());
+      if (jobs.length === 0) {
+        xterm.writeln('No background jobs running.');
+        return;
+      }
+
+      xterm.writeln(`[1] ${jobs.length} job${jobs.length > 1 ? 's' : ''}:`);
+      for (const [jobId, job] of jobs) {
+        const runtime = Date.now() - job.startTime;
+        xterm.writeln(`[${jobId}] ${job.command} (running, ${Math.round(runtime / 1000)}s)`);
+      }
+    }
+
+    /**
+     * Handle 'fg' command - bring background job to foreground
+     */
+    async function handleFgCommand(args: string[]): Promise<void> {
+      const jobId = args.length > 0 ? parseInt(args[0].replace(/^\%/, ''), 10) : 1;
+
+      const job = backgroundProcessesRef.current.get(jobId);
+      if (!job) {
+        xterm.writeln(`fg: no such job ${jobId}`);
+        xterm.write('\r\n$ ');
+        return;
+      }
+
+      // Remove from background
+      backgroundProcessesRef.current.delete(jobId);
+
+      xterm.writeln(`[${jobId}] ${job.command} - continuing in foreground...`);
+
+      // Bring to foreground - this is a simplified version
+      // In a real implementation, we'd need to reattach to the process output
+      // For now, just notify that it's running
+      currentProcessRef.current = job.processId;
+
+      try {
+        // Wait for the process to complete
+        const exitCode = await job.exit;
+        currentProcessRef.current = null;
+
+        if (exitCode !== 0) {
+          xterm.writeln(`\r\n[${jobId}] Exited with code ${exitCode}`);
+        } else {
+          xterm.writeln(`\r\n[${jobId}] Completed successfully`);
+        }
+      } catch (error: any) {
+        currentProcessRef.current = null;
+        xterm.writeln(`\r\n[${jobId}] Error: ${error.message}`);
+      }
+    }
+
     // Execute command
     async function executeCommand(command: string) {
       if (!command.trim()) {
@@ -815,8 +901,26 @@ export function Terminal() {
         return;
       }
 
-      // Parse stderr redirection
-      const { cleanedCommand, stderrRedirect, append } = parseStderrRedirection(command);
+      // Check for jobs command
+      if (command.trim() === 'jobs') {
+        await handleJobsCommand();
+        xterm.write('\r\n$ ');
+        return;
+      }
+
+      // Check for fg command
+      if (command.trim().startsWith('fg')) {
+        const args = command.trim().split(/\s+/).slice(1);
+        await handleFgCommand(args);
+        xterm.write('\r\n$ ');
+        return;
+      }
+
+      // Parse background operator
+      const { cleanedCommand: bgCleanedCommand, isBackground } = parseBackgroundOperator(command);
+
+      // Parse stderr redirection (use background-cleaned command)
+      const { cleanedCommand, stderrRedirect, append } = parseStderrRedirection(bgCleanedCommand);
       const stderrBuffer: string[] = [];
 
       // Helper to write error (either to buffer or terminal)
@@ -994,8 +1098,43 @@ export function Terminal() {
 
         const result = await webContainer.spawn(cmd, args);
 
-        if (result.success && result.process && result.processId) {
+        if (result.success && result.process && result.processId && result.exit) {
           const process = result.process;
+
+          // Handle background process
+          if (isBackground) {
+            const jobId = nextJobIdRef.current++;
+            const startTime = Date.now();
+
+            // Add to background processes
+            backgroundProcessesRef.current.set(jobId, {
+              processId: result.processId,
+              command: `${cmd} ${args.join(' ')}`,
+              startTime,
+              exit: result.exit,
+            });
+
+            // Notify when background process completes
+            result.exit.then((exitCode) => {
+              backgroundProcessesRef.current.delete(jobId);
+              if (exitCode !== 0) {
+                xterm.writeln(`\r\n[${jobId}] ${command} exited with code ${exitCode}`);
+              } else {
+                xterm.writeln(`\r\n[${jobId}] ${command} completed`);
+              }
+              xterm.write('$ ');
+            }).catch((error) => {
+              backgroundProcessesRef.current.delete(jobId);
+              xterm.writeln(`\r\n[${jobId}] ${command} error: ${error.message}`);
+              xterm.write('$ ');
+            });
+
+            xterm.writeln(`[${jobId}] ${Date.now()} (running in background)`);
+            xterm.write('$ ');
+            return;
+          }
+
+          // Foreground process execution
           currentProcessRef.current = result.processId;
 
           // Create abort controller for timeout

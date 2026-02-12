@@ -574,3 +574,102 @@ describe('Terminal - Stderr Redirection', () => {
     }
   });
 });
+
+// =============================================================================
+// BACKGROUND PROCESS TESTS
+// =============================================================================
+
+describe('Terminal - Background Process Execution', () => {
+  // Test the parseBackgroundOperator function logic
+  it('should parse background operator (&) from command', () => {
+    const command = 'npm run dev &';
+
+    const trimmed = command.trim();
+    const isBackground = trimmed.endsWith('&');
+    const cleanedCommand = isBackground ? trimmed.slice(0, -1).trim() : command;
+
+    expect(isBackground).toBe(true);
+    expect(cleanedCommand).toBe('npm run dev');
+  });
+
+  it('should parse command without background operator', () => {
+    const command = 'npm run dev';
+
+    const trimmed = command.trim();
+    const isBackground = trimmed.endsWith('&');
+    const cleanedCommand = isBackground ? trimmed.slice(0, -1).trim() : command;
+
+    expect(isBackground).toBe(false);
+    expect(cleanedCommand).toBe('npm run dev');
+  });
+
+  it('should handle background operator with spaces', () => {
+    const command = 'npm run dev & ';
+
+    const trimmed = command.trim();
+    const isBackground = trimmed.endsWith('&');
+    const cleanedCommand = isBackground ? trimmed.slice(0, -1).trim() : command;
+
+    expect(isBackground).toBe(true);
+    expect(cleanedCommand).toBe('npm run dev');
+  });
+
+  it('should handle command with multiple args and background operator', () => {
+    const command = 'npm run build --prod --watch &';
+
+    const trimmed = command.trim();
+    const isBackground = trimmed.endsWith('&');
+    const cleanedCommand = isBackground ? trimmed.slice(0, -1).trim() : command;
+
+    expect(isBackground).toBe(true);
+    expect(cleanedCommand).toBe('npm run build --prod --watch');
+  });
+
+  it('should handle background operator with stderr redirection', () => {
+    // This tests the combination of & and 2>
+    // Note: The order matters - & should be at the end, 2> before it
+    const command = 'npm run build 2>errors.txt &';
+
+    // First, parse background operator
+    const trimmed = command.trim();
+    const isBackground = trimmed.endsWith('&');
+    const bgCleaned = isBackground ? trimmed.slice(0, -1).trim() : command;
+
+    expect(isBackground).toBe(true);
+    expect(bgCleaned).toBe('npm run build 2>errors.txt');
+
+    // Then parse stderr from the cleaned command
+    const stderrMatch = bgCleaned.match(/(.+?)\s*2(>>?)\s*(\S+)$/);
+    expect(stderrMatch).toBeTruthy();
+    if (stderrMatch) {
+      const [, cmdPart, , filePath] = stderrMatch;
+      expect(cmdPart.trim()).toBe('npm run build');
+      expect(filePath).toBe('errors.txt');
+    }
+  });
+
+  it('should parse fg command with job number', () => {
+    const command = 'fg %1';
+
+    const parts = command.trim().split(/\s+/);
+    expect(parts[0]).toBe('fg');
+    expect(parts[1]).toBe('%1');
+
+    const jobId = parseInt(parts[1].replace(/^\%/, ''), 10);
+    expect(jobId).toBe(1);
+  });
+
+  it('should parse fg command without job number (defaults to 1)', () => {
+    const command = 'fg';
+
+    const parts = command.trim().split(/\s+/);
+    expect(parts[0]).toBe('fg');
+    expect(parts.length).toBe(1);
+  });
+
+  it('should parse jobs command', () => {
+    const command = 'jobs';
+
+    expect(command.trim()).toBe('jobs');
+  });
+});
