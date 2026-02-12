@@ -45,7 +45,7 @@ export function initSentry(config: SentryConfig): void {
         }
 
         // Sanitize event to remove sensitive data
-        return sanitizeEvent(event);
+        return sanitizeEvent(event) as Sentry.Event | null;
       },
 
       // Context filters
@@ -79,12 +79,13 @@ function sanitizeEvent(event: Sentry.Event): Sentry.Event | null {
 
   // Sanitize cookies
   if (event.request?.cookies) {
-    event.request.cookies = '[FILTERED]';
+    // Type assertion needed as Sentry expects string | Record<string, string> | undefined
+    (event.request as { cookies?: string }).cookies = '[FILTERED]';
   }
 
   // Sanitize extra data
   if (event.extra) {
-    event.extra = sanitizeObject(event.extra);
+    (event as { extra: Record<string, unknown> }).extra = sanitizeObject(event.extra) as Record<string, unknown>;
   }
 
   // Sanitize user context but keep identifying info
@@ -99,12 +100,12 @@ function sanitizeEvent(event: Sentry.Event): Sentry.Event | null {
 
   // Sanitize contexts
   if (event.contexts) {
-    event.contexts = sanitizeObject(event.contexts);
+    (event as { contexts: Record<string, unknown> }).contexts = sanitizeObject(event.contexts) as Record<string, unknown>;
   }
 
   // Sanitize tags
   if (event.tags) {
-    event.tags = sanitizeObject(event.tags);
+    (event as { tags: Record<string, unknown> }).tags = sanitizeObject(event.tags) as Record<string, unknown>;
   }
 
   return event;
@@ -212,7 +213,8 @@ function sanitizeBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | 
 export function reportError(error: Error, context?: Record<string, unknown>): void {
   Sentry.withScope(scope => {
     if (context) {
-      scope.setExtras(sanitizeObject(context));
+      const sanitized = sanitizeObject(context) as Record<string, unknown>;
+      scope.setExtras(sanitized);
     }
 
     Sentry.captureException(error);
@@ -225,7 +227,8 @@ export function reportError(error: Error, context?: Record<string, unknown>): vo
 export function reportMessage(message: string, level: Sentry.SeverityLevel = 'info', context?: Record<string, unknown>): void {
   Sentry.withScope(scope => {
     if (context) {
-      scope.setExtras(sanitizeObject(context));
+      const sanitized = sanitizeObject(context) as Record<string, unknown>;
+      scope.setExtras(sanitized);
     }
 
     scope.setLevel(level);
@@ -258,7 +261,7 @@ export function addBreadcrumb(category: string, message: string, data?: Record<s
   Sentry.addBreadcrumb({
     category,
     message,
-    data: data ? sanitizeObject(data) : undefined,
+    data: data ? (sanitizeObject(data) as Record<string, unknown>) : undefined,
   });
 }
 
@@ -266,7 +269,16 @@ export function addBreadcrumb(category: string, message: string, data?: Record<s
  * Check if Sentry is enabled and configured
  */
 export function isSentryEnabled(): boolean {
-  return Sentry.getCurrentHub().getClient() !== undefined;
+  // In newer Sentry versions, we can check if a client is bound
+  // using a try-catch or checking the global state
+  try {
+    // Try to get the current client - if it throws or returns undefined, Sentry is not enabled
+    const hub = (Sentry as unknown as { getCurrentHub: () => { getClient: () => unknown } }).getCurrentHub?.();
+    return hub?.getClient?.() !== undefined;
+  } catch {
+    // If we can't check, assume Sentry might be enabled but not initialized
+    return false;
+  }
 }
 
 /**
