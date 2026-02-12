@@ -40,6 +40,12 @@ export interface Settings extends EditorSettings, GitSettings {
     openaiKey: string;
     defaultProvider: 'anthropic' | 'glm' | 'openai';
   };
+  monitoring?: {
+    sentryDsn: string;
+    sentryEnvironment: 'production' | 'development' | 'test';
+    sentryEnabled: boolean;
+    tracesSampleRate: number;
+  };
 }
 
 // RecentProject and FileNode are imported from types
@@ -240,6 +246,12 @@ const DEFAULT_SETTINGS: Settings = {
     glmKey: '',
     openaiKey: '',
     defaultProvider: 'glm',
+  },
+  monitoring: {
+    sentryDsn: '',
+    sentryEnvironment: 'development',
+    sentryEnabled: false,
+    tracesSampleRate: 0.1,
   },
 };
 

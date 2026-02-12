@@ -1,9 +1,11 @@
 /**
  * Centralized Logging Utility
  * Provides structured logging with different levels
+ * Integrates with Sentry for production error tracking
  */
 
 import { config } from '@/config/environment';
+import { reportError as reportToSentry, isSentryEnabled } from '@/services/sentry';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -116,10 +118,27 @@ class Logger {
   }
 
   private reportError(entry: LogEntry): void {
-    // TODO: Implement error reporting to external service
-    // Example: Sentry, LogRocket, etc.
+    // Report to Sentry if enabled
+    if (isSentryEnabled() && entry.data instanceof Error) {
+      reportToSentry(entry.data, {
+        level: entry.level,
+        context: entry.context,
+        message: entry.message,
+        timestamp: entry.timestamp,
+      });
+    } else if (isSentryEnabled() && entry.message) {
+      // For non-error objects, report as message
+      reportToSentry(new Error(entry.message), {
+        level: entry.level,
+        context: entry.context,
+        data: entry.data,
+        timestamp: entry.timestamp,
+      });
+    }
+
+    // Development logging
     if (config.IS_DEV) {
-      console.log('Would report error to tracking service:', entry);
+      console.log('Error logged to tracking service:', entry);
     }
   }
 

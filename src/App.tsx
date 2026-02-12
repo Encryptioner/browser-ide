@@ -25,6 +25,7 @@ import { logger } from '@/utils/logger';
 import { config } from '@/config/environment';
 import { useKeyboardDetection } from '@/hooks/useKeyboardDetection';
 import { Toaster } from 'sonner';
+import { initSentry } from '@/services/sentry';
 
 function App() {
   useKeyboardDetection();
@@ -45,6 +46,7 @@ function App() {
     setActiveBottomPanel,
     terminalMaximized,
     bottomPanelSize,
+    settings,
   } = useIDEStore();
 
   const [showCloneDialog, setShowCloneDialog] = useState(false);
@@ -62,6 +64,16 @@ function App() {
 
   useEffect(() => {
     logger.info(`Browser IDE v${config.APP_VERSION} - Starting...`);
+
+    // Initialize Sentry if configured
+    if (settings.monitoring?.sentryEnabled && settings.monitoring.sentryDsn) {
+      initSentry({
+        dsn: settings.monitoring.sentryDsn,
+        environment: settings.monitoring.sentryEnvironment,
+        tracesSampleRate: settings.monitoring.tracesSampleRate,
+        enabled: settings.monitoring.sentryEnabled,
+      });
+    }
 
     // Hide loading screen
     const loading = document.getElementById('loading');

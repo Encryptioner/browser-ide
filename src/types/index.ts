@@ -160,6 +160,12 @@ export interface AppSettings {
     fontSize: number;
     cursorStyle: 'block' | 'underline' | 'bar';
   };
+  monitoring: {
+    sentryDsn: string;
+    sentryEnvironment: 'production' | 'development' | 'test';
+    sentryEnabled: boolean;
+    tracesSampleRate: number;
+  };
 }
 
 export interface UserProfile {

@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { reportError as reportToSentry, addBreadcrumb, isSentryEnabled } from '@/services/sentry';
 
 interface Props {
   children: ReactNode;
@@ -37,7 +38,19 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    // TODO: Log to external service in production (e.g., Sentry)
+    // Report to Sentry if enabled
+    if (isSentryEnabled()) {
+      // Add breadcrumb for the error
+      addBreadcrumb('react', 'Error caught by ErrorBoundary', {
+        componentStack: errorInfo.componentStack,
+      });
+
+      // Report the error with additional context
+      reportToSentry(error, {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true,
+      });
+    }
   }
 
   handleReset = (): void => {
