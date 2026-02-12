@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import { fileSystem } from '@/services/filesystem';
 import { useIDEStore } from '@/store/useIDEStore';
 import { linterService } from '@/services/linter';
 import { logger } from '@/utils/logger';
+import * as monaco from 'monaco-editor';
 
 export function Editor() {
   const {
@@ -16,12 +17,15 @@ export function Editor() {
     markFileSaved,
     settings,
     setCurrentFile,
+    searchHighlight,
+    clearSearchHighlight,
   } = useIDEStore();
 
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const editorRef = useRef<unknown | null>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const lintTimeout = useRef<number | undefined>(undefined);
+  const searchDecorationsRef = useRef<string[]>([]);
 
   const loadFile = useCallback(async (path: string) => {
     // Check if already in memory
@@ -44,6 +48,52 @@ export function Editor() {
       loadFile(currentFile);
     }
   }, [currentFile, loadFile]);
+
+  // Apply search highlight decorations (use layout effect to avoid concurrent mode issues)
+  useLayoutEffect(() => {
+    if (!editorRef.current) return;
+
+    const editor = editorRef.current;
+
+    // Clear existing decorations first
+    searchDecorationsRef.current = editor.deltaDecorations(
+      searchDecorationsRef.current,
+      []
+    );
+
+    // Apply new highlight if it matches the current file
+    if (searchHighlight && searchHighlight.file === currentFile) {
+      const { line, column, text } = searchHighlight;
+
+      // Create a decoration for the search result
+      const decorations: monaco.editor.IModelDeltaDecoration[] = [
+        {
+          range: new monaco.Range(
+            line,
+            column,
+            line,
+            column + text.length
+          ),
+          options: {
+            className: 'searchHighlight',
+            stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            overviewRuler: {
+              color: monaco.MarkerSeverity.Info,
+              position: monaco.editor.OverviewRulerLane.Full,
+            },
+          },
+        },
+      ];
+
+      searchDecorationsRef.current = editor.deltaDecorations(
+        [],
+        decorations
+      );
+
+      // Reveal the line in the editor
+      editor.revealLineInCenter(line);
+    }
+  }, [searchHighlight, currentFile]);
 
   function handleChange(value: string | undefined) {
     const newValue = value || '';
@@ -83,24 +133,17 @@ export function Editor() {
     }
   }
 
-  function handleEditorDidMount(editor: unknown) {
+  function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
     editorRef.current = editor;
 
     // Add save shortcut
-
-    if (editor && typeof editor === 'object' && 'addCommand' in editor) {
-      /* eslint-disable @typescript-eslint/no-unused-vars */
-      const monacoEditor = editor as { addCommand: (shortcut: number, callback: () => void) => void };
-      /* eslint-enable @typescript-eslint/no-unused-vars */
-      // Cmd+S or Ctrl+S
-      monacoEditor.addCommand(
-        (window.navigator.platform.match('Mac') ? 2048 : 2048) | 49, // KeyMod.CtrlCmd | KeyCode.KeyS
-        () => {
-          handleSave();
-        }
-      );
-    }
-
+    // Cmd+S or Ctrl+S
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+      () => {
+        handleSave();
+      }
+    );
   }
 
   // Handlers for welcome screen buttons

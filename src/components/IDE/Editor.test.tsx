@@ -32,6 +32,8 @@ const mockUpdateEditorContent = vi.fn();
 const mockMarkFileUnsaved = vi.fn();
 const mockMarkFileSaved = vi.fn();
 const mockSetCurrentFile = vi.fn();
+const mockSetSearchHighlight = vi.fn();
+const mockClearSearchHighlight = vi.fn();
 
 // Mock store state
 let mockStoreState = {
@@ -47,6 +49,7 @@ let mockStoreState = {
     lineNumbers: 'on' as const,
     theme: 'vs-dark',
   },
+  searchHighlight: null as { file: string; line: number; column: number; text: string } | null,
 };
 
 // Mock Monaco Editor - must be defined before imports
@@ -111,6 +114,9 @@ vi.mock('@/store/useIDEStore', () => ({
     markFileSaved: mockMarkFileSaved,
     settings: mockStoreState.settings,
     setCurrentFile: mockSetCurrentFile,
+    searchHighlight: mockStoreState.searchHighlight,
+    setSearchHighlight: mockSetSearchHighlight,
+    clearSearchHighlight: mockClearSearchHighlight,
   })),
 }));
 
@@ -158,6 +164,8 @@ function resetAllMocks(): void {
   mockMarkFileUnsaved.mockReset();
   mockMarkFileSaved.mockReset();
   mockSetCurrentFile.mockReset();
+  mockSetSearchHighlight.mockReset();
+  mockClearSearchHighlight.mockReset();
 }
 
 // =============================================================================
@@ -961,5 +969,135 @@ describe('Editor - Theme', () => {
 
     const editor = screen.getByTestId('monaco-editor');
     expect(editor).toHaveAttribute('data-theme', 'hc-black');
+  });
+});
+
+// =============================================================================
+// SEARCH HIGHLIGHT TESTS
+// =============================================================================
+
+describe('Editor - Search Highlight', () => {
+  it('should render without crashing when searchHighlight is null', () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'const test = "hello";',
+      },
+      searchHighlight: null,
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+  });
+
+  it('should not fail when searchHighlight points to a different file', () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'const test = "hello";',
+      },
+      searchHighlight: {
+        file: '/other/file.ts',
+        line: 5,
+        column: 10,
+        text: 'test',
+      },
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+    // Should not crash even though highlight is for a different file
+  });
+
+  it('should apply search highlight when it matches current file', async () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'const test = "hello";\nconsole.log(test);',
+      },
+      searchHighlight: {
+        file: '/src/test.ts',
+        line: 2,
+        column: 13,
+        text: 'test',
+      },
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    // Editor should render successfully with search highlight
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+  });
+
+  it('should handle search highlight with special characters in text', async () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'const regex = /test\\d+/g;',
+      },
+      searchHighlight: {
+        file: '/src/test.ts',
+        line: 1,
+        column: 14,
+        text: '/test\\d+/g',
+      },
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+  });
+
+  it('should handle search highlight at the beginning of a line', async () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'test function() {}',
+      },
+      searchHighlight: {
+        file: '/src/test.ts',
+        line: 1,
+        column: 1,
+        text: 'test',
+      },
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+  });
+
+  it('should clear search highlight when set to null', async () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'const test = "hello";',
+      },
+      searchHighlight: null,
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
   });
 });

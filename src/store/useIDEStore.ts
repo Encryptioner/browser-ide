@@ -68,6 +68,7 @@ interface IDEState {
   unsavedChanges: Set<string>;
   activeTabId: string | null;
   splitEditorState: SplitEditorState | null;
+  searchHighlight: { file: string; line: number; column: number; text: string } | null;
 
   // Debugging
   debugSessions: Record<string, DebugSession[]>;
@@ -134,6 +135,8 @@ interface IDEActions {
   markFileUnsaved: (file: string) => void;
   markFileSaved: (file: string) => void;
   setFileTree: (tree: FileNode[]) => void;
+  setSearchHighlight: (highlight: { file: string; line: number; column: number; text: string } | null) => void;
+  clearSearchHighlight: () => void;
 
   // Directory Navigation
   changeDirectory: (path: string) => void;
@@ -263,6 +266,7 @@ export const useIDEStore = create<IDEState & IDEActions>()(
       unsavedChanges: new Set(),
       activeTabId: null,
       splitEditorState: null,
+      searchHighlight: null,
 
       debugSessions: {},
       activeDebugSessionId: null,
@@ -347,6 +351,8 @@ export const useIDEStore = create<IDEState & IDEActions>()(
         return { unsavedChanges: newUnsavedChanges };
       }),
       setFileTree: (tree) => set({ fileTree: tree }),
+      setSearchHighlight: (highlight) => set({ searchHighlight: highlight }),
+      clearSearchHighlight: () => set({ searchHighlight: null }),
 
       // Directory Navigation
       changeDirectory: (path) => set({ currentDirectory: path }),
