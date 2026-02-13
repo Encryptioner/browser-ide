@@ -5,7 +5,7 @@
  * Tabs: Changes | History | Branches
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { gitService } from '@/services/git';
@@ -13,6 +13,7 @@ import type { GitStatus, GitCommit } from '@/types';
 import { DiffViewer } from './DiffViewer';
 import { toast } from 'sonner';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type Tab = 'changes' | 'history' | 'branches' | 'stash';
 
@@ -581,6 +582,7 @@ function BranchesView({ currentBranch, onRefresh }: BranchesViewProps) {
   const [showCreateBranch, setShowCreateBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<any>(null);
 
   // Load branches
   const loadBranches = async () => {
@@ -632,49 +634,56 @@ function BranchesView({ currentBranch, onRefresh }: BranchesViewProps) {
     setIsCreating(false);
   };
 
-  const handleDeleteBranch = async (branchName: string) => {
+  const handleDeleteBranch = useCallback((branchName: string) => {
     if (branchName === currentBranch) {
       toast.error('Cannot delete the current branch');
       return;
     }
 
-    if (!confirm(`Delete branch "${branchName}"?`)) {
-      return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Branch',
+      message: `Are you sure you want to delete branch "${branchName}"?`,
+      onConfirm: async () => {
+        const result = await gitService.deleteBranch('/repo', branchName);
+        if (result.success) {
+          await loadBranches();
+          toast.success(`Deleted branch ${branchName}`);
+        } else {
+          toast.error('Failed to delete branch: ' + result.error);
+        }
+        setConfirmDialog(null);
+      },
+    });
+  }, [currentBranch]);
 
-    const result = await gitService.deleteBranch('/repo', branchName);
-
-    if (result.success) {
-      await loadBranches();
-      toast.success(`Deleted branch ${branchName}`);
-    } else {
-      toast.error('Failed to delete branch: ' + result.error);
-    }
-  };
-
-  const handleMergeBranch = async (branchName: string) => {
+  const handleMergeBranch = useCallback((branchName: string) => {
     if (branchName === currentBranch) {
       toast.error('Cannot merge current branch into itself');
       return;
     }
 
-    if (!confirm(`Merge "${branchName}" into "${currentBranch}"?`)) {
-      return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Merge Branch',
+      message: `Merge "${branchName}" into "${currentBranch}"?`,
+      onConfirm: async () => {
+        setIsLoading(true);
+        const result = await gitService.merge(branchName, '/repo');
 
-    setIsLoading(true);
-    const result = await gitService.merge(branchName, '/repo');
-
-    if (result.success) {
-      const mergeType = result.data?.fastForward ? 'Fast-forward' : 'Merge';
-      toast.success(`${mergeType} merge completed: ${branchName} → ${currentBranch}`);
-      await gitService.initializeRepository('/repo');
-      onRefresh();
-    } else {
-      toast.error('Merge failed: ' + result.error);
-    }
-    setIsLoading(false);
-  };
+        if (result.success) {
+          const mergeType = result.data?.fastForward ? 'Fast-forward' : 'Merge';
+          toast.success(`${mergeType} merge completed: ${branchName} → ${currentBranch}`);
+          await gitService.initializeRepository('/repo');
+          onRefresh();
+        } else {
+          toast.error('Merge failed: ' + result.error);
+        }
+        setIsLoading(false);
+        setConfirmDialog(null);
+      },
+    });
+  }, [currentBranch, onRefresh]);
 
   return (
     <div className="branches-view p-4 space-y-4">
@@ -784,6 +793,15 @@ function BranchesView({ currentBranch, onRefresh }: BranchesViewProps) {
           <div className="text-center py-8 text-gray-500 text-sm">No branches found</div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog?.isOpen ?? false}
+        onClose={() => setConfirmDialog(null)}
+        title={confirmDialog?.title ?? ''}
+        message={confirmDialog?.message ?? ''}
+        onConfirm={confirmDialog?.onConfirm ?? (() => {})}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   );
 }
@@ -803,6 +821,7 @@ function StashView({ onRefresh }: StashViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [stashMessage, setStashMessage] = useState('');
   const [isCreatingStash, setIsCreatingStash] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<any>(null);
 
   // Load stashes
   const loadStashes = async () => {
@@ -856,20 +875,24 @@ function StashView({ onRefresh }: StashViewProps) {
     }
   };
 
-  const handleDropStash = async (index: number) => {
-    if (!confirm(`Drop stash "${stashes[index].message}"?`)) {
-      return;
-    }
+  const handleDropStash = useCallback((index: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Drop Stash',
+      message: `Drop stash "${stashes[index].message}"?`,
+      onConfirm: async () => {
+        const result = await gitService.stashDrop(index);
 
-    const result = await gitService.stashDrop(index);
-
-    if (result.success) {
-      toast.success('Stash dropped');
-      await loadStashes();
-    } else {
-      toast.error('Failed to drop stash: ' + result.error);
-    }
-  };
+        if (result.success) {
+          toast.success('Stash dropped');
+          await loadStashes();
+        } else {
+          toast.error('Failed to drop stash: ' + result.error);
+        }
+        setConfirmDialog(null);
+      },
+    });
+  }, [stashes]);
 
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -974,6 +997,15 @@ function StashView({ onRefresh }: StashViewProps) {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog?.isOpen ?? false}
+        onClose={() => setConfirmDialog(null)}
+        title={confirmDialog?.title ?? ''}
+        message={confirmDialog?.message ?? ''}
+        onConfirm={confirmDialog?.onConfirm ?? (() => {})}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   );
 }

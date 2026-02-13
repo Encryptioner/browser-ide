@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
 import { logger } from '@/utils/logger';
+import { toast } from 'sonner';
 
 interface SearchResult {
   file: string;
@@ -178,7 +179,7 @@ export function SearchPanel() {
       }
     }
 
-    alert(`Replaced ${replaceCount} occurrences in ${filesToReplace.size} files`);
+    toast.success(`Replaced ${replaceCount} occurrences in ${filesToReplace.size} files`);
     // Re-search to update results
     await performSearch();
   };

@@ -7,6 +7,7 @@ import { validateEnvironment } from '@/config/environment';
 import { logger } from '@/utils/logger';
 import { registerSW } from 'virtual:pwa-register';
 import { Buffer } from 'buffer';
+import { toast } from 'sonner';
 import './index.css';
 
 // Polyfill Buffer for isomorphic-git
@@ -25,9 +26,12 @@ if ('serviceWorker' in navigator) {
   const updateSW = registerSW({
     onNeedRefresh() {
       logger.info('New version available');
-      if (confirm('New version available! Reload to update?')) {
-        updateSW(true);
-      }
+      toast('New version available!', {
+        action: {
+          label: 'Reload to update',
+          onClick: () => updateSW(true),
+        },
+      });
     },
     onOfflineReady() {
       logger.info('App ready to work offline');

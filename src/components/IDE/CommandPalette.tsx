@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { importExportService } from '@/services/importExport';
+import { toast } from 'sonner';
 
 interface Command {
   id: string;
@@ -61,10 +62,10 @@ export function CommandPalette() {
       if (result.success && result.data) {
         importExportService.downloadExport(result.data, projectName);
       } else {
-        alert(`Export failed: ${result.error}`);
+        toast.error(`Export failed: ${result.error}`);
       }
     } catch {
-      alert('Export failed - please try again');
+      toast.error('Export failed - please try again');
     } finally {
       setIsExporting(false);
       setShowExportDialog(false);
@@ -74,7 +75,7 @@ export function CommandPalette() {
   const handleImport = useCallback(async (file: File) => {
     // Validate file first
     if (!file.name.endsWith('.zip')) {
-      alert('Please select a valid ZIP export file');
+      toast.error('Please select a valid ZIP export file');
       return;
     }
 
@@ -102,12 +103,12 @@ export function CommandPalette() {
       const result = await importExportService.importProject(arrayBuffer, importOptions);
 
       if (result.success) {
-        alert(`✅ Import successful: ${result.importedFiles} files imported from "${result.projectName}"`);
+        toast.success(`✅ Import successful: ${result.importedFiles} files imported from "${result.projectName}"`);
       } else {
-        alert(`❌ Import failed: ${result.error}`);
+        toast.error(`❌ Import failed: ${result.error}`);
       }
     } catch {
-      alert('❌ Import failed - please try again');
+      toast.error('❌ Import failed - please try again');
     } finally {
       setIsImporting(false);
       setShowImportDialog(false);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { toast } from 'sonner';
 
 interface SettingsDialogProps {
   onClose: () => void;
@@ -11,7 +12,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
 
   function handleSave() {
     updateSettings(localSettings);
-    alert('Settings saved!');
+    toast.success('Settings saved!');
     onClose();
   }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { toast } from 'sonner';
 
 interface AIAssistantProps {
   onClose: () => void;
@@ -23,7 +24,7 @@ export function AIAssistant({ onClose }: AIAssistantProps) {
         : settings.ai.openaiKey;
 
     if (!apiKey) {
-      alert(`Please set ${provider} API key in settings`);
+      toast.error(`Please set ${provider} API key in settings`);
       return;
     }
 

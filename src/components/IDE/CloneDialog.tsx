@@ -17,7 +17,7 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
   async function handleClone() {
     if (!repoUrl) return;
     if (!settings.githubToken) {
-      alert('Please set GitHub token in settings first');
+      toast.error('Please set GitHub token in settings first');
       return;
     }
 
@@ -44,7 +44,7 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
       const initResult = await gitService.initializeRepository(clonedPath);
 
       if (initResult.success) {
-        alert(`Repository cloned successfully! Branch: ${initResult.data?.currentBranch}`);
+        toast.success(`Repository cloned successfully! Branch: ${initResult.data?.currentBranch}`);
 
         // Change to the cloned directory
         const changeResult = await fileSystem.changeDirectory(clonedPath);
@@ -57,8 +57,10 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
 
       onClose();
       // Reload to refresh file tree and store state
-      await fileSystem.readDirectory('/');
-      useIDEStore.getState().refreshFileTree?.();
+      const listResult = await fileSystem.listCurrentDirectory();
+      if (listResult.success && listResult.data) {
+        useIDEStore.getState().setFileTree(listResult.data);
+      }
     } else {
       toast.error('Failed to clone: ' + result.error);
       setProgress('');

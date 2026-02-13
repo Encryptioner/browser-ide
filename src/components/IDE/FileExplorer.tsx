@@ -3,6 +3,7 @@ import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   File,
   Folder,
@@ -109,6 +110,12 @@ export function FileExplorer() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [newItemParent, setNewItemParent] = useState<{ path: string; type: 'file' | 'folder' } | null>(null);
   const [gitStatusMap, setGitStatusMap] = useState<Map<string, string>>(new Map());
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    node: FileNode | null;
+  } | null>(null);
   const {
     fileTree,
     currentFile,
@@ -216,9 +223,17 @@ export function FileExplorer() {
     }
   }
 
-  async function handleDelete(node: FileNode) {
-    const confirmed = confirm(`Delete ${node.name}?`);
-    if (!confirmed) return;
+  function handleDelete(node: FileNode) {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Item',
+      message: `Are you sure you want to delete ${node.name}?`,
+      node,
+    });
+  }
+
+  async function confirmDelete(node: FileNode | null) {
+    if (!node) return;
 
     const result = await fileSystem.deletePath(node.path);
     if (result.success) {
@@ -228,6 +243,7 @@ export function FileExplorer() {
     } else {
       toast.error(`Failed to delete: ${result.error}`);
     }
+    setConfirmDialog(null);
   }
 
   async function handleRename(oldPath: string, newName: string) {
@@ -656,6 +672,15 @@ export function FileExplorer() {
           onAction={handleContextAction}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog?.isOpen ?? false}
+        onClose={() => setConfirmDialog(null)}
+        title={confirmDialog?.title ?? ''}
+        message={confirmDialog?.message ?? ''}
+        onConfirm={() => confirmDelete(confirmDialog?.node ?? null)}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   );
 }
