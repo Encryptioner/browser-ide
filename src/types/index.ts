@@ -72,6 +72,7 @@ export interface FileNode {
   type: 'file' | 'directory';
   size?: number;
   modified?: number;
+  lastSavedTime?: number;
   children?: FileNode[];
 }
 

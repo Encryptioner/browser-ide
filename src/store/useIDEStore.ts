@@ -62,6 +62,7 @@ interface IDEState {
   openFiles: string[];
   fileTree: FileNode[];
   currentDirectory: string;
+  fileLastSavedTime: Record<string, number> = {};
 
   // Git
   currentRepo: string | null;
