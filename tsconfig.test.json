@@ -24,9 +24,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+
+    /* Testing types */
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "build", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "tests/e2e"],
+  "include": ["src", "tests", "tests/e2e"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

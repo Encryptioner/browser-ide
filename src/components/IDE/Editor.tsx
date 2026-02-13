@@ -78,7 +78,7 @@ export function Editor() {
             className: 'searchHighlight',
             stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
             overviewRuler: {
-              color: monaco.MarkerSeverity.Info,
+              color: '#d4af37', // Gold color for search highlights
               position: monaco.editor.OverviewRulerLane.Full,
             },
           },

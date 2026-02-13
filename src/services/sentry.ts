@@ -38,14 +38,14 @@ export function initSentry(config: SentryConfig): void {
       tracesSampleRate: config.tracesSampleRate,
 
       // Filter out sensitive data
-      beforeSend(event, hint) {
+      beforeSend(event: Sentry.Event) {
         // Don't send events in development
         if (config.environment === 'development') {
           return null;
         }
 
         // Sanitize event to remove sensitive data
-        return sanitizeEvent(event) as Sentry.Event | null;
+        return sanitizeEvent(event) as Sentry.ErrorEvent | null;
       },
 
       // Context filters

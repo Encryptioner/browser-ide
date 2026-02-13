@@ -257,7 +257,7 @@ export async function initializeDatabase(): Promise<void> {
         editor: DEFAULT_EDITOR_SETTINGS,
         git: DEFAULT_GIT_SETTINGS,
         ai: {
-          providers: [],
+          providers: [] as import('@/types').AIProviderConfig[],
           defaultProvider: 'anthropic',
           defaultModel: 'claude-sonnet-4-20250514',
           streamResponses: true,
@@ -273,6 +273,12 @@ export async function initializeDatabase(): Promise<void> {
           fontFamily: 'Consolas, Monaco, monospace',
           fontSize: 14,
           cursorStyle: 'block',
+        },
+        monitoring: {
+          sentryDsn: '',
+          sentryEnvironment: 'development',
+          sentryEnabled: false,
+          tracesSampleRate: 0.1,
         },
       });
       console.log('✅ Default settings created');

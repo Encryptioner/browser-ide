@@ -29,6 +29,9 @@ export default defineConfig({
     },
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'tests/integration/**/*.test.ts'],
     testTimeout: 10000,
+    typecheck: {
+      tsconfig: './tsconfig.test.json',
+    },
   },
   resolve: {
     alias: {
