@@ -83,6 +83,8 @@ function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
     <div
       ref={ref}
       className="fixed z-50 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl py-1 min-w-[180px]"
+      role="tree"
+      aria-label="File explorer"
       style={{ left: x, top: y }}
     >
       {menuItems.map((item) => (
