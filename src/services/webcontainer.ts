@@ -16,6 +16,123 @@ export interface ProcessResult {
   error?: string;
 }
 
+/**
+ * Command allowlist for WebContainer spawn
+ * These are the only commands allowed to run for security reasons
+ */
+const ALLOWED_COMMANDS = new Set([
+  // Node.js
+  'node',
+  'npm',
+  'npx',
+  'pnpm',
+  'yarn',
+  'bun',
+
+  // Python
+  'python',
+  'python3',
+  'pip',
+  'pip3',
+
+  // Git
+  'git',
+
+  // Shell built-ins (available in most shells)
+  'ls',
+  'cd',
+  'pwd',
+  'cat',
+  'echo',
+  'mkdir',
+  'rm',
+  'rmdir',
+  'touch',
+  'cp',
+  'mv',
+  'head',
+  'tail',
+  'grep',
+  'find',
+  'wc',
+  'sort',
+  'uniq',
+  'xargs',
+
+  // Utilities
+  'curl',
+  'wget',
+  'tar',
+  'zip',
+  'unzip',
+  'chmod',
+  'chown',
+
+  // Editors (often needed)
+  'nano',
+  'vim',
+  'vi',
+
+  // Build tools
+  'make',
+  'cmake',
+  'cargo',
+  'rustc',
+  'go',
+  'javac',
+  'java',
+  'gcc',
+  'g++',
+  'clang',
+  'clang++',
+]);
+
+/**
+ * Check if a command is in the allowlist
+ */
+function isCommandAllowed(command: string): boolean {
+  // Check base command (without path)
+  const baseCommand = command.split('/').pop() || command;
+  return ALLOWED_COMMANDS.has(baseCommand);
+}
+
+/**
+ * Sanitize command arguments to prevent injection
+ * Removes dangerous shell operators and characters
+ */
+function sanitizeArguments(args: string[]): string[] {
+  const dangerousPatterns = [
+    ';',       // Command separator
+    '|',       // Pipe
+    '&',       // Background or command chaining
+    '&&',      // AND operator
+    '||',      // OR operator
+    '>',       // Output redirect
+    '>>',      // Append redirect
+    '<',       // Input redirect
+    '`',       // Command substitution
+    '$(',      // Command substitution
+    '\n',      // Newline (command separator)
+    '\r',      // Carriage return
+    '\t',      // Tab
+    '\\',      // Escape character (can be dangerous in combinations)
+  ];
+
+  return args.filter(arg => {
+    // Check if argument contains dangerous patterns
+    for (const pattern of dangerousPatterns) {
+      if (arg.includes(pattern)) {
+        return false;
+      }
+    }
+    // Check for environment variable assignment at start
+    if (arg.startsWith('=')) {
+      return false;
+    }
+    return true;
+  });
+}
+
 class WebContainerService {
   private instance: WebContainer | null = null;
   private serverUrl: string | null = null;
@@ -130,8 +247,23 @@ class WebContainerService {
       if (!result.success) return { success: false, error: result.error };
     }
 
+    // Security: Check if command is allowed
+    if (!isCommandAllowed(command)) {
+      const error = `Command "${command}" is not allowed for security reasons. ` +
+        `Allowed commands: ${Array.from(ALLOWED_COMMANDS).sort().join(', ')}`;
+      console.error(`❌ ${error}`);
+      return { success: false, error };
+    }
+
+    // Security: Sanitize arguments
+    const sanitizedArgs = sanitizeArguments(args);
+    if (sanitizedArgs.length !== args.length) {
+      const filtered = args.filter((_, i) => !sanitizedArgs.includes(args[i]));
+      console.warn(`⚠️ Filtered potentially dangerous arguments:`, filtered);
+    }
+
     try {
-      const process = await this.instance!.spawn(command, args, options);
+      const process = await this.instance!.spawn(command, sanitizedArgs, options);
 
       const processId = `${command}-${Date.now()}`;
       this.processes.set(processId, process);
@@ -259,4 +391,8 @@ class WebContainerService {
   }
 }
 
+// Export singleton instance
 export const webContainer = new WebContainerService();
+
+// Export functions for testing
+export { isCommandAllowed, sanitizeArguments, ALLOWED_COMMANDS };

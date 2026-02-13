@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { safeJSONParse } from '@/utils/json';
 
 interface MobileKeyboardConfig {
   enabled: boolean;
@@ -105,7 +106,7 @@ export function useMobileConfig(): {
 
         // Merge with localStorage config if it exists
         const localConfigStr = localStorage.getItem('browser-ide-mobile-config');
-        const localConfig = localConfigStr ? JSON.parse(localConfigStr) : {};
+        const localConfig = safeJSONParse(localConfigStr, {} as Record<string, unknown>);
 
         const mergedConfig = {
           ...DEFAULT_CONFIG,

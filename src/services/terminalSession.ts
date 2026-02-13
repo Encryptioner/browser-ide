@@ -10,6 +10,7 @@
  */
 
 import { fileSystem } from './filesystem';
+import { safeJSONParse } from '@/utils/json';
 
 export interface TerminalSession {
   id: string;
@@ -367,7 +368,7 @@ class TerminalSessionService {
       const currentSessionId = localStorage.getItem('current-session-id');
 
       if (sessionsData) {
-        const sessions: TerminalSession[] = JSON.parse(sessionsData);
+        const sessions: TerminalSession[] = safeJSONParse(sessionsData, []);
         sessions.forEach(session => {
           this.sessions.set(session.id, session);
         });

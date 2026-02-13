@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
+import { toast } from 'sonner';
 
 interface CloneDialogProps {
   onClose: () => void;
@@ -51,14 +52,15 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
           console.log(`Changed to cloned directory: ${clonedPath}`);
         }
       } else {
-        alert('Repository cloned but failed to initialize state');
+        toast.error('Failed to initialize repository. Please try opening the project manually.');
       }
 
       onClose();
       // Reload to refresh file tree and store state
-      window.location.reload();
+      await fileSystem.readDirectory('/');
+      useIDEStore.getState().refreshFileTree?.();
     } else {
-      alert('Failed to clone: ' + result.error);
+      toast.error('Failed to clone: ' + result.error);
       setProgress('');
     }
     setIsCloning(false);
