@@ -154,13 +154,21 @@ let mockStoreState = {
   },
 };
 
+const getTerminalMockStoreState = (): Record<string, unknown> => ({
+  terminalMaximized: mockStoreState.terminalMaximized,
+  toggleTerminalMaximized: mockToggleTerminalMaximized,
+  setTerminalMaximized: mockSetTerminalMaximized,
+  settings: mockStoreState.settings,
+});
+
 vi.mock('@/store/useIDEStore', () => ({
-  useIDEStore: vi.fn(() => ({
-    terminalMaximized: mockStoreState.terminalMaximized,
-    toggleTerminalMaximized: mockToggleTerminalMaximized,
-    setTerminalMaximized: mockSetTerminalMaximized,
-    settings: mockStoreState.settings,
-  })),
+  useIDEStore: vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
+    const state = getTerminalMockStoreState();
+    if (typeof selector === 'function') {
+      return selector(state);
+    }
+    return state;
+  }),
 }));
 
 // Import Terminal after all mocks are set up

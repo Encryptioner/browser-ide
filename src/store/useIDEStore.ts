@@ -1,25 +1,25 @@
-import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
   EditorSettings,
   GitSettings,
-  AppSettings,
   FileNode,
   Project,
   CodeSnippet,
   Problem,
   WebContainerServer,
-  EditorTab,
   DebugSession,
   DebugBreakpoint,
+  DebugConfiguration,
   SplitEditorState,
   SnippetSession,
   ProblemsFilter,
   WebContainerProcess,
+  GitStatus,
+  GitCommit,
+  AIMessage,
 } from '@/types';
-import { TerminalTab, TerminalProfile } from '@/components/IDE/TerminalTabs';
-import { Terminal } from 'lucide-react';
+import { TerminalTab } from '@/components/IDE/TerminalTabs';
 
 // RecentProject is defined here since it doesn't exist in types
 export interface RecentProject {
@@ -29,8 +29,25 @@ export interface RecentProject {
   lastOpened: number;
 }
 
-// Services will be added later when needed
-const webContainerServer: WebContainerServer | null = null;
+/** Browser BeforeInstallPrompt event for PWA install */
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+/** Diagnostic entry from various sources (matches Monaco/LSP shape) */
+interface Diagnostic {
+  severity: 'error' | 'warning' | 'info' | number;
+  message: string;
+  source?: string;
+  code?: string | { value: string; target: string };
+  tags?: number[];
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
+  resource?: string;
+}
 
 // Settings interface combines editor, git, and AI settings
 export interface Settings extends EditorSettings, GitSettings {
@@ -62,13 +79,13 @@ interface IDEState {
   openFiles: string[];
   fileTree: FileNode[];
   currentDirectory: string;
-  fileLastSavedTime: Record<string, number> = {};
+  fileLastSavedTime: Record<string, number>;
 
   // Git
   currentRepo: string | null;
   currentBranch: string;
-  gitStatus: any[];
-  commits: any[];
+  gitStatus: GitStatus[];
+  commits: GitCommit[];
 
   // Editor
   editorContent: Record<string, string>;
@@ -81,7 +98,7 @@ interface IDEState {
   debugSessions: Record<string, DebugSession[]>;
   activeDebugSessionId: string | null;
   breakpoints: Record<string, DebugBreakpoint[]>;
-  debugConfigurations: any[];
+  debugConfigurations: DebugConfiguration[];
 
   // Code Snippets
   snippets: CodeSnippet[];
@@ -92,16 +109,16 @@ interface IDEState {
   terminalTabs: TerminalTab[];
   activeTerminalTabId: string | null;
   terminalProcesses: Record<string, WebContainerProcess>;
-  terminalProfiles: any[];
+  terminalProfiles: TerminalTab['profile'][];
 
   // Problems/Diagnostics
   problems: Problem[];
-  diagnostics: Record<string, any[]>;
+  diagnostics: Record<string, Diagnostic[]>;
   problemFilters: ProblemsFilter;
 
   // AI/Chat
   aiOpen: boolean;
-  aiSessions: Record<string, any[]>;
+  aiSessions: Record<string, AIMessage[]>;
 
   // UI State
   sidebarOpen: boolean;
@@ -120,7 +137,7 @@ interface IDEState {
 
   // PWA
   isInstalled: boolean;
-  installPromptEvent: any;
+  installPromptEvent: BeforeInstallPromptEvent | null;
 
   // Services
   webContainerService: typeof import('@/services/webcontainer').webContainer | null;
@@ -152,8 +169,8 @@ interface IDEActions {
   // Git
   setCurrentRepo: (repo: string | null) => void;
   setCurrentBranch: (branch: string) => void;
-  setGitStatus: (status: any[]) => void;
-  setCommits: (commits: any[]) => void;
+  setGitStatus: (status: GitStatus[]) => void;
+  setCommits: (commits: GitCommit[]) => void;
 
   // Debugging
   setActiveDebugSession: (projectId: string, sessionId: string) => void;
@@ -161,7 +178,7 @@ interface IDEActions {
   addBreakpoint: (breakpoint: DebugBreakpoint) => void;
   removeBreakpoint: (breakpointId: string) => void;
   updateBreakpoint: (breakpoint: DebugBreakpoint) => void;
-  setDebugConfigurations: (configs: any[]) => void;
+  setDebugConfigurations: (configs: DebugConfiguration[]) => void;
 
   // Split Editor
   setSplitEditorState: (state: SplitEditorState) => void;
@@ -211,7 +228,7 @@ interface IDEActions {
 
   // PWA
   setInstalled: (installed: boolean) => void;
-  setInstallPrompt: (event: any) => void;
+  setInstallPrompt: (event: BeforeInstallPromptEvent | null) => void;
 
   // Tab Management
   setActiveTab: (tabId: string) => void;
@@ -219,7 +236,7 @@ interface IDEActions {
   closeTab: (tabId: string) => void;
 
   // Actions from various components
-  getDiagnostics: () => any[];
+  getDiagnostics: () => Diagnostic[];
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -269,6 +286,7 @@ export const useIDEStore = create<IDEState & IDEActions>()(
       openFiles: [],
       fileTree: [],
       currentDirectory: '/repo',
+      fileLastSavedTime: {},
 
       currentRepo: null,
       currentBranch: 'main',
@@ -449,20 +467,23 @@ export const useIDEStore = create<IDEState & IDEActions>()(
           s.id === snippetId ? { ...s, ...updates } : s
         ),
       })),
-      createSnippetSession: (editorId, snippet) => set((state) => ({
-        snippetSessions: {
-          ...state.snippetSessions,
-          [editorId]: {
-            id: `session-${Date.now()}`,
-            snippet,
-            placeholders: [],
-            activePlaceholder: 0,
-            isActive: true,
-            editorId,
+      createSnippetSession: (editorId, snippet) => {
+        const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        set((state) => ({
+          snippetSessions: {
+            ...state.snippetSessions,
+            [editorId]: {
+              id: sessionId,
+              snippet,
+              placeholders: [],
+              activePlaceholder: 0,
+              isActive: true,
+              editorId,
+            },
           },
-        },
-        activeSnippetSessionId: `session-${Date.now()}`,
-      })),
+          activeSnippetSessionId: sessionId,
+        }));
+      },
       finishSnippetSession: (sessionId) => set((state) => {
         const newSessions = { ...state.snippetSessions };
         Object.keys(newSessions).forEach(editorId => {
@@ -480,13 +501,13 @@ export const useIDEStore = create<IDEState & IDEActions>()(
       // Terminal Actions
       createTerminalTab: (profileId, name) => set((state) => {
         const newTab: TerminalTab = {
-          id: `tab-${Date.now()}`,
+          id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           title: name || `Terminal ${state.terminalTabs.length + 1}`,
           profile: {
             id: profileId,
             name: 'Bash',
             command: '/bin/bash',
-            icon: React.createElement(Terminal, { className: 'w-4 h-4' }),
+            icon: null,
             description: 'Bash shell'
           },
           history: [''],
@@ -573,9 +594,22 @@ export const useIDEStore = create<IDEState & IDEActions>()(
       setBottomPanelSize: (size) => set({ bottomPanelSize: Math.max(15, Math.min(100, size)) }),
 
       // Settings Actions
-      updateSettings: (newSettings) => set((state) => ({
-        settings: { ...state.settings, ...newSettings },
-      })),
+      updateSettings: (newSettings) => {
+        set((state) => ({
+          settings: { ...state.settings, ...newSettings },
+        }));
+        // Sync sensitive keys to sessionStorage (survives refresh, not browser close)
+        const merged = { ...get().settings, ...newSettings };
+        try {
+          const secrets = {
+            anthropicKey: merged.ai?.anthropicKey || '',
+            glmKey: merged.ai?.glmKey || '',
+            openaiKey: merged.ai?.openaiKey || '',
+            githubToken: merged.githubToken || '',
+          };
+          sessionStorage.setItem('ide-secrets', JSON.stringify(secrets));
+        } catch { /* sessionStorage may be unavailable */ }
+      },
 
       // Tab Management
       setActiveTab: (tabId) => set({ activeTabId: tabId }),
@@ -607,7 +641,7 @@ export const useIDEStore = create<IDEState & IDEActions>()(
       // Service Actions
       getDiagnostics: () => {
         // Return current diagnostics from various sources
-        const allDiagnostics: any[] = [];
+        const allDiagnostics: Diagnostic[] = [];
 
         // Add file-specific diagnostics
         Object.values(get().diagnostics).forEach(fileDiagnostics => {
@@ -626,7 +660,17 @@ export const useIDEStore = create<IDEState & IDEActions>()(
       version: 1,
       partialize: (state) => ({
         // Only persist these essential fields (excluding runtime state)
-        settings: state.settings,
+        // SECURITY: Strip API keys and tokens before persisting to localStorage
+        settings: {
+          ...state.settings,
+          ai: {
+            ...state.settings.ai,
+            anthropicKey: '',
+            glmKey: '',
+            openaiKey: '',
+          },
+          githubToken: '',
+        },
         recentProjects: state.recentProjects,
         sidebarOpen: state.sidebarOpen,
         terminalOpen: state.terminalOpen,
@@ -635,6 +679,31 @@ export const useIDEStore = create<IDEState & IDEActions>()(
         bottomPanelSize: state.bottomPanelSize,
         terminalMaximized: state.terminalMaximized,
       }) as IDEState & IDEActions,
+      // Restore sensitive keys from sessionStorage after rehydration
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        try {
+          const raw = sessionStorage.getItem('ide-secrets');
+          if (raw) {
+            const secrets = JSON.parse(raw) as {
+              anthropicKey?: string;
+              glmKey?: string;
+              openaiKey?: string;
+              githubToken?: string;
+            };
+            state.settings = {
+              ...state.settings,
+              ai: {
+                ...state.settings.ai,
+                anthropicKey: secrets.anthropicKey || '',
+                glmKey: secrets.glmKey || '',
+                openaiKey: secrets.openaiKey || '',
+              },
+              githubToken: secrets.githubToken || '',
+            };
+          }
+        } catch { /* sessionStorage may be unavailable */ }
+      },
     }
   )
 );

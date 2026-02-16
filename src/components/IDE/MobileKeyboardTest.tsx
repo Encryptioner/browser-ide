@@ -60,7 +60,9 @@ export function MobileKeyboardTest() {
     // Test 4: Virtual Keyboard Control
     if ('virtualKeyboard' in navigator && keyboardConfig.virtualKeyboardAPI.enabled) {
       try {
-        (navigator.virtualKeyboard as any).overlaysContent = keyboardConfig.virtualKeyboardAPI.overlaysContent;
+        if (navigator.virtualKeyboard) {
+          navigator.virtualKeyboard.overlaysContent = keyboardConfig.virtualKeyboardAPI.overlaysContent;
+        }
         results[3] = {
           feature: 'Virtual Keyboard Control',
           status: 'pass' as const,

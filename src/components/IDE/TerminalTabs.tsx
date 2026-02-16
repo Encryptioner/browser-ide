@@ -108,7 +108,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
   const [terminalInput, setTerminalInput] = useState<Record<string, string>>({});
   const terminalRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const { webContainerService } = useIDEStore();
+  // Granular selector - individual selector for single state value
+  const webContainerService = useIDEStore(state => state.webContainerService);
 
   // Initialize with one default tab
   useEffect(() => {
@@ -264,7 +265,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     setShowTabMenu(null);
   }, []);
 
-   
+
   const splitTab = useCallback((tabId: string, _direction: 'horizontal' | 'vertical' = 'horizontal') => {
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;

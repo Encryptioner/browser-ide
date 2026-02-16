@@ -90,7 +90,7 @@ export interface OpenFile {
 // ============= Git Types =============
 export interface GitStatus {
   path: string;
-  status: 'modified' | 'added' | 'deleted' | 'untracked' | 'staged' | 'unmodified';
+  status: 'modified' | 'added' | 'deleted' | 'untracked' | 'staged' | 'unmodified' | 'unstaged';
 }
 
 export interface GitCommit {

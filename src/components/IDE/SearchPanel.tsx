@@ -28,7 +28,10 @@ export function SearchPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [replaceMode, setReplaceMode] = useState(false);
 
-  const { setCurrentFile, setSearchHighlight, clearSearchHighlight } = useIDEStore();
+  // Granular selectors - individual selectors for actions (stable references)
+  const setCurrentFile = useIDEStore(state => state.setCurrentFile);
+  const setSearchHighlight = useIDEStore(state => state.setSearchHighlight);
+  const clearSearchHighlight = useIDEStore(state => state.clearSearchHighlight);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Handle keyboard shortcuts

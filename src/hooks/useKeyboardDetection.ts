@@ -54,8 +54,8 @@ export function useKeyboardDetection(): KeyboardState {
 
     try {
       // Set overlaysContent mode if configured
-      if (config.MOBILE_KEYBOARD.OVERLAYS_CONTENT) {
-        (vk as any).overlaysContent = true;
+      if (config.MOBILE_KEYBOARD.OVERLAYS_CONTENT && vk) {
+        vk.overlaysContent = true;
         console.log('📱 Virtual Keyboard API enabled with overlaysContent');
       }
 
@@ -116,7 +116,7 @@ export function useKeyboardDetection(): KeyboardState {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const initialViewportHeight = (window as any).innerHeight;
+    const initialViewportHeight = window.innerHeight;
 
     // Check if device is likely mobile - more comprehensive detection
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -134,7 +134,7 @@ export function useKeyboardDetection(): KeyboardState {
 
     // Update orientation
     const updateOrientation = () => {
-      const isPortrait = (window as any).innerHeight > (window as any).innerWidth;
+      const isPortrait = window.innerHeight > window.innerWidth;
       const isLandscape = !isPortrait;
 
       setKeyboardState(prev => ({
@@ -146,21 +146,19 @@ export function useKeyboardDetection(): KeyboardState {
 
     // Visual viewport API for accurate keyboard detection (supported by modern browsers)
     const checkVisualViewport = () => {
-      if ('visualViewport' in window) {
-        const viewport = (window as any).visualViewport;
-        if (viewport) {
-          const keyboardHeight = (window as any).innerHeight - viewport.height;
-          const isKeyboardVisible = keyboardHeight > config.MOBILE_KEYBOARD.KEYBOARD_HEIGHT_THRESHOLD;
+      if ('visualViewport' in window && window.visualViewport) {
+        const viewport = window.visualViewport;
+        const keyboardHeight = window.innerHeight - viewport.height;
+        const isKeyboardVisible = keyboardHeight > config.MOBILE_KEYBOARD.KEYBOARD_HEIGHT_THRESHOLD;
 
-          setKeyboardState(prev => ({
-            ...prev,
-            isVisible: isKeyboardVisible && isMobileDevice,
-            height: isKeyboardVisible && isMobileDevice ? keyboardHeight : 0,
-          }));
-        }
+        setKeyboardState(prev => ({
+          ...prev,
+          isVisible: isKeyboardVisible && isMobileDevice,
+          height: isKeyboardVisible && isMobileDevice ? keyboardHeight : 0,
+        }));
       } else {
         // Fallback for browsers without visual viewport support
-        const currentHeight = (window as any).innerHeight;
+        const currentHeight = window.innerHeight;
         const heightDifference = initialViewportHeight - currentHeight;
         const isKeyboardVisible = heightDifference > config.MOBILE_KEYBOARD.KEYBOARD_HEIGHT_THRESHOLD;
 
@@ -235,11 +233,8 @@ export function useKeyboardDetection(): KeyboardState {
     document.addEventListener('focusout', handleFocusOut);
 
     // Visual viewport API events
-    if ('visualViewport' in window) {
-      const viewport = (window as any).visualViewport as EventTarget | null;
-      if (viewport) {
-        viewport.addEventListener('resize', checkVisualViewport);
-      }
+    if ('visualViewport' in window && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', checkVisualViewport);
     }
 
     return () => {
@@ -248,11 +243,8 @@ export function useKeyboardDetection(): KeyboardState {
       document.removeEventListener('focusin', handleFocusIn);
       document.removeEventListener('focusout', handleFocusOut);
 
-      if ('visualViewport' in window) {
-        const viewport = (window as any).visualViewport as EventTarget | null;
-        if (viewport) {
-          viewport.removeEventListener('resize', checkVisualViewport);
-        }
+      if ('visualViewport' in window && window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', checkVisualViewport);
       }
     };
   }, [initializeVirtualKeyboardAPI, showVirtualKeyboard, hideVirtualKeyboard]);
@@ -271,7 +263,7 @@ export function useViewportHeight() {
     if (typeof window === 'undefined') return;
 
     const updateVh = () => {
-      const height = (window as any).visualViewport?.height || (window as any).innerHeight;
+      const height = window.visualViewport?.height || window.innerHeight;
       const calculatedVh = `${height * 0.01}px`;
       setVh(calculatedVh);
 
@@ -339,7 +331,9 @@ export function useVirtualKeyboardControls() {
     }
 
     try {
-      (navigator.virtualKeyboard as any).overlaysContent = true;
+      if (navigator.virtualKeyboard) {
+        navigator.virtualKeyboard.overlaysContent = true;
+      }
       setIsVirtualKeyboardEnabled(true);
       console.log('📱 Virtual Keyboard API enabled with overlaysContent');
       return true;
@@ -355,7 +349,9 @@ export function useVirtualKeyboardControls() {
     }
 
     try {
-      (navigator.virtualKeyboard as any).overlaysContent = false;
+      if (navigator.virtualKeyboard) {
+        navigator.virtualKeyboard.overlaysContent = false;
+      }
       setIsVirtualKeyboardEnabled(false);
       console.log('📱 Virtual Keyboard API disabled');
       return true;

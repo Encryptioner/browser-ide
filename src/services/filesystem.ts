@@ -15,6 +15,11 @@ export interface FileSystemResult<T = unknown> {
   error?: string;
 }
 
+interface FileSystemError {
+  code?: string;
+  message?: string;
+}
+
 class FileSystemService {
   private fs: LightningFS;
   private pfs: LightningFS['promises'];
@@ -273,7 +278,7 @@ class FileSystemService {
       await this.pfs.mkdir(path);
     } catch (error) {
       // Directory might already exist
-      const err = error as any;
+      const err = error as FileSystemError;
       if (err.code !== 'EEXIST') {
         throw error;
       }

@@ -65,22 +65,28 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock useIDEStore
-let mockStoreState = {
-  fileTree: [],
-  currentFile: null,
-  gitStatus: [],
+// Mock useIDEStore - must support selector-based calls (useShallow and individual selectors)
+let mockStoreState: Record<string, unknown> = {
+  fileTree: [] as unknown[],
+  currentFile: null as string | null,
+  gitStatus: [] as unknown[],
+  setCurrentFile: mockSetCurrentFile,
+  addOpenFile: mockAddOpenFile,
+  setFileTree: mockSetFileTree,
 };
 
 vi.mock('@/store/useIDEStore', () => ({
-  useIDEStore: vi.fn(() => ({
-    fileTree: mockStoreState.fileTree,
-    currentFile: mockStoreState.currentFile,
-    setCurrentFile: mockSetCurrentFile,
-    addOpenFile: mockAddOpenFile,
-    setFileTree: mockSetFileTree,
-    gitStatus: mockStoreState.gitStatus,
-  })),
+  useIDEStore: vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
+    if (typeof selector === 'function') {
+      return selector(mockStoreState);
+    }
+    return mockStoreState;
+  }),
+}));
+
+// Mock zustand/react/shallow - useShallow just returns the selector as-is
+vi.mock('zustand/react/shallow', () => ({
+  useShallow: (selector: unknown) => selector,
 }));
 
 // Import FileExplorer after all mocks are set up
@@ -90,7 +96,7 @@ const { FileExplorer } = await import('./FileExplorer');
 // TEST UTILITIES
 // =============================================================================
 
-function setMockStoreState(partial: Partial<typeof mockStoreState>): void {
+function setMockStoreState(partial: Record<string, unknown>): void {
   mockStoreState = { ...mockStoreState, ...partial };
 }
 
@@ -113,6 +119,9 @@ function resetAllMocks(): void {
     fileTree: [],
     currentFile: null,
     gitStatus: [],
+    setCurrentFile: mockSetCurrentFile,
+    addOpenFile: mockAddOpenFile,
+    setFileTree: mockSetFileTree,
   });
 
   // Reset action mocks

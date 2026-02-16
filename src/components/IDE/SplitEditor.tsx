@@ -10,10 +10,9 @@ interface SplitEditorProps {
 }
 
 export function SplitEditor({ className }: SplitEditorProps) {
-  const {
-    splitEditorState,
-    setSplitEditorState,
-  } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const splitEditorState = useIDEStore(state => state.splitEditorState);
+  const setSplitEditorState = useIDEStore(state => state.setSplitEditorState);
 
   // Initialize split editor state if not present
   useEffect(() => {

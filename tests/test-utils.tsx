@@ -8,6 +8,7 @@
  */
 import { render, RenderOptions, renderHook } from '@testing-library/react';
 import { ReactElement } from 'react';
+import { vi, afterEach } from 'vitest';
 
 /**
  * Custom render function that wraps components with necessary providers
@@ -135,7 +136,7 @@ export function createMockFileTree(tree: Record<string, unknown>): Array<{
  *
  * @returns Mock console object with spy functions
  */
-export function mockConsole(): {
+export function mockConsole() {
   const consoleSpy = {
     log: vi.spyOn(console, 'log').mockImplementation(() => {}),
     warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, JSX } from 'react';
 import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
@@ -26,7 +27,7 @@ import {
 } from 'lucide-react';
 import type { FileNode } from '@/types';
 
- 
+
 interface ContextMenuProps {
   x: number;
   y: number;
@@ -36,7 +37,7 @@ interface ContextMenuProps {
   onAction: (action: string, node: FileNode) => void;
   /* eslint-enable @typescript-eslint/no-unused-vars */
 }
- 
+
 
 function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -118,14 +119,18 @@ export function FileExplorer() {
     message: string;
     node: FileNode | null;
   } | null>(null);
-  const {
-    fileTree,
-    currentFile,
-    setCurrentFile,
-    addOpenFile,
-    setFileTree,
-    gitStatus,
-  } = useIDEStore();
+
+  // Granular selectors - useShallow for related state, individual for actions
+  const { fileTree, currentFile, gitStatus } = useIDEStore(
+    useShallow(state => ({
+      fileTree: state.fileTree,
+      currentFile: state.currentFile,
+      gitStatus: state.gitStatus,
+    }))
+  );
+  const setCurrentFile = useIDEStore(state => state.setCurrentFile);
+  const addOpenFile = useIDEStore(state => state.addOpenFile);
+  const setFileTree = useIDEStore(state => state.setFileTree);
 
   const currentDirectory = fileSystem.getCurrentWorkingDirectory();
 

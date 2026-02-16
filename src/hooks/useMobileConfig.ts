@@ -252,7 +252,7 @@ export function useKeyboardTestingControls() {
 
       // Try to use Virtual Keyboard API if available
       if ('virtualKeyboard' in navigator && keyboardConfig.virtualKeyboardAPI.enabled) {
-        (navigator.virtualKeyboard as any).show();
+        navigator.virtualKeyboard?.show();
       }
 
       console.log('📱 Keyboard forced to show for testing');
@@ -272,7 +272,7 @@ export function useKeyboardTestingControls() {
     try {
       // Try to use Virtual Keyboard API if available
       if ('virtualKeyboard' in navigator && keyboardConfig.virtualKeyboardAPI.enabled) {
-        (navigator.virtualKeyboard as any).hide();
+        navigator.virtualKeyboard?.hide();
       }
 
       // Blur any active input

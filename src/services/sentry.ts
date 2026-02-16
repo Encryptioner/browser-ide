@@ -269,14 +269,10 @@ export function addBreadcrumb(category: string, message: string, data?: Record<s
  * Check if Sentry is enabled and configured
  */
 export function isSentryEnabled(): boolean {
-  // In newer Sentry versions, we can check if a client is bound
-  // using a try-catch or checking the global state
   try {
-    // Try to get the current client - if it throws or returns undefined, Sentry is not enabled
-    const hub = (Sentry as unknown as { getCurrentHub: () => { getClient: () => unknown } }).getCurrentHub?.();
-    return hub?.getClient?.() !== undefined;
+    const client = Sentry.getClient();
+    return client !== undefined;
   } catch {
-    // If we can't check, assume Sentry might be enabled but not initialized
     return false;
   }
 }

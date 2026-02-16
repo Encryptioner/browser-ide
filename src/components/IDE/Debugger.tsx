@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Square, RotateCcw, StepForward, ArrowRight, SkipForward, Bug, X, Plus, Settings, ChevronDown, ChevronRight, EyeOff, CheckCircle } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { DebugBreakpoint, DebugThread, DebugConfiguration, DebugConsoleMessage, DebugScope, DebugVariable, DebugSession } from '@/types';
 import { clsx } from 'clsx';
 import { nanoid } from 'nanoid';
@@ -11,15 +12,18 @@ interface DebuggerProps {
 }
 
 export function Debugger({ className }: DebuggerProps) {
-  const {
-    activeProjectId,
-    setActiveDebugSession,
-    addBreakpoint,
-    removeBreakpoint,
-    updateBreakpoint,
-    debugSessions,
-    activeDebugSessionId,
-  } = useIDEStore();
+  // Granular selectors - useShallow for related state, individual for actions
+  const { activeProjectId, debugSessions, activeDebugSessionId } = useIDEStore(
+    useShallow(state => ({
+      activeProjectId: state.activeProjectId,
+      debugSessions: state.debugSessions,
+      activeDebugSessionId: state.activeDebugSessionId,
+    }))
+  );
+  const setActiveDebugSession = useIDEStore(state => state.setActiveDebugSession);
+  const addBreakpoint = useIDEStore(state => state.addBreakpoint);
+  const removeBreakpoint = useIDEStore(state => state.removeBreakpoint);
+  const updateBreakpoint = useIDEStore(state => state.updateBreakpoint);
 
   const [activeSession, setActiveSession] = useState<DebugSession | null>(null);
   const [selectedThread, setSelectedThread] = useState<DebugThread | null>(null);

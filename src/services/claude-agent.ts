@@ -20,7 +20,7 @@ export interface ClaudeAgentConfig {
 export interface AgentTool {
   name: string;
   description: string;
-  input_schema: Record<string, any>;
+  input_schema: Record<string, unknown>;
 }
 
 export interface AgentExecutionResult {
@@ -33,6 +33,12 @@ export interface AgentExecutionResult {
     filesDeleted?: string[];
     commandsExecuted?: string[];
   };
+}
+
+interface FileTreeNode {
+  type: string;
+  path: string;
+  children?: FileTreeNode[];
 }
 
 /**
@@ -183,7 +189,7 @@ export class ClaudeCodeAgent {
    */
   private async executeTool(
     toolName: string,
-    toolInput: Record<string, any>
+    toolInput: Record<string, string>
   ): Promise<string> {
     try {
       switch (toolName) {
@@ -244,7 +250,7 @@ export class ClaudeCodeAgent {
           );
           const results: string[] = [];
 
-          const searchFiles = async (nodes: any[]) => {
+          const searchFiles = async (nodes: FileTreeNode[]) => {
             for (const node of nodes) {
               if (node.type === 'file') {
                 const result = await fileSystem.readFile(node.path);
@@ -284,8 +290,9 @@ export class ClaudeCodeAgent {
         default:
           return `Unknown tool: ${toolName}`;
       }
-    } catch (error: any) {
-      return `Error executing ${toolName}: ${error.message}`;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return `Error executing ${toolName}: ${message}`;
     }
   }
 
@@ -324,7 +331,7 @@ export class ClaudeCodeAgent {
           max_tokens: this.config.maxTokens!,
           temperature: this.config.temperature,
           messages: this.conversationHistory,
-          tools: this.getTools() as any,
+          tools: this.getTools() as Anthropic.Messages.Tool[],
         });
 
         // Check stop reason
@@ -341,11 +348,11 @@ export class ClaudeCodeAgent {
           continueLoop = false;
         } else if (response.stop_reason === 'tool_use') {
           // Agent wants to use tools
-          const toolResults: any[] = [];
+          const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
 
           for (const content of response.content) {
             if (content.type === 'tool_use') {
-              const toolInput = content.input as Record<string, any>;
+              const toolInput = content.input as Record<string, string>;
 
               onProgress?.(
                 `🔧 Using tool: ${content.name} with input: ${JSON.stringify(toolInput)}`
@@ -399,11 +406,12 @@ export class ClaudeCodeAgent {
         output: 'Task completed',
         artifacts,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error('Agent execution error:', error);
       return {
         success: false,
-        error: error.message,
+        error: message,
       };
     }
   }

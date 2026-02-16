@@ -7,7 +7,9 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
-  const { settings, updateSettings } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const settings = useIDEStore(state => state.settings);
+  const updateSettings = useIDEStore(state => state.updateSettings);
   const [localSettings, setLocalSettings] = useState(settings);
 
   function handleSave() {

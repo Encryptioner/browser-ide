@@ -3,11 +3,14 @@
  *
  * WebContainer-based implementation of Claude Code CLI
  * Provides terminal-like experience in browser environment
+ *
+ * SECURITY: All command execution goes through the webContainer singleton
+ * which enforces command allowlists and argument sanitization.
  */
 
-import { WebContainer } from '@webcontainer/api';
-import { fileSystem } from './filesystem';
-import { ClaudeCodeAgent, createGLMAgent, createAnthropicAgent } from './claude-agent';
+import { webContainer } from '@/services/webcontainer';
+import { fileSystem } from '@/services/filesystem';
+import { ClaudeCodeAgent, createGLMAgent, createAnthropicAgent } from '@/services/claude-agent';
 
 export interface CLIOptions {
   provider: 'anthropic' | 'glm';
@@ -19,7 +22,7 @@ export interface CLIOptions {
 export interface CLICommand {
   command: string;
   args: string[];
-  options: Record<string, any>;
+  options: Record<string, string>;
 }
 
 export interface CLIResult {
@@ -36,10 +39,10 @@ export interface CLIResult {
 
 /**
  * Browser-based Claude CLI Service
- * Simulates Claude Code CLI using WebContainers and browser APIs
+ * Uses the shared webContainer singleton for all process execution,
+ * ensuring all commands go through the security layer.
  */
 export class ClaudeCLIService {
-  private webContainer: WebContainer | null = null;
   private agent: ClaudeCodeAgent | null = null;
   private workingDirectory: string = '/workspace';
   private environment: Record<string, string> = {};
@@ -51,14 +54,17 @@ export class ClaudeCLIService {
   }
 
   /**
-   * Initialize WebContainer and CLI environment
+   * Initialize CLI environment using the shared WebContainer singleton
    */
   async initialize(): Promise<void> {
     try {
-      console.log('🚀 Initializing WebContainer environment...');
+      console.log('Initializing CLI environment via shared WebContainer...');
 
-      // Initialize WebContainer
-      this.webContainer = await WebContainer.boot();
+      // Boot the shared WebContainer singleton (no-op if already booted)
+      const bootResult = await webContainer.boot();
+      if (!bootResult.success) {
+        throw new Error(`WebContainer boot failed: ${bootResult.error}`);
+      }
 
       // Setup environment
       this.environment = {
@@ -70,33 +76,34 @@ export class ClaudeCLIService {
         ...this.getProviderEnvironment()
       };
 
-      // Set working directory
-      await this.webContainer!.fs.writeFile('/workspace/.gitignore', `node_modules/
+      // Write initial workspace files through the secure singleton
+      await webContainer.writeFile('/workspace/.gitignore', `node_modules/
 dist/
 .env
 *.log`);
 
-      // Initialize git repository
+      // Initialize git repository through the secure spawn
       try {
-        await this.webContainer!.spawn('git', ['init', '-q']);
-        await this.webContainer!.spawn('git', ['config', 'user.name', 'Browser IDE User']);
-        await this.webContainer!.spawn('git', ['config', 'user.email', 'user@browser-ide.local']);
-        await this.webContainer!.spawn('git', ['add', '.']);
-        await this.webContainer!.spawn('git', ['commit', '-m', 'Initial commit', '--quiet']);
-      } catch (error) {
+        await this.runAndWait('git', ['init', '-q']);
+        await this.runAndWait('git', ['config', 'user.name', 'Browser IDE User']);
+        await this.runAndWait('git', ['config', 'user.email', 'user@browser-ide.local']);
+        await this.runAndWait('git', ['add', '.']);
+        await this.runAndWait('git', ['commit', '-m', 'Initial commit', '--quiet']);
+      } catch {
         // Git initialization might fail if git is not available
-        console.log('⚠️ Git initialization failed, continuing without git');
+        console.log('Git initialization failed, continuing without git');
       }
 
       // Initialize Claude agent
       await this.initializeAgent();
 
       this.isInitialized = true;
-      console.log('✅ WebContainer environment initialized');
+      console.log('CLI environment initialized');
 
-    } catch (error) {
-      console.error('❌ Failed to initialize WebContainer:', error);
-      throw error;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Failed to initialize CLI environment:', message);
+      throw new Error(`CLI initialization failed: ${message}`);
     }
   }
 
@@ -127,7 +134,7 @@ dist/
    */
   private async initializeAgent(): Promise<void> {
     if (!this.options.apiKey) {
-      console.log('⚠️ No API key provided, some features may be limited');
+      console.log('No API key provided, some features may be limited');
       return;
     }
 
@@ -140,15 +147,30 @@ dist/
 
       if (this.agent) {
         this.agent.setWorkingDirectory(this.workingDirectory);
-        console.log(`✅ Claude agent initialized with ${this.options.provider} provider`);
+        console.log(`Claude agent initialized with ${this.options.provider} provider`);
       }
-    } catch (error) {
-      console.error('❌ Failed to initialize Claude agent:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Failed to initialize Claude agent:', message);
     }
   }
 
   /**
-   * Execute a command in the WebContainer
+   * Helper: spawn a command through the secure singleton and wait for exit
+   */
+  private async runAndWait(command: string, args: string[] = []): Promise<{ output: string; exitCode: number }> {
+    const result = await webContainer.spawn(command, args, { cwd: this.workingDirectory });
+    if (!result.success || !result.process) {
+      throw new Error(result.error || `Failed to spawn ${command}`);
+    }
+
+    const output = await this.collectProcessOutput(result.process);
+    const exitCode = await result.exit!;
+    return { output, exitCode };
+  }
+
+  /**
+   * Execute a command in the WebContainer through the security layer
    */
   async executeCommand(command: string, args: string[] = []): Promise<CLIResult> {
     if (!this.isInitialized) {
@@ -160,9 +182,7 @@ dist/
     try {
       console.log(`$ ${command} ${args.join(' ')}`);
 
-      const process = await this.webContainer!.spawn(command, args);
-      const output = await this.collectProcessOutput(process);
-      const exitCode = await process.exit;
+      const { output, exitCode } = await this.runAndWait(command, args);
 
       return {
         success: exitCode === 0,
@@ -170,10 +190,11 @@ dist/
         exitCode
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       return {
         success: false,
-        error: error.message,
+        error: message,
         exitCode: 1
       };
     }
@@ -190,7 +211,7 @@ dist/
       await this.initialize();
     }
 
-    console.log(`🎯 Executing task: ${task}`);
+    console.log(`Executing task: ${task}`);
 
     if (!this.agent) {
       return {
@@ -202,10 +223,10 @@ dist/
     try {
       const result = await this.agent.executeTask(task, (message) => {
         options.onProgress?.(message);
-        console.log(`🔧 ${message}`);
+        console.log(`Task progress: ${message}`);
       });
 
-      // Sync file changes to WebContainer if needed
+      // Sync file changes through the secure webContainer singleton
       if (result.artifacts) {
         await this.syncArtifacts(result.artifacts);
       }
@@ -217,18 +238,23 @@ dist/
         artifacts: result.artifacts
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       return {
         success: false,
-        error: error.message
+        error: message
       };
     }
   }
 
   /**
-   * Sync artifacts from filesystem to WebContainer
+   * Sync artifacts from LightningFS to the shared WebContainer filesystem
    */
-  private async syncArtifacts(artifacts: any): Promise<void> {
+  private async syncArtifacts(artifacts: {
+    filesCreated?: string[];
+    filesModified?: string[];
+    filesDeleted?: string[];
+  }): Promise<void> {
     const { filesCreated, filesModified } = artifacts;
 
     try {
@@ -237,7 +263,7 @@ dist/
         for (const filePath of filesCreated) {
           const result = await fileSystem.readFile(filePath);
           if (result.success && result.data) {
-            await this.webContainer!.fs.writeFile(filePath, result.data);
+            await webContainer.writeFile(filePath, result.data);
           }
         }
       }
@@ -247,12 +273,13 @@ dist/
         for (const filePath of filesModified) {
           const result = await fileSystem.readFile(filePath);
           if (result.success && result.data) {
-            await this.webContainer!.fs.writeFile(filePath, result.data);
+            await webContainer.writeFile(filePath, result.data);
           }
         }
       }
-    } catch (error) {
-      console.error('❌ Failed to sync artifacts to WebContainer:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Failed to sync artifacts to WebContainer:', message);
     }
   }
 
@@ -261,8 +288,8 @@ dist/
    */
   async getStatus(): Promise<{
     workingDirectory: string;
-    gitStatus?: any;
-    files: any[];
+    gitStatus?: { isRepo: boolean; branch?: string; clean?: boolean; files?: { status: string; path: string }[]; error?: string };
+    files: { name: string; path: string; type: string; size?: number; children?: unknown[] }[];
     environment: Record<string, string>;
   }> {
     if (!this.isInitialized) {
@@ -270,33 +297,30 @@ dist/
     }
 
     try {
-      // Get file listing
+      // Get file listing via fileSystem service
       const files = await this.getWorkspaceFiles();
 
-      // Get git status
-      let gitStatus;
+      // Get git status through the secure spawn
+      let gitStatus: { isRepo: boolean; branch?: string; clean?: boolean; files?: { status: string; path: string }[]; error?: string } | undefined;
       try {
-        const gitProcess = await this.webContainer!.spawn('git', ['status', '--porcelain']);
-        const statusOutput = await this.collectProcessOutput(gitProcess);
-        const exitCode = await gitProcess.exit;
+        const statusResult = await this.runAndWait('git', ['status', '--porcelain']);
 
-        if (exitCode === 0) {
-          const branchProcess = await this.webContainer!.spawn('git', ['branch', '--show-current']);
-          const branchOutput = await this.collectProcessOutput(branchProcess);
-          await branchProcess.exit;
+        if (statusResult.exitCode === 0) {
+          const branchResult = await this.runAndWait('git', ['branch', '--show-current']);
 
           gitStatus = {
             isRepo: true,
-            branch: branchOutput.trim(),
-            clean: statusOutput.trim().length === 0,
-            files: statusOutput.trim().split('\n').filter(line => line.trim()).map(line => ({
+            branch: branchResult.output.trim(),
+            clean: statusResult.output.trim().length === 0,
+            files: statusResult.output.trim().split('\n').filter(line => line.trim()).map(line => ({
               status: line.substring(0, 2),
               path: line.substring(3)
             }))
           };
         }
-      } catch (error: any) {
-        gitStatus = { isRepo: false, error: error.message };
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        gitStatus = { isRepo: false, error: message };
       }
 
       return {
@@ -306,68 +330,37 @@ dist/
         environment: this.environment
       };
 
-    } catch (error: any) {
-      throw new Error(`Failed to get status: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get status: ${message}`);
     }
   }
 
   /**
-   * Get workspace files
+   * Get workspace files using the fileSystem service
    */
-  private async getWorkspaceFiles(): Promise<any[]> {
+  private async getWorkspaceFiles(): Promise<{ name: string; path: string; type: string; size?: number; children?: unknown[] }[]> {
     try {
-      const files: any[] = [];
-      await this.buildFileTree('/', files);
-      return files;
-    } catch (error) {
+      const entries = await fileSystem.readDir(this.workingDirectory);
+
+      return entries
+        .filter(entry => !entry.name.startsWith('.'))
+        .map(entry => ({
+          name: entry.name,
+          path: entry.path,
+          type: entry.type,
+          size: entry.size,
+          ...(entry.type === 'directory' ? { children: [] } : {})
+        }));
+    } catch {
       return [];
     }
   }
 
   /**
-   * Build file tree recursively
+   * Collect all output from a WebContainer process
    */
-  private async buildFileTree(path: string, files: any[]): Promise<void> {
-    try {
-      const entries = await this.webContainer!.fs.readdir(path);
-
-      for (const entry of entries) {
-        const fullPath = path === '/' ? `/${entry}` : `${path}/${entry}`;
-
-        try {
-          const stat = await (this.webContainer!.fs as any).stat(fullPath);
-
-          if (entry !== '.' && entry !== '..' && !entry.startsWith('.')) {
-            if (stat.isFile()) {
-              files.push({
-                name: entry,
-                path: fullPath,
-                type: 'file',
-                size: stat.size
-              });
-            } else if (stat.isDirectory()) {
-              files.push({
-                name: entry,
-                path: fullPath,
-                type: 'directory',
-                children: []
-              });
-              await this.buildFileTree(fullPath, files[files.length - 1].children);
-            }
-          }
-        } catch (error) {
-          // Skip files that can't be accessed
-        }
-      }
-    } catch (error) {
-      // Directory can't be read
-    }
-  }
-
-  /**
-   * Collect all output from a process
-   */
-  private async collectProcessOutput(process: any): Promise<string> {
+  private async collectProcessOutput(process: { output: ReadableStream<string> }): Promise<string> {
     const output: string[] = [];
     const reader = process.output.getReader();
 
@@ -393,9 +386,9 @@ dist/
     }
 
     try {
-      console.log(`🚀 Initializing ${projectType} project...`);
+      console.log(`Initializing ${projectType} project...`);
 
-      let commands = [];
+      let commands: string[][] = [];
 
       switch (projectType) {
         case 'react':
@@ -437,46 +430,11 @@ dist/
         }
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
       return {
         success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Execute shell script
-   */
-  async executeScript(script: string): Promise<CLIResult> {
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    try {
-      // Write script to file
-      const scriptPath = '/tmp/claude-script.sh';
-      await this.webContainer!.fs.writeFile(scriptPath, script);
-      await this.webContainer!.spawn('chmod', ['+x', scriptPath]);
-
-      // Execute script
-      const process = await this.webContainer!.spawn(scriptPath, []);
-      const output = await this.collectProcessOutput(process);
-      const exitCode = await process.exit;
-
-      // Cleanup
-      await this.webContainer!.fs.rm(scriptPath);
-
-      return {
-        success: exitCode === 0,
-        output,
-        exitCode
-      };
-
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message
+        error: message
       };
     }
   }
@@ -513,56 +471,50 @@ dist/
   }
 
   /**
-   * Change working directory
+   * Change working directory (validated via fileSystem service)
    */
   async changeDirectory(path: string): Promise<void> {
     try {
-      const stat = await (this.webContainer!.fs as any).stat(path);
-      if (stat.isDirectory()) {
-        this.workingDirectory = path;
-        this.environment.PWD = path;
-
-        if (this.agent) {
-          this.agent.setWorkingDirectory(path);
-        }
-
-        console.log(`📁 Changed to directory: ${path}`);
-      } else {
-        throw new Error(`${path} is not a directory`);
+      const statResult = await fileSystem.stats(path);
+      if (!statResult.success || !statResult.data || statResult.data.type !== 'directory') {
+        throw new Error(`${path} is not a valid directory`);
       }
-    } catch (error: any) {
-      throw new Error(`Failed to change directory: ${error.message}`);
+
+      this.workingDirectory = path;
+      this.environment.PWD = path;
+
+      if (this.agent) {
+        this.agent.setWorkingDirectory(path);
+      }
+
+      console.log(`Changed to directory: ${path}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to change directory: ${message}`);
     }
   }
 
   /**
    * Clean up resources
+   * Note: We do NOT teardown the shared webContainer singleton here,
+   * as other parts of the application may still be using it.
    */
   async cleanup(): Promise<void> {
-    if (this.webContainer) {
-      try {
-        this.webContainer.teardown();
-        console.log('🧹 WebContainer cleaned up');
-      } catch (error) {
-        console.error('❌ Failed to cleanup WebContainer:', error);
-      }
-    }
-
-    this.webContainer = null;
     this.agent = null;
     this.isInitialized = false;
+    console.log('CLI service cleaned up');
   }
 
   /**
-   * Get available shell commands
+   * Get available shell commands (mirrors the webContainer allowlist)
    */
   getAvailableCommands(): string[] {
     return [
       'ls', 'cat', 'cd', 'pwd', 'mkdir', 'touch', 'rm', 'cp', 'mv',
       'echo', 'grep', 'find', 'wc', 'head', 'tail', 'sort', 'uniq',
-      'git', 'npm', 'node', 'python', 'python3', 'java', 'gcc', 'make',
-      'curl', 'wget', 'tar', 'gzip', 'zip', 'unzip',
-      'ps', 'top', 'kill', 'killall', 'df', 'du', 'free', 'uptime'
+      'git', 'npm', 'npx', 'pnpm', 'node', 'python', 'python3',
+      'curl', 'wget', 'tar', 'zip', 'unzip', 'chmod',
+      'make', 'cargo', 'go', 'javac', 'java', 'gcc', 'g++'
     ];
   }
 }

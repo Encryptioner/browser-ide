@@ -102,22 +102,36 @@ vi.mock('@/utils/logger', () => ({
   },
 }));
 
-// Mock useIDEStore - it's a Zustand hook that returns state directly
+// Mock useIDEStore - supports selector-based calls (useShallow and individual selectors)
+const getMockStoreState = (): Record<string, unknown> => ({
+  currentFile: mockStoreState.currentFile,
+  openFiles: mockStoreState.openFiles,
+  closeFile: mockCloseFile,
+  editorContent: mockStoreState.editorContent,
+  unsavedChanges: mockStoreState.unsavedFiles,
+  updateEditorContent: mockUpdateEditorContent,
+  markFileUnsaved: mockMarkFileUnsaved,
+  markFileSaved: mockMarkFileSaved,
+  settings: mockStoreState.settings,
+  setCurrentFile: mockSetCurrentFile,
+  searchHighlight: mockStoreState.searchHighlight,
+  setSearchHighlight: mockSetSearchHighlight,
+  clearSearchHighlight: mockClearSearchHighlight,
+});
+
 vi.mock('@/store/useIDEStore', () => ({
-  useIDEStore: vi.fn(() => ({
-    currentFile: mockStoreState.currentFile,
-    openFiles: mockStoreState.openFiles,
-    closeFile: mockCloseFile,
-    editorContent: mockStoreState.editorContent,
-    updateEditorContent: mockUpdateEditorContent,
-    markFileUnsaved: mockMarkFileUnsaved,
-    markFileSaved: mockMarkFileSaved,
-    settings: mockStoreState.settings,
-    setCurrentFile: mockSetCurrentFile,
-    searchHighlight: mockStoreState.searchHighlight,
-    setSearchHighlight: mockSetSearchHighlight,
-    clearSearchHighlight: mockClearSearchHighlight,
-  })),
+  useIDEStore: vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
+    const state = getMockStoreState();
+    if (typeof selector === 'function') {
+      return selector(state);
+    }
+    return state;
+  }),
+}));
+
+// Mock zustand/react/shallow - useShallow just returns the selector as-is
+vi.mock('zustand/react/shallow', () => ({
+  useShallow: (selector: unknown) => selector,
 }));
 
 // Import Editor after all mocks are set up

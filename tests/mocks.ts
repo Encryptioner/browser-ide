@@ -97,7 +97,7 @@ export const mockGitService = {
   clone: vi.fn().mockResolvedValue({ success: true }),
   status: vi.fn().mockResolvedValue({ success: true, data: [] }),
   add: vi.fn().mockResolvedValue({ success: true }),
-  reset: vi.fn().mockResolvedValue({ success: true }),
+  resetStaged: vi.fn().mockResolvedValue({ success: true }),
   commit: vi.fn().mockResolvedValue({ success: true, data: 'abc123' }),
   push: vi.fn().mockResolvedValue({ success: true }),
   pull: vi.fn().mockResolvedValue({ success: true }),
@@ -121,7 +121,7 @@ export const mockGitService = {
     mockGitService.clone.mockResolvedValue({ success: true });
     mockGitService.status.mockResolvedValue({ success: true, data: [] });
     mockGitService.add.mockResolvedValue({ success: true });
-    mockGitService.reset.mockResolvedValue({ success: true });
+    mockGitService.resetStaged.mockResolvedValue({ success: true });
     mockGitService.commit.mockResolvedValue({ success: true, data: 'abc123' });
     mockGitService.push.mockResolvedValue({ success: true });
     mockGitService.pull.mockResolvedValue({ success: true });

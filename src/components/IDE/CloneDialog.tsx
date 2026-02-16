@@ -12,7 +12,9 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
   const [repoUrl, setRepoUrl] = useState('');
   const [isCloning, setIsCloning] = useState(false);
   const [progress, setProgress] = useState('');
-  const { settings, addRecentProject } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const settings = useIDEStore(state => state.settings);
+  const addRecentProject = useIDEStore(state => state.addRecentProject);
 
   async function handleClone() {
     if (!repoUrl) return;

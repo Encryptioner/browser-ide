@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {
   FileExplorer,
@@ -6,19 +6,22 @@ import {
   Terminal,
   Preview,
   StatusBar,
-  CloneDialog,
-  SettingsDialog,
-  AIAssistant,
-  ClaudeCodePanel,
-  ExtensionsPanel,
   WorkspaceSwitcher,
-  CommandPalette,
-  HelpPanel,
 } from '@/components/IDE';
-import { SourceControlPanel } from '@/components/Git';
 import { MobileOptimizedLayout, MobileBottomPanel } from '@/components/MobileOptimizedLayout';
-import { MobileKeyboardTest } from '@/components/IDE/MobileKeyboardTest';
+
+// Lazy-loaded heavy panels & dialogs (only loaded when opened)
+const CloneDialog = lazy(() => import('@/components/IDE/CloneDialog').then(m => ({ default: m.CloneDialog })));
+const SettingsDialog = lazy(() => import('@/components/IDE/SettingsDialog').then(m => ({ default: m.SettingsDialog })));
+const AIAssistant = lazy(() => import('@/components/IDE/AIAssistant').then(m => ({ default: m.AIAssistant })));
+const ClaudeCodePanel = lazy(() => import('@/components/IDE/ClaudeCodePanel').then(m => ({ default: m.ClaudeCodePanel })));
+const ExtensionsPanel = lazy(() => import('@/components/IDE/ExtensionsPanel').then(m => ({ default: m.ExtensionsPanel })));
+const CommandPalette = lazy(() => import('@/components/IDE/CommandPalette').then(m => ({ default: m.CommandPalette })));
+const HelpPanel = lazy(() => import('@/components/IDE/HelpPanel').then(m => ({ default: m.HelpPanel })));
+const SourceControlPanel = lazy(() => import('@/components/Git/SourceControlPanel').then(m => ({ default: m.SourceControlPanel })));
+const MobileKeyboardTest = lazy(() => import('@/components/IDE/MobileKeyboardTest').then(m => ({ default: m.MobileKeyboardTest })));
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { gitService } from '@/services/git';
 import { fileSystem } from '@/services/filesystem';
 import { logger } from '@/utils/logger';
@@ -29,25 +32,37 @@ import { initSentry } from '@/services/sentry';
 
 function App() {
   useKeyboardDetection();
-  const {
-    sidebarOpen,
-    terminalOpen,
-    previewOpen,
-    isInstalled,
-    installPromptEvent,
-    setInstallPrompt,
-    setInstalled,
-    toggleSidebar,
-    toggleTerminal,
-    togglePreview,
-    toggleHelp,
-    helpOpen,
-    activeBottomPanel,
-    setActiveBottomPanel,
-    terminalMaximized,
-    bottomPanelSize,
-    settings,
-  } = useIDEStore();
+
+  // UI state group
+  const { sidebarOpen, terminalOpen, previewOpen, helpOpen, activeBottomPanel, terminalMaximized, bottomPanelSize } = useIDEStore(
+    useShallow(state => ({
+      sidebarOpen: state.sidebarOpen,
+      terminalOpen: state.terminalOpen,
+      previewOpen: state.previewOpen,
+      helpOpen: state.helpOpen,
+      activeBottomPanel: state.activeBottomPanel,
+      terminalMaximized: state.terminalMaximized,
+      bottomPanelSize: state.bottomPanelSize,
+    }))
+  );
+
+  // PWA state group
+  const { isInstalled, installPromptEvent } = useIDEStore(
+    useShallow(state => ({
+      isInstalled: state.isInstalled,
+      installPromptEvent: state.installPromptEvent,
+    }))
+  );
+
+  // Actions (stable references)
+  const setInstallPrompt = useIDEStore(state => state.setInstallPrompt);
+  const setInstalled = useIDEStore(state => state.setInstalled);
+  const toggleSidebar = useIDEStore(state => state.toggleSidebar);
+  const toggleTerminal = useIDEStore(state => state.toggleTerminal);
+  const togglePreview = useIDEStore(state => state.togglePreview);
+  const toggleHelp = useIDEStore(state => state.toggleHelp);
+  const setActiveBottomPanel = useIDEStore(state => state.setActiveBottomPanel);
+  const settings = useIDEStore(state => state.settings);
 
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -111,7 +126,7 @@ function App() {
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e);
+      setInstallPrompt(e as Event & { prompt(): Promise<{ outcome: 'accepted' | 'dismissed' }>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> });
       if (!isInstalled) {
         setShowInstallPrompt(true);
       }
@@ -147,12 +162,8 @@ function App() {
 
   const handleInstallClick = async () => {
     if (installPromptEvent) {
-      const promptEvent = installPromptEvent as Event & {
-        prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
-        userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-      };
-      promptEvent.prompt();
-      const { outcome } = await promptEvent.userChoice;
+      installPromptEvent.prompt();
+      const { outcome } = await installPromptEvent.userChoice;
       if (outcome === 'accepted') {
         setInstalled(true);
         setShowInstallPrompt(false);
@@ -491,10 +502,12 @@ function App() {
                         {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}
                         {activeBottomPanel === 'terminal' && terminalOpen && <Terminal />}
                         {activeBottomPanel === 'preview' && previewOpen && <Preview />}
-                        {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
-                        {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
-                        {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}
-                        {activeBottomPanel === 'help' && helpOpen && <HelpPanel />}
+                        <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading...</div>}>
+                          {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
+                          {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
+                          {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}
+                          {activeBottomPanel === 'help' && helpOpen && <HelpPanel />}
+                        </Suspense>
                       </div>
                     </MobileBottomPanel>
                   </Panel>
@@ -508,15 +521,13 @@ function App() {
       {/* Status Bar */}
       <StatusBar />
 
-      {/* Dialogs */}
-      {showCloneDialog && <CloneDialog onClose={() => setShowCloneDialog(false)} />}
-
-      {showSettingsDialog && <SettingsDialog onClose={() => setShowSettingsDialog(false)} />}
-
-      {showAIAssistant && <AIAssistant onClose={() => setShowAIAssistant(false)} />}
-
-      {/* Overlays */}
-      {showCommandPalette && <CommandPalette />}
+      {/* Dialogs (lazy-loaded) */}
+      <Suspense fallback={null}>
+        {showCloneDialog && <CloneDialog onClose={() => setShowCloneDialog(false)} />}
+        {showSettingsDialog && <SettingsDialog onClose={() => setShowSettingsDialog(false)} />}
+        {showAIAssistant && <AIAssistant onClose={() => setShowAIAssistant(false)} />}
+        {showCommandPalette && <CommandPalette />}
+      </Suspense>
 
       {/* Mobile File Explorer Overlay */}
       {sidebarOpen && (
@@ -542,7 +553,9 @@ function App() {
     </MobileOptimizedLayout>
 
     {/* Mobile Keyboard Test - only visible in development */}
-      <MobileKeyboardTest />
+      <Suspense fallback={null}>
+        <MobileKeyboardTest />
+      </Suspense>
 
       {/* Toast Notifications */}
       <Toaster position="top-right" richColors closeButton />

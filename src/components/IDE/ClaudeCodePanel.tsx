@@ -10,7 +10,8 @@ import { useIDEStore } from '@/store/useIDEStore';
 import { Info } from 'lucide-react';
 
 export function ClaudeCodePanel() {
-  const { settings } = useIDEStore();
+  // Granular selector - individual selector for single state value
+  const settings = useIDEStore(state => state.settings);
 
   // Get API key from settings
   const provider = settings?.ai?.defaultProvider === 'glm' ? 'glm' : 'anthropic';
