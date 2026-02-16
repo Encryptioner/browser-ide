@@ -239,8 +239,15 @@ class GitService {
   async statusMatrix(dir?: string): Promise<GitStatus[]> {
     const directory = dir || fileSystem.getCurrentWorkingDirectory();
     try {
+      // Check if .git directory exists before attempting status
+      const fs = fileSystem.getFS();
+      const gitDirExists = await fs.promises.stat(`${directory}/.git`).catch(() => null);
+      if (!gitDirExists) {
+        return [];
+      }
+
       const matrix = await git.statusMatrix({
-        fs: fileSystem.getFS(),
+        fs,
         dir: directory,
       });
 

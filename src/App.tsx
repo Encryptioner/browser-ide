@@ -104,17 +104,19 @@ function App() {
     // Initialize git repository if it exists
     async function initGitIfExists() {
       try {
-        // Check if current directory has a git repository
+        // Check if current directory has a .git repository
         const currentDir = fileSystem.getCurrentWorkingDirectory();
         const fs = fileSystem.getFS();
-        const stats = await fs.promises.stat(currentDir).catch(() => null);
+        const gitDir = await fs.promises.stat(`${currentDir}/.git`).catch(() => null);
 
-        if (stats && stats.isDirectory()) {
-          const result = await gitService.initializeRepository(currentDir);
+        if (!gitDir) {
+          // No git repo yet - this is fine, user can clone/init later
+          return;
+        }
 
-          if (result.success && result.data) {
-            logger.info(`Git initialized: branch=${result.data.currentBranch}, files=${result.data.gitStatus.length}, commits=${result.data.commits.length}`);
-          }
+        const result = await gitService.initializeRepository(currentDir);
+        if (result.success && result.data) {
+          logger.info(`Git initialized: branch=${result.data.currentBranch}, files=${result.data.gitStatus.length}, commits=${result.data.commits.length}`);
         }
       } catch (error) {
         logger.error('Error checking for repository:', error);

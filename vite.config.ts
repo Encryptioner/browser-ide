@@ -144,15 +144,16 @@ export default defineConfig(({ mode }) => ({
     headers: {
       'Cross-Origin-Embedder-Policy': 'credentialless',
       'Cross-Origin-Opener-Policy': 'same-origin',
+      // Dev CSP: 'unsafe-inline' required for Vite HMR/Fast Refresh inline scripts
       'Content-Security-Policy': [
         "default-src 'self'",
-        "script-src 'self' blob: 'unsafe-eval'",
+        "script-src 'self' blob: 'unsafe-eval' 'unsafe-inline'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: blob:",
         "connect-src 'self' https://api.anthropic.com https://api.openai.com https://api.z.ai https://cors.isomorphic-git.org https://cdn.jsdelivr.net ws: wss:",
         "worker-src 'self' blob:",
-        "frame-src 'self' blob:",
+        "frame-src 'self' blob: https://*.stackblitz.com https://stackblitz.com",
         "media-src 'self'",
         "object-src 'none'",
         "base-uri 'self'",
@@ -181,7 +182,7 @@ export default defineConfig(({ mode }) => ({
         "img-src 'self' data: blob:",
         "connect-src 'self' https://api.anthropic.com https://api.openai.com https://api.z.ai https://cors.isomorphic-git.org https://cdn.jsdelivr.net",
         "worker-src 'self' blob:",
-        "frame-src 'self' blob:",
+        "frame-src 'self' blob: https://*.stackblitz.com https://stackblitz.com",
         "media-src 'self'",
         "object-src 'none'",
         "base-uri 'self'",

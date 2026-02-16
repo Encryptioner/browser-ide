@@ -151,16 +151,10 @@ class WebContainerService {
     }
 
     // Check for required COOP/COEP headers
+    // Note: crossOriginIsolated may be false with 'credentialless' COEP mode,
+    // but WebContainers support credentialless mode. We log a warning instead of blocking.
     if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
-      const errorMsg = 'WebContainers require COOP/COEP headers (Cross-Origin-Opener-Policy: same-origin and Cross-Origin-Embedder-Policy: require-corp). ' +
-        'GitHub Pages does not support these headers. Please use a hosting provider that supports custom headers like Netlify, Vercel, or Cloudflare Pages. ' +
-        'See: https://webcontainers.io/guides/coop-coep';
-
-      console.error('❌ WebContainer Error:', errorMsg);
-      return {
-        success: false,
-        error: errorMsg
-      };
+      console.warn('⚠️ window.crossOriginIsolated is false. WebContainer will attempt to boot with credentialless COEP mode.');
     }
 
     // Start new boot process

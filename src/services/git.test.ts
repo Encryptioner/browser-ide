@@ -74,6 +74,7 @@ const mockFSPromises = {
   readFile: vi.fn(),
   writeFile: vi.fn(),
   mkdir: vi.fn(),
+  stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
 };
 
 const mockFileSystem = {

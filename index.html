@@ -49,17 +49,20 @@
     <title>Browser IDE - Production-Ready Web IDE with AI</title>
 
     <!-- coi-serviceworker: Enables COOP/COEP headers for WebContainers on static hosting (GitHub Pages) -->
-    <!-- Must be loaded before any other scripts that need SharedArrayBuffer -->
+    <!-- Only needed in production; dev server sets COOP/COEP headers directly -->
     <script>
-      // Configure coi-serviceworker to use credentialless mode
-      window.coi = {
-        // Use credentialless mode (more permissive than require-corp)
-        coepCredentialless: () => true,
-        // Quiet mode to reduce console noise
-        quiet: false,
-      };
+      // Only load coi-serviceworker in production (GitHub Pages)
+      // In dev mode, Vite's server headers handle COOP/COEP
+      if (window.location.pathname.startsWith('/browser-ide/')) {
+        window.coi = {
+          coepCredentialless: function() { return true; },
+          quiet: false,
+        };
+        var s = document.createElement('script');
+        s.src = '/browser-ide/coi-serviceworker.min.js';
+        document.head.appendChild(s);
+      }
     </script>
-    <script src="/browser-ide/coi-serviceworker.min.js"></script>
   </head>
   <body>
     <noscript>
