@@ -13,6 +13,9 @@ node_modules
 
 # Testing
 coverage
+docs/test-results/
+test-results/
+playwright-report/
 
 # Production
 dist

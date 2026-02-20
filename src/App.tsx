@@ -434,7 +434,7 @@ function App() {
                           {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
                           {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
                           {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}
-                          {activeBottomPanel === 'help' && helpOpen && <HelpPanel />}
+                          {activeBottomPanel === 'help' && <HelpPanel />}
                         </Suspense>
                       </div>
                     </MobileBottomPanel>
