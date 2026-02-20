@@ -39,7 +39,7 @@ export interface WorkspaceSlice {
   diagnostics: Record<string, Diagnostic[]>;
   problemFilters: ProblemsFilter;
 
-  // State - AI/Chat
+  // State - AI/Chat (legacy - sessions now managed by aiSlice)
   aiSessions: Record<string, AIMessage[]>;
 
   // State - PWA

@@ -7,6 +7,7 @@ import { linterService } from '@/services/linter';
 import { logger } from '@/utils/logger';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { EditorStatusBar } from './EditorStatusBar';
+import { DiffEditor } from './DiffEditor';
 import type * as Monaco from 'monaco-editor';
 
 export function Editor() {
@@ -26,6 +27,9 @@ export function Editor() {
   const settings = useIDEStore(state => state.settings);
   const setCurrentFile = useIDEStore(state => state.setCurrentFile);
   const searchHighlight = useIDEStore(state => state.searchHighlight);
+  const pendingDiff = useIDEStore(state => state.pendingDiff);
+  const acceptDiff = useIDEStore(state => state.acceptDiff);
+  const rejectDiff = useIDEStore(state => state.rejectDiff);
 
   const isMobile = useIsMobile();
   const [content, setContent] = useState('');
@@ -254,6 +258,9 @@ export function Editor() {
     );
   }
 
+  // Check if we should show the diff editor for the current file
+  const showDiff = pendingDiff !== null && pendingDiff.file === currentFile;
+
   return (
     <div className="editor-container flex flex-col h-full bg-gray-900" role="region" aria-label="Code editor">
       {/* Mobile-optimized Tabs */}
@@ -304,113 +311,126 @@ export function Editor() {
         })}
       </div>
 
-      {/* Monaco Editor */}
-      <div className="editor-wrapper flex-1 flex flex-col" role="tabpanel" aria-label="Code editing area">
+      {/* Diff Editor or Monaco Editor */}
+      {showDiff ? (
         <div className="flex-1 min-h-0">
-          <MonacoEditor
-            height="100%"
-            language={language}
-            value={content}
-            onChange={handleChange}
-            onMount={handleEditorDidMount}
-            theme={settings.theme}
-            loading={
-              <div className="flex items-center justify-center h-full bg-gray-900 text-gray-500">
-                <div className="text-center">
-                  <div className="animate-pulse mb-2">Loading editor...</div>
-                  <div className="w-48 h-1 bg-gray-800 rounded overflow-hidden">
-                    <div className="h-full bg-blue-600 rounded animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
-                  </div>
-                </div>
-              </div>
-            }
-            options={{
-              // Mobile-optimized visual settings
-              fontSize: isMobile ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,
-              tabSize: settings.tabSize,
-              wordWrap: isMobile ? 'on' : (settings.wordWrap || 'off'),
-              minimap: { enabled: isMobile ? false : settings.minimap },
-              lineNumbers: isMobile ? 'off' : settings.lineNumbers,
-              automaticLayout: true,
-              scrollBeyondLastLine: false,
-
-              // Enhanced IntelliSense and completion
-              suggestOnTriggerCharacters: true,
-              quickSuggestions: {
-                other: true,
-                comments: true,
-                strings: true
-              },
-              suggestSelection: 'first',
-              showUnused: true,
-              showDeprecated: true,
-
-              // Error detection and linting
-              colorDecorators: true,
-              codeLens: true,
-              lightbulb: {
-                enabled: true
-              } as never,
-
-              // Advanced editing features
-              multiCursorModifier: 'ctrlCmd',
-              multiCursorMergeOverlapping: true,
-              renderWhitespace: 'selection',
-              renderControlCharacters: true,
-
-              // Find/Replace enhancements
-              find: {
-                addExtraSpaceOnTop: false,
-                autoFindInSelection: 'never',
-                seedSearchStringFromSelection: 'never'
-              },
-
-              // Folding and outlining
-              folding: true,
-              foldingStrategy: 'auto',
-              foldingHighlight: true,
-              showFoldingControls: 'always',
-
-              // Bracket matching and highlighting
-              matchBrackets: 'always',
-              guides: {
-                bracketPairs: true,
-                indentation: true
-              },
-
-              // Enhanced language features
-              acceptSuggestionOnCommitCharacter: true,
-              acceptSuggestionOnEnter: 'on',
-              accessibilitySupport: 'auto',
-
-              // Performance optimizations
-              stablePeek: true,
-              fastScrollSensitivity: 5,
-              smoothScrolling: true,
-
-              // Context menu and hover
-              contextmenu: true,
-              hover: {
-                enabled: true,
-                delay: 300,
-                above: false
-              },
-
-              // Links and navigation
-              links: true,
-              gotoLocation: {
-                multiple: 'goto'
-              },
-
-              // Inlay hints
-              inlayHints: {
-                enabled: 'on'
-              }
-            }}
+          <DiffEditor
+            originalContent={pendingDiff.original}
+            modifiedContent={pendingDiff.modified}
+            fileName={pendingDiff.file}
+            language={pendingDiff.language}
+            onAccept={acceptDiff}
+            onReject={rejectDiff}
           />
         </div>
-        {currentFile && <EditorStatusBar />}
-      </div>
+      ) : (
+        <div className="editor-wrapper flex-1 flex flex-col" role="tabpanel" aria-label="Code editing area">
+          <div className="flex-1 min-h-0">
+            <MonacoEditor
+              height="100%"
+              language={language}
+              value={content}
+              onChange={handleChange}
+              onMount={handleEditorDidMount}
+              theme={settings.theme}
+              loading={
+                <div className="flex items-center justify-center h-full bg-gray-900 text-gray-500">
+                  <div className="text-center">
+                    <div className="animate-pulse mb-2">Loading editor...</div>
+                    <div className="w-48 h-1 bg-gray-800 rounded overflow-hidden">
+                      <div className="h-full bg-blue-600 rounded animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                    </div>
+                  </div>
+                </div>
+              }
+              options={{
+                // Mobile-optimized visual settings
+                fontSize: isMobile ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,
+                tabSize: settings.tabSize,
+                wordWrap: isMobile ? 'on' : (settings.wordWrap || 'off'),
+                minimap: { enabled: isMobile ? false : settings.minimap },
+                lineNumbers: isMobile ? 'off' : settings.lineNumbers,
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+
+                // Enhanced IntelliSense and completion
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: {
+                  other: true,
+                  comments: true,
+                  strings: true
+                },
+                suggestSelection: 'first',
+                showUnused: true,
+                showDeprecated: true,
+
+                // Error detection and linting
+                colorDecorators: true,
+                codeLens: true,
+                lightbulb: {
+                  enabled: true
+                } as never,
+
+                // Advanced editing features
+                multiCursorModifier: 'ctrlCmd',
+                multiCursorMergeOverlapping: true,
+                renderWhitespace: 'selection',
+                renderControlCharacters: true,
+
+                // Find/Replace enhancements
+                find: {
+                  addExtraSpaceOnTop: false,
+                  autoFindInSelection: 'never',
+                  seedSearchStringFromSelection: 'never'
+                },
+
+                // Folding and outlining
+                folding: true,
+                foldingStrategy: 'auto',
+                foldingHighlight: true,
+                showFoldingControls: 'always',
+
+                // Bracket matching and highlighting
+                matchBrackets: 'always',
+                guides: {
+                  bracketPairs: true,
+                  indentation: true
+                },
+
+                // Enhanced language features
+                acceptSuggestionOnCommitCharacter: true,
+                acceptSuggestionOnEnter: 'on',
+                accessibilitySupport: 'auto',
+
+                // Performance optimizations
+                stablePeek: true,
+                fastScrollSensitivity: 5,
+                smoothScrolling: true,
+
+                // Context menu and hover
+                contextmenu: true,
+                hover: {
+                  enabled: true,
+                  delay: 300,
+                  above: false
+                },
+
+                // Links and navigation
+                links: true,
+                gotoLocation: {
+                  multiple: 'goto'
+                },
+
+                // Inlay hints
+                inlayHints: {
+                  enabled: 'on'
+                }
+              }}
+            />
+          </div>
+          {currentFile && <EditorStatusBar />}
+        </div>
+      )}
     </div>
   );
 }

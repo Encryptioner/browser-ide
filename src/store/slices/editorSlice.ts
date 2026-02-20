@@ -2,6 +2,13 @@ import type { StateCreator } from 'zustand';
 import type { SplitEditorState } from '@/types';
 import type { IDEStore } from '../types';
 
+export interface PendingDiff {
+  file: string;
+  original: string;
+  modified: string;
+  language: string;
+}
+
 export interface EditorSlice {
   // State
   currentFile: string | null;
@@ -17,6 +24,7 @@ export interface EditorSlice {
     text: string;
   } | null;
   fileLastSavedTime: Record<string, number>;
+  pendingDiff: PendingDiff | null;
 
   // Actions
   setCurrentFile: (_file: string | null) => void;
@@ -34,6 +42,9 @@ export interface EditorSlice {
   setActiveTab: (_tabId: string) => void;
   duplicateTab: (_tabId: string) => void;
   closeTab: (_tabId: string) => void;
+  setPendingDiff: (_diff: PendingDiff | null) => void;
+  acceptDiff: () => void;
+  rejectDiff: () => void;
 }
 
 export const createEditorSlice: StateCreator<IDEStore, [], [], EditorSlice> = (
@@ -49,6 +60,7 @@ export const createEditorSlice: StateCreator<IDEStore, [], [], EditorSlice> = (
   splitEditorState: null,
   searchHighlight: null,
   fileLastSavedTime: {},
+  pendingDiff: null,
 
   // Actions
   setCurrentFile: (file) => set({ currentFile: file }),
@@ -120,4 +132,18 @@ export const createEditorSlice: StateCreator<IDEStore, [], [], EditorSlice> = (
             : state.activeTabId,
       };
     }),
+  setPendingDiff: (diff) => set({ pendingDiff: diff }),
+  acceptDiff: () => {
+    const { pendingDiff } = get();
+    if (!pendingDiff) return;
+    set((state) => ({
+      editorContent: {
+        ...state.editorContent,
+        [pendingDiff.file]: pendingDiff.modified,
+      },
+      unsavedChanges: new Set([...state.unsavedChanges, pendingDiff.file]),
+      pendingDiff: null,
+    }));
+  },
+  rejectDiff: () => set({ pendingDiff: null }),
 });

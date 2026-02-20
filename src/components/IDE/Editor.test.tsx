@@ -34,6 +34,8 @@ const mockMarkFileSaved = vi.fn();
 const mockSetCurrentFile = vi.fn();
 const mockSetSearchHighlight = vi.fn();
 const mockClearSearchHighlight = vi.fn();
+const mockAcceptDiff = vi.fn();
+const mockRejectDiff = vi.fn();
 
 // Mock store state
 let mockStoreState = {
@@ -50,6 +52,7 @@ let mockStoreState = {
     theme: 'vs-dark',
   },
   searchHighlight: null as { file: string; line: number; column: number; text: string } | null,
+  pendingDiff: null as { file: string; original: string; modified: string; language: string } | null,
 };
 
 // Mock Monaco Editor - must be defined before imports
@@ -87,6 +90,11 @@ vi.mock('@monaco-editor/react', () => ({
       'data-theme': theme,
     }, `Monaco Editor: ${language}`);
   }),
+  DiffEditor: vi.fn((props: Record<string, unknown>) => {
+    const onMount = props.onMount as ((_editor: unknown) => void) | undefined;
+    if (onMount) onMount({});
+    return React.createElement('div', { 'data-testid': 'mock-diff-editor' });
+  }),
 }));
 
 // Mock filesystem service
@@ -108,7 +116,10 @@ vi.mock('@/services/linter', () => ({
 // Mock logger
 vi.mock('@/utils/logger', () => ({
   logger: {
+    info: vi.fn(),
     error: mockLoggerError,
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -127,6 +138,9 @@ const getMockStoreState = (): Record<string, unknown> => ({
   searchHighlight: mockStoreState.searchHighlight,
   setSearchHighlight: mockSetSearchHighlight,
   clearSearchHighlight: mockClearSearchHighlight,
+  pendingDiff: mockStoreState.pendingDiff,
+  acceptDiff: mockAcceptDiff,
+  rejectDiff: mockRejectDiff,
 });
 
 vi.mock('@/store/useIDEStore', () => ({
@@ -180,6 +194,7 @@ function resetAllMocks(): void {
       lineNumbers: 'on',
       theme: 'vs-dark',
     },
+    pendingDiff: null,
   });
 
   // Reset action mocks
@@ -190,6 +205,8 @@ function resetAllMocks(): void {
   mockSetCurrentFile.mockReset();
   mockSetSearchHighlight.mockReset();
   mockClearSearchHighlight.mockReset();
+  mockAcceptDiff.mockReset();
+  mockRejectDiff.mockReset();
 }
 
 // =============================================================================
@@ -1129,5 +1146,71 @@ describe('Editor - Search Highlight', () => {
 
     const editor = screen.getByTestId('monaco-editor');
     expect(editor).toBeInTheDocument();
+  });
+});
+
+// =============================================================================
+// DIFF EDITOR INTEGRATION TESTS
+// =============================================================================
+
+describe('Editor - Diff Editor Integration', () => {
+  it('should show diff editor when pendingDiff matches current file', () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'const x = 1;',
+      },
+      pendingDiff: {
+        file: '/src/test.ts',
+        original: 'const x = 1;',
+        modified: 'const x = 2;',
+        language: 'typescript',
+      },
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    expect(screen.getByTestId('mock-diff-editor')).toBeInTheDocument();
+    expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
+  });
+
+  it('should show normal editor when pendingDiff is for a different file', () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'content',
+      },
+      pendingDiff: {
+        file: '/src/other.ts',
+        original: 'old',
+        modified: 'new',
+        language: 'typescript',
+      },
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
+    expect(screen.queryByTestId('mock-diff-editor')).not.toBeInTheDocument();
+  });
+
+  it('should show normal editor when pendingDiff is null', () => {
+    setMockStoreState({
+      currentFile: '/src/test.ts',
+      openFiles: ['/src/test.ts'],
+      editorContent: {
+        '/src/test.ts': 'content',
+      },
+      pendingDiff: null,
+    });
+    mockGetLanguageFromPath.mockReturnValue('typescript');
+
+    render(<Editor />);
+
+    expect(screen.getByTestId('monaco-editor')).toBeInTheDocument();
   });
 });

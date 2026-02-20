@@ -9,6 +9,7 @@ import { createSettingsSlice } from './slices/settingsSlice';
 import { createGitSlice } from './slices/gitSlice';
 import { createTerminalSlice } from './slices/terminalSlice';
 import { createWorkspaceSlice } from './slices/workspaceSlice';
+import { createAISlice } from './slices/aiSlice';
 import type { IDEStore } from './types';
 
 // Re-export types that consumers previously imported from this file
@@ -26,6 +27,7 @@ export const useIDEStore = create<IDEStore>()(
       ...createGitSlice(...a),
       ...createTerminalSlice(...a),
       ...createWorkspaceSlice(...a),
+      ...createAISlice(...a),
     }),
     {
       name: 'ide-storage',

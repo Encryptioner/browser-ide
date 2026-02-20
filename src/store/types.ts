@@ -5,13 +5,15 @@ import type { SettingsSlice } from './slices/settingsSlice';
 import type { GitSlice } from './slices/gitSlice';
 import type { TerminalSlice } from './slices/terminalSlice';
 import type { WorkspaceSlice } from './slices/workspaceSlice';
+import type { AISlice } from './slices/aiSlice';
 
 export type IDEStore = EditorSlice &
   UISlice &
   SettingsSlice &
   GitSlice &
   TerminalSlice &
-  WorkspaceSlice;
+  WorkspaceSlice &
+  AISlice;
 
 /** Browser BeforeInstallPrompt event for PWA install */
 export interface BeforeInstallPromptEvent extends Event {
