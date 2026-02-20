@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoFetchInterval: 60000,
   ai: {
     anthropicKey: '',
+    anthropicBaseUrl: 'https://api.anthropic.com',
     glmKey: '',
     openaiKey: '',
     defaultProvider: 'glm',
@@ -63,6 +64,7 @@ export const createSettingsSlice: StateCreator<IDEStore, [], [], SettingsSlice> 
     try {
       const secrets: Record<string, string> = {
         anthropicKey: merged.ai?.anthropicKey || '',
+        anthropicBaseUrl: merged.ai?.anthropicBaseUrl || '',
         glmKey: merged.ai?.glmKey || '',
         openaiKey: merged.ai?.openaiKey || '',
         githubToken: merged.githubToken || '',

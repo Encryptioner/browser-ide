@@ -443,10 +443,10 @@ export class ClaudeCodeAgent {
 /**
  * Create a Claude Code agent instance configured for GLM-4.6
  */
-export function createGLMAgent(apiKey: string): ClaudeCodeAgent {
+export function createGLMAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgent {
   return new ClaudeCodeAgent({
     apiKey,
-    baseUrl: 'https://api.z.ai/api/anthropic',
+    baseUrl: baseUrl || 'https://api.z.ai/api/anthropic',
     model: 'claude-sonnet-4-20250514', // Maps to GLM-4.6
   });
 }
@@ -454,10 +454,10 @@ export function createGLMAgent(apiKey: string): ClaudeCodeAgent {
 /**
  * Create a Claude Code agent instance configured for Anthropic
  */
-export function createAnthropicAgent(apiKey: string): ClaudeCodeAgent {
+export function createAnthropicAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgent {
   return new ClaudeCodeAgent({
     apiKey,
-    baseUrl: 'https://api.anthropic.com/v1',
+    baseUrl: baseUrl || 'https://api.anthropic.com/v1',
     model: 'claude-sonnet-4-20250514',
   });
 }

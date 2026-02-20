@@ -67,6 +67,7 @@ export const useIDEStore = create<IDEStore>()(
                   ai: {
                     ...state.settings.ai,
                     anthropicKey: secrets.anthropicKey || '',
+                    anthropicBaseUrl: secrets.anthropicBaseUrl || 'https://api.anthropic.com',
                     glmKey: secrets.glmKey || '',
                     openaiKey: secrets.openaiKey || '',
                   },

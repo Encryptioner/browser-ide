@@ -96,6 +96,16 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                 />
               </label>
               <label className="block">
+                <span className="text-sm text-gray-300 block mb-1">Anthropic Base URL (for z.ai proxy):</span>
+                <input
+                  type="text"
+                  value={localSettings.ai.anthropicBaseUrl}
+                  onChange={(e) => updateAISetting('anthropicBaseUrl', e.target.value)}
+                  placeholder="https://api.anthropic.com"
+                  className="w-full px-3 py-2 bg-gray-700 text-gray-100 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
+                />
+              </label>
+              <label className="block">
                 <span className="text-sm text-gray-300 block mb-1">GLM API Key:</span>
                 <input
                   type="password"

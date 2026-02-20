@@ -18,6 +18,7 @@ export function ClaudeCodePanel() {
   const apiKey = provider === 'glm'
     ? settings?.ai?.glmKey
     : settings?.ai?.anthropicKey;
+  const baseUrl = settings?.ai?.anthropicBaseUrl || 'https://api.anthropic.com';
 
   return (
     <div className="h-full flex flex-col bg-gray-900">
@@ -44,6 +45,7 @@ export function ClaudeCodePanel() {
           options={{
             provider,
             apiKey,
+            baseUrl,
           }}
         />
       </div>

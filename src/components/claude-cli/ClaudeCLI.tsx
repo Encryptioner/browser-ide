@@ -47,6 +47,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     const service = createCLIService({
       provider: options?.provider || 'anthropic',
       apiKey: options?.apiKey,
+      baseUrl: options?.baseUrl,
       workingDirectory
     });
 

@@ -46,6 +46,7 @@ export interface RecentProject {
 export interface Settings extends EditorSettings, GitSettings {
   ai: {
     anthropicKey: string;
+    anthropicBaseUrl: string;
     glmKey: string;
     openaiKey: string;
     defaultProvider: 'anthropic' | 'glm' | 'openai';

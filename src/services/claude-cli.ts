@@ -16,6 +16,7 @@ import { logger } from '@/utils/logger';
 export interface CLIOptions {
   provider: 'anthropic' | 'glm';
   apiKey?: string;
+  baseUrl?: string;
   model?: string;
   workingDirectory?: string;
 }
@@ -78,10 +79,15 @@ export class ClaudeCLIService {
       };
 
       // Write initial workspace files through the secure singleton
-      await webContainer.writeFile('/workspace/.gitignore', `node_modules/
+      try {
+        await webContainer.writeFile('/workspace/.gitignore', `node_modules/
 dist/
 .env
 *.log`);
+      } catch (writeError) {
+        // Directory might not exist yet, will be created when needed
+        logger.info('Could not write .gitignore during init, will create when needed');
+      }
 
       // Initialize git repository through the secure spawn
       try {
@@ -116,13 +122,13 @@ dist/
       case 'anthropic':
         return {
           ANTHROPIC_API_KEY: this.options.apiKey || '',
-          ANTHROPIC_BASE_URL: 'https://api.anthropic.com',
+          ANTHROPIC_BASE_URL: this.options.baseUrl || 'https://api.anthropic.com',
           CLAUDE_PROVIDER: 'anthropic'
         };
       case 'glm':
         return {
           GLM_API_KEY: this.options.apiKey || '',
-          GLM_BASE_URL: 'https://api.z.ai/api/anthropic',
+          GLM_BASE_URL: this.options.baseUrl || 'https://api.z.ai/api/anthropic',
           CLAUDE_PROVIDER: 'glm'
         };
       default:
@@ -141,9 +147,9 @@ dist/
 
     try {
       if (this.options.provider === 'anthropic') {
-        this.agent = createAnthropicAgent(this.options.apiKey);
+        this.agent = createAnthropicAgent(this.options.apiKey, this.options.baseUrl);
       } else if (this.options.provider === 'glm') {
-        this.agent = createGLMAgent(this.options.apiKey);
+        this.agent = createGLMAgent(this.options.apiKey, this.options.baseUrl);
       }
 
       if (this.agent) {
