@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Centralized Logging Utility
  * Provides structured logging with different levels

@@ -146,62 +146,62 @@ interface IDEState {
 
 interface IDEActions {
   // Project Management
-  setActiveProject: (id: string | null) => void;
-  addRecentProject: (project: Omit<RecentProject, 'lastOpened'>) => void;
-  removeRecentProject: (url: string) => void;
+  setActiveProject: (_id: string | null) => void;
+  addRecentProject: (_project: Omit<RecentProject, 'lastOpened'>) => void;
+  removeRecentProject: (_url: string) => void;
 
   // File System
-  setCurrentFile: (file: string | null) => void;
-  addOpenFile: (file: string) => void;
-  closeFile: (file: string) => void;
+  setCurrentFile: (_file: string | null) => void;
+  addOpenFile: (_file: string) => void;
+  closeFile: (_file: string) => void;
   closeAllFiles: () => void;
-  updateEditorContent: (file: string, content: string) => void;
-  markFileUnsaved: (file: string) => void;
-  markFileSaved: (file: string) => void;
-  setFileTree: (tree: FileNode[]) => void;
-  setSearchHighlight: (highlight: { file: string; line: number; column: number; text: string } | null) => void;
+  updateEditorContent: (_file: string, _content: string) => void;
+  markFileUnsaved: (_file: string) => void;
+  markFileSaved: (_file: string) => void;
+  setFileTree: (_tree: FileNode[]) => void;
+  setSearchHighlight: (_highlight: { file: string; line: number; column: number; text: string } | null) => void;
   clearSearchHighlight: () => void;
 
   // Directory Navigation
-  changeDirectory: (path: string) => void;
+  changeDirectory: (_path: string) => void;
   getCurrentDirectory: () => string;
 
   // Git
-  setCurrentRepo: (repo: string | null) => void;
-  setCurrentBranch: (branch: string) => void;
-  setGitStatus: (status: GitStatus[]) => void;
-  setCommits: (commits: GitCommit[]) => void;
+  setCurrentRepo: (_repo: string | null) => void;
+  setCurrentBranch: (_branch: string) => void;
+  setGitStatus: (_status: GitStatus[]) => void;
+  setCommits: (_commits: GitCommit[]) => void;
 
   // Debugging
-  setActiveDebugSession: (projectId: string, sessionId: string) => void;
-  stopDebugSession: (sessionId: string) => void;
-  addBreakpoint: (breakpoint: DebugBreakpoint) => void;
-  removeBreakpoint: (breakpointId: string) => void;
-  updateBreakpoint: (breakpoint: DebugBreakpoint) => void;
-  setDebugConfigurations: (configs: DebugConfiguration[]) => void;
+  setActiveDebugSession: (_projectId: string, _sessionId: string) => void;
+  stopDebugSession: (_sessionId: string) => void;
+  addBreakpoint: (_breakpoint: DebugBreakpoint) => void;
+  removeBreakpoint: (_breakpointId: string) => void;
+  updateBreakpoint: (_breakpoint: DebugBreakpoint) => void;
+  setDebugConfigurations: (_configs: DebugConfiguration[]) => void;
 
   // Split Editor
-  setSplitEditorState: (state: SplitEditorState) => void;
+  setSplitEditorState: (_state: SplitEditorState) => void;
 
   // Code Snippets
-  addSnippet: (snippet: CodeSnippet) => void;
-  removeSnippet: (snippetId: string) => void;
-  updateSnippet: (snippetId: string, updates: Partial<CodeSnippet>) => void;
-  createSnippetSession: (editorId: string, snippet: CodeSnippet) => void;
-  finishSnippetSession: (sessionId: string) => void;
+  addSnippet: (_snippet: CodeSnippet) => void;
+  removeSnippet: (_snippetId: string) => void;
+  updateSnippet: (_snippetId: string, _updates: Partial<CodeSnippet>) => void;
+  createSnippetSession: (_editorId: string, _snippet: CodeSnippet) => void;
+  finishSnippetSession: (_sessionId: string) => void;
 
   // Terminal
-  createTerminalTab: (profileId: string, name?: string) => void;
-  closeTerminalTab: (tabId: string) => void;
-  setActiveTerminalTab: (tabId: string) => void;
-  updateTerminalTab: (tabId: string, updates: Partial<TerminalTab>) => void;
+  createTerminalTab: (_profileId: string, _name?: string) => void;
+  closeTerminalTab: (_tabId: string) => void;
+  setActiveTerminalTab: (_tabId: string) => void;
+  updateTerminalTab: (_tabId: string, _updates: Partial<TerminalTab>) => void;
 
   // Problems
-  setProblems: (problems: Problem[]) => void;
-  addProblem: (problem: Problem) => void;
-  removeProblem: (problemId: string) => void;
+  setProblems: (_problems: Problem[]) => void;
+  addProblem: (_problem: Problem) => void;
+  removeProblem: (_problemId: string) => void;
   clearProblems: () => void;
-  setProblemFilters: (filters: ProblemsFilter) => void;
+  setProblemFilters: (_filters: ProblemsFilter) => void;
 
   // UI Actions
   toggleSidebar: () => void;
@@ -210,30 +210,30 @@ interface IDEActions {
   toggleAI: () => void;
   toggleCommandPalette: () => void;
   toggleHelp: () => void;
-  setSidebarOpen: (open: boolean) => void;
-  setTerminalOpen: (open: boolean) => void;
-  setPreviewOpen: (open: boolean) => void;
-  setAIOpen: (open: boolean) => void;
-  setCommandPaletteOpen: (open: boolean) => void;
-  setHelpOpen: (open: boolean) => void;
-  setActiveBottomPanel: (panel: 'terminal' | 'preview' | 'claude-code' | 'extensions' | 'git' | 'debugger' | 'split-editor' | 'terminal-tabs' | 'problems' | 'help') => void;
+  setSidebarOpen: (_open: boolean) => void;
+  setTerminalOpen: (_open: boolean) => void;
+  setPreviewOpen: (_open: boolean) => void;
+  setAIOpen: (_open: boolean) => void;
+  setCommandPaletteOpen: (_open: boolean) => void;
+  setHelpOpen: (_open: boolean) => void;
+  setActiveBottomPanel: (_panel: 'terminal' | 'preview' | 'claude-code' | 'extensions' | 'git' | 'debugger' | 'split-editor' | 'terminal-tabs' | 'problems' | 'help') => void;
 
   // Panel Sizing
   toggleTerminalMaximized: () => void;
-  setTerminalMaximized: (maximized: boolean) => void;
-  setBottomPanelSize: (size: number) => void;
+  setTerminalMaximized: (_maximized: boolean) => void;
+  setBottomPanelSize: (_size: number) => void;
 
   // Settings
-  updateSettings: (newSettings: Partial<Settings>) => void;
+  updateSettings: (_newSettings: Partial<Settings>) => void;
 
   // PWA
-  setInstalled: (installed: boolean) => void;
-  setInstallPrompt: (event: BeforeInstallPromptEvent | null) => void;
+  setInstalled: (_installed: boolean) => void;
+  setInstallPrompt: (_event: BeforeInstallPromptEvent | null) => void;
 
   // Tab Management
-  setActiveTab: (tabId: string) => void;
-  duplicateTab: (tabId: string) => void;
-  closeTab: (tabId: string) => void;
+  setActiveTab: (_tabId: string) => void;
+  duplicateTab: (_tabId: string) => void;
+  closeTab: (_tabId: string) => void;
 
   // Actions from various components
   getDiagnostics: () => Diagnostic[];

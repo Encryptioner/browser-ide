@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { config } from '@/config/environment';
+import { breakpoints } from '@/config/breakpoints';
+import { logger } from '@/utils/logger';
 
 interface KeyboardState {
   isVisible: boolean;
@@ -41,12 +43,12 @@ export function useKeyboardDetection(): KeyboardState {
   // Initialize Virtual Keyboard API if available
   const initializeVirtualKeyboardAPI = useCallback((): boolean => {
     if (!config.MOBILE_KEYBOARD.ENABLE_VIRTUAL_KEYBOARD_API) {
-      console.log('📱 Virtual Keyboard API disabled in config');
+      logger.info('📱 Virtual Keyboard API disabled in config');
       return false;
     }
 
     if (!('virtualKeyboard' in navigator)) {
-      console.log('📱 Virtual Keyboard API not available');
+      logger.info('📱 Virtual Keyboard API not available');
       return false;
     }
 
@@ -56,13 +58,13 @@ export function useKeyboardDetection(): KeyboardState {
       // Set overlaysContent mode if configured
       if (config.MOBILE_KEYBOARD.OVERLAYS_CONTENT && vk) {
         vk.overlaysContent = true;
-        console.log('📱 Virtual Keyboard API enabled with overlaysContent');
+        logger.info('📱 Virtual Keyboard API enabled with overlaysContent');
       }
 
-      console.log('📱 Virtual Keyboard API initialized successfully');
+      logger.info('📱 Virtual Keyboard API initialized successfully');
       return true;
     } catch (error) {
-      console.warn('📱 Failed to initialize Virtual Keyboard API:', error);
+      logger.warn('📱 Failed to initialize Virtual Keyboard API:', error);
       return false;
     }
   }, []);
@@ -81,13 +83,13 @@ export function useKeyboardDetection(): KeyboardState {
 
       if (navigator.virtualKeyboard?.show) {
         navigator.virtualKeyboard.show();
-        console.log('📱 Virtual Keyboard shown programmatically');
+        logger.info('📱 Virtual Keyboard shown programmatically');
         return true;
       }
 
       return false;
     } catch (error) {
-      console.warn('📱 Failed to show virtual keyboard:', error);
+      logger.warn('📱 Failed to show virtual keyboard:', error);
       return false;
     }
   }, []);
@@ -102,13 +104,13 @@ export function useKeyboardDetection(): KeyboardState {
     try {
       if (navigator.virtualKeyboard?.hide) {
         navigator.virtualKeyboard.hide();
-        console.log('📱 Virtual Keyboard hidden programmatically');
+        logger.info('📱 Virtual Keyboard hidden programmatically');
         return true;
       }
 
       return false;
     } catch (error) {
-      console.warn('📱 Failed to hide virtual keyboard:', error);
+      logger.warn('📱 Failed to hide virtual keyboard:', error);
       return false;
     }
   }, []);
@@ -124,7 +126,7 @@ export function useKeyboardDetection(): KeyboardState {
     ) || (
       // Additional mobile detection
       navigator.maxTouchPoints > 0 &&
-      window.innerWidth <= 768
+      window.innerWidth <= breakpoints.md
     ) || (
       // Touch-only device detection
       'ontouchstart' in window &&
@@ -293,9 +295,10 @@ export function useViewportHeight() {
 }
 
 /**
- * Hook to detect if device is mobile
+ * Hook to detect if device is a mobile device (user-agent + touch + viewport).
+ * For layout breakpoints, use useIsMobile from useMediaQuery instead.
  */
-export function useIsMobile() {
+export function useIsMobileDevice() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -306,7 +309,7 @@ export function useIsMobile() {
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-      setIsMobile(isMobileDevice || (isTouchDevice && window.innerWidth <= 768));
+      setIsMobile(isMobileDevice || (isTouchDevice && window.innerWidth <= breakpoints.md));
     };
 
     checkMobile();
@@ -326,7 +329,7 @@ export function useVirtualKeyboardControls() {
 
   const enableVirtualKeyboard = useCallback(() => {
     if (!('virtualKeyboard' in navigator)) {
-      console.warn('📱 Virtual Keyboard API not supported');
+      logger.warn('📱 Virtual Keyboard API not supported');
       return false;
     }
 
@@ -335,10 +338,10 @@ export function useVirtualKeyboardControls() {
         navigator.virtualKeyboard.overlaysContent = true;
       }
       setIsVirtualKeyboardEnabled(true);
-      console.log('📱 Virtual Keyboard API enabled with overlaysContent');
+      logger.info('📱 Virtual Keyboard API enabled with overlaysContent');
       return true;
     } catch (error) {
-      console.error('📱 Failed to enable Virtual Keyboard API:', error);
+      logger.error('📱 Failed to enable Virtual Keyboard API:', error);
       return false;
     }
   }, []);
@@ -353,10 +356,10 @@ export function useVirtualKeyboardControls() {
         navigator.virtualKeyboard.overlaysContent = false;
       }
       setIsVirtualKeyboardEnabled(false);
-      console.log('📱 Virtual Keyboard API disabled');
+      logger.info('📱 Virtual Keyboard API disabled');
       return true;
     } catch (error) {
-      console.error('📱 Failed to disable Virtual Keyboard API:', error);
+      logger.error('📱 Failed to disable Virtual Keyboard API:', error);
       return false;
     }
   }, []);
@@ -371,10 +374,10 @@ export function useVirtualKeyboardControls() {
         element.focus();
       }
       navigator.virtualKeyboard?.show();
-      console.log('📱 Virtual Keyboard shown');
+      logger.info('📱 Virtual Keyboard shown');
       return true;
     } catch (error) {
-      console.error('📱 Failed to show Virtual Keyboard:', error);
+      logger.error('📱 Failed to show Virtual Keyboard:', error);
       return false;
     }
   }, [isVirtualKeyboardEnabled]);
@@ -386,10 +389,10 @@ export function useVirtualKeyboardControls() {
 
     try {
       navigator.virtualKeyboard?.hide();
-      console.log('📱 Virtual Keyboard hidden');
+      logger.info('📱 Virtual Keyboard hidden');
       return true;
     } catch (error) {
-      console.error('📱 Failed to hide Virtual Keyboard:', error);
+      logger.error('📱 Failed to hide Virtual Keyboard:', error);
       return false;
     }
   }, [isVirtualKeyboardEnabled]);

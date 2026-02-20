@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { extensionManager, VSCodeExtension, POPULAR_EXTENSIONS } from '@/services/vscode-extensions';
+import { logger } from '@/utils/logger';
 
 export function ExtensionsPanel() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +49,7 @@ export function ExtensionsPanel() {
       const popular = await extensionManager.getPopularExtensions(20);
       setExtensions(popular);
     } catch (error) {
-      console.error('Failed to load popular extensions:', error);
+      logger.error('Failed to load popular extensions:', error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export function ExtensionsPanel() {
       });
       setExtensions(results);
     } catch (error) {
-      console.error('Search failed:', error);
+      logger.error('Search failed:', error);
     } finally {
       setLoading(false);
     }

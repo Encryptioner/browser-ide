@@ -21,6 +21,7 @@ import { createGLMAgent, createAnthropicAgent } from '@/services/claude-agent';
 import type { ClaudeCodeAgent } from '@/services/claude-agent';
 import type { Settings } from '@/store/useIDEStore';
 import { terminalSessionService } from '@/services/terminalSession';
+import { logger } from '@/utils/logger';
 
 // --------------------------------------------------------------------------
 // Types
@@ -121,7 +122,7 @@ async function writeStderrToFile(
     const result = await fileSystem.writeFile(filePath, finalContent);
     return result.success;
   } catch (error) {
-    console.error('Failed to write stderr to file:', error);
+    logger.error('Failed to write stderr to file:', error);
     return false;
   }
 }
@@ -477,7 +478,7 @@ async function handleGitCommand(args: string[], w: TerminalWriter): Promise<void
       case 'push': {
         const currentSettings = getSettings();
         const token = currentSettings.githubToken;
-        console.log('\u{1F50D} Push - Token check:', {
+        logger.info('\u{1F50D} Push - Token check:', {
           hasToken: !!token,
           tokenLength: token?.length,
           tokenPrefix: token?.substring(0, 7),
@@ -500,7 +501,7 @@ async function handleGitCommand(args: string[], w: TerminalWriter): Promise<void
       case 'pull': {
         const currentSettings = getSettings();
         const token = currentSettings.githubToken;
-        console.log('\u{1F50D} Pull - Token check:', {
+        logger.info('\u{1F50D} Pull - Token check:', {
           hasToken: !!token,
           tokenLength: token?.length,
           tokenPrefix: token?.substring(0, 7),
@@ -981,14 +982,14 @@ export async function executeCommand(
 
     // Not a builtin -- run via WebContainer
     if (!webContainer.isBooted()) {
-      console.log('\u26A0\uFE0F Command blocked: WebContainer not booted yet');
-      writeError('\u26A0\uFE0F  WebContainer is still booting...');
+      writeError(`Command "${cmd}" requires WebContainer which is not available.`);
+      writeError('Supported without WebContainer: ls, cd, pwd, cat, mkdir, touch, rm, cp, mv, echo, clear, help, git');
       w.write('$ ');
       await flushStderr(stderrRedirect, stderrBuffer, append, w);
       return;
     }
 
-    console.log('\u2705 Executing command:', cmd, args);
+    logger.info('\u2705 Executing command:', cmd, args);
     const spawnResult = await webContainer.spawn(cmd, args);
 
     if (spawnResult.success && spawnResult.process && spawnResult.processId && spawnResult.exit) {
@@ -1030,7 +1031,7 @@ export async function executeCommand(
         const outputReader = process.output.getReader();
         const decoder = new TextDecoder();
 
-        // eslint-disable-next-line no-constant-condition
+         
         while (true) {
           const { done, value } = await outputReader.read();
           if (done) break;

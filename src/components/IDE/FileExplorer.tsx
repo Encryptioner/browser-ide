@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, JSX } from 'react';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
@@ -26,6 +27,7 @@ import {
   Scissors,
 } from 'lucide-react';
 import type { FileNode } from '@/types';
+import { logger } from '@/utils/logger';
 
 
 interface ContextMenuProps {
@@ -33,9 +35,9 @@ interface ContextMenuProps {
   y: number;
   node: FileNode;
   onClose: () => void;
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  onAction: (action: string, node: FileNode) => void;
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+   
+  onAction: (_action: string, _node: FileNode) => void;
+   
 }
 
 
@@ -108,6 +110,7 @@ function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
 }
 
 export function FileExplorer() {
+  const isMobile = useIsMobile();
   const [expandedDirs, setExpandedDirs] = useState(new Set<string>(['/']));
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -163,7 +166,7 @@ export function FileExplorer() {
       });
       setGitStatusMap(statusMap);
     } catch (error) {
-      console.error('Failed to load git status:', error);
+      logger.error('Failed to load git status:', error);
     }
   }
 
@@ -378,7 +381,7 @@ export function FileExplorer() {
             <>
               <div
                 className={`tree-item-row directory flex items-center gap-2 cursor-pointer hover:bg-gray-700 transition-colors ${
-                  window.innerWidth < 768 ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'
+                  isMobile ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'
                 }`}
                 style={{ paddingLeft: `${level * 16 + 8}px` }}
                 onClick={() => toggleDir(item.path)}
@@ -478,7 +481,7 @@ export function FileExplorer() {
             <div
               className={`tree-item-row file group flex items-center gap-2 cursor-pointer hover:bg-gray-700 transition-colors ${
                 currentFile === item.path ? 'bg-blue-600 text-white' : ''
-              } ${window.innerWidth < 768 ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'}`}
+              } ${isMobile ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'}`}
               style={{ paddingLeft: `${level * 16 + 24}px` }}
               onClick={() => handleFileClick(item)}
               onContextMenu={(e) => handleContextMenu(e, item)}

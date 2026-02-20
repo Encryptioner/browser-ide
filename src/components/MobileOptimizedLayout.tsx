@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect } from 'react';
-import { useKeyboardDetection, useViewportHeight, useIsMobile } from '@/hooks/useKeyboardDetection';
+import { useKeyboardDetection, useViewportHeight, useIsMobileDevice } from '@/hooks/useKeyboardDetection';
 
 interface MobileOptimizedLayoutProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface MobileOptimizedLayoutProps {
  */
 export function MobileOptimizedLayout({ children, className = '' }: MobileOptimizedLayoutProps) {
   const { isVisible, height, isPortrait } = useKeyboardDetection();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobileDevice();
   const vh = useViewportHeight();
 
   // Set CSS custom properties for dynamic spacing
@@ -73,7 +73,7 @@ export function MobileInputWrapper({
   className = '',
   shouldPreventZoom = true
 }: MobileInputProps) {
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobileDevice();
 
   return (
     <div
@@ -108,7 +108,7 @@ export function MobileBottomPanel({
   className = ''
 }: MobileBottomPanelProps) {
   const { isVisible, height } = useKeyboardDetection();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobileDevice();
 
   const panelStyles: React.CSSProperties = {};
 
@@ -161,7 +161,7 @@ export function MobileEditorPanel({
   className = ''
 }: MobileEditorPanelProps) {
   const { isVisible, height } = useKeyboardDetection();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobileDevice();
 
   const editorStyles: React.CSSProperties = {};
 

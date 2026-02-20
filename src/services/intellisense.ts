@@ -8,6 +8,7 @@ import {
   type CodeAction,
   type Diagnostic
 } from 'vscode-languageserver-protocol';
+import { logger } from '@/utils/logger';
 
 // Local type definitions for symbols with location support
 interface SymbolLocation {
@@ -138,12 +139,12 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
 
   async activate(): Promise<void> {
     // Initialize language-specific resources
-    console.log('JavaScript IntelliSense provider activated');
+    logger.info('JavaScript IntelliSense provider activated');
   }
 
   async deactivate(): Promise<void> {
     this.fileCache.clear();
-    console.log('JavaScript IntelliSense provider deactivated');
+    logger.info('JavaScript IntelliSense provider deactivated');
   }
 
   private initializeBuiltInObjects(): void {
@@ -254,7 +255,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
 
       return parsed;
     } catch (error) {
-      console.error('Failed to parse document:', error);
+      logger.error('Failed to parse document:', error);
       return { content: '', symbols: [] };
     }
   }
@@ -454,7 +455,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
             { prefix: 'export', label: 'export statement', body: 'export default $1;' },
             { prefix: 'const', label: 'const declaration', body: 'const $1 = $0;' },
             { prefix: 'let', label: 'let declaration', body: 'let $1 = $0;' },
-            { prefix: 'console', label: 'console.log', body: 'console.log($0);' },
+            { prefix: 'console', label: 'console.log', body: 'logger.info($0);' },
           ];
 
           snippets.forEach(snippet => {
@@ -473,7 +474,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
         }
       }
     } catch (error) {
-      console.error('Error providing completions:', error);
+      logger.error('Error providing completions:', error);
     }
 
     return completions;
@@ -566,7 +567,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
       }
 
     } catch (error) {
-      console.error('Error providing hover:', error);
+      logger.error('Error providing hover:', error);
     }
 
     return null;
@@ -621,7 +622,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
       }
 
     } catch (error) {
-      console.error('Error providing definition:', error);
+      logger.error('Error providing definition:', error);
     }
 
     return null;
@@ -641,7 +642,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
       const { symbols } = await this.parseDocument(document);
       return symbols;
     } catch (error) {
-      console.error('Error providing document symbols:', error);
+      logger.error('Error providing document symbols:', error);
       return [];
     }
   }
@@ -703,7 +704,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
         }
       });
     } catch (error) {
-      console.error('Error providing diagnostics:', error);
+      logger.error('Error providing diagnostics:', error);
     }
 
     return diagnostics;

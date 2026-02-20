@@ -3,10 +3,19 @@ import { webContainer } from '@/services/webcontainer';
 
 export function Preview() {
   const [url, setUrl] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
-    // Check for server URL
+    // If WebContainer never booted, show degraded state after a short check
+    const bootCheck = setTimeout(() => {
+      if (!webContainer.isBooted()) {
+        setUnavailable(true);
+      }
+    }, 2000);
+
+    // Poll for server URL once WebContainer is available
     const checkUrl = setInterval(() => {
+      if (!webContainer.isBooted()) return;
       const serverUrl = webContainer.getServerUrl();
       if (serverUrl) {
         setUrl(serverUrl);
@@ -14,7 +23,10 @@ export function Preview() {
       }
     }, 1000);
 
-    return () => clearInterval(checkUrl);
+    return () => {
+      clearTimeout(bootCheck);
+      clearInterval(checkUrl);
+    };
   }, []);
 
   return (
@@ -38,6 +50,14 @@ export function Preview() {
           src={url}
           title="Preview"
         />
+      ) : unavailable ? (
+        <div className="flex items-center justify-center flex-1 text-gray-500">
+          <div className="text-center">
+            <p className="text-yellow-400">Preview unavailable</p>
+            <p className="text-sm mt-2">WebContainer is not supported in this browser.</p>
+            <p className="text-sm mt-1">Use a Chromium-based browser with COOP/COEP headers for live preview.</p>
+          </div>
+        </div>
       ) : (
         <div className="flex items-center justify-center flex-1 text-gray-500">
           <div className="text-center">

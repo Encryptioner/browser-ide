@@ -55,7 +55,7 @@ const { FileSystemService } = await import('./filesystem');
 // TEST UTILITIES
 // =============================================================================
 
-let fileSystem: FileSystemService;
+let fileSystem: InstanceType<typeof FileSystemService>;
 
 function resetMockFS(): void {
   mockFSState.clear();
@@ -555,7 +555,7 @@ describe('FileSystemService - Utilities', () => {
 // =============================================================================
 
 describe('FileSystemService - Language Detection', () => {
-  let fileSystemService: FileSystemService;
+  let fileSystemService: InstanceType<typeof FileSystemService>;
 
   beforeEach(() => {
     fileSystemService = new FileSystemService();

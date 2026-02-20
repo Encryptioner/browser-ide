@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import { fileSystem } from './filesystem';
 import { gitService } from './git';
 import { useIDEStore } from '@/store/useIDEStore';
+import { logger } from '@/utils/logger';
 
 export interface ExportOptions {
   includeSettings: boolean;
@@ -57,7 +58,7 @@ class ImportExportService {
     description?: string
   ): Promise<{ success: boolean; data?: Uint8Array; error?: string }> {
     try {
-      console.log('📦 Starting project export...');
+      logger.info('📦 Starting project export...');
 
       const zip = new JSZip();
       const metadata: ExportMetadata = {
@@ -70,7 +71,7 @@ class ImportExportService {
 
       // Export file system
       const currentDir = fileSystem.getCurrentWorkingDirectory();
-      console.log(`📁 Exporting files from: ${currentDir}`);
+      logger.info(`📁 Exporting files from: ${currentDir}`);
 
       const fileTree = await fileSystem.buildFileTree(currentDir, 10);
       const files: FileSystemExport['files'] = [];
@@ -115,7 +116,7 @@ class ImportExportService {
           };
           zip.file(this.GIT_INFO_FILE, JSON.stringify(gitInfo, null, 2));
         } catch (error) {
-          console.warn('⚠️ Could not export git information:', error);
+          logger.warn('⚠️ Could not export git information:', error);
         }
       }
 
@@ -125,14 +126,14 @@ class ImportExportService {
       // Generate zip file
       const zipData = await zip.generateAsync({ type: 'uint8array' });
 
-      console.log(`✅ Export complete: ${files.length} files, ${zipData.length} bytes`);
+      logger.info(`✅ Export complete: ${files.length} files, ${zipData.length} bytes`);
 
       return {
         success: true,
         data: zipData,
       };
     } catch (error) {
-      console.error('❌ Export failed:', error);
+      logger.error('❌ Export failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Export failed',
@@ -183,7 +184,7 @@ class ImportExportService {
         }
       }
     } catch (error) {
-      console.warn(`⚠️ Could not collect files from ${path}:`, error);
+      logger.warn(`⚠️ Could not collect files from ${path}:`, error);
     }
   }
 
@@ -197,7 +198,7 @@ class ImportExportService {
     } = {}
   ): Promise<ImportResult> {
     try {
-      console.log('📥 Starting project import...');
+      logger.info('📥 Starting project import...');
 
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(zipData);
@@ -212,7 +213,7 @@ class ImportExportService {
       }
 
       const metadata: ExportMetadata = JSON.parse(await metadataFile.async('text'));
-      console.log(`📋 Importing project: ${metadata.projectName} (v${metadata.version})`);
+      logger.info(`📋 Importing project: ${metadata.projectName} (v${metadata.version})`);
 
       // Clear current workspace if requested
       if (importOptions.clearCurrentWorkspace) {
@@ -253,9 +254,9 @@ class ImportExportService {
             const settings = JSON.parse(await settingsFile.async('text'));
             const store = useIDEStore.getState();
             store.updateSettings(settings);
-            console.log('⚙️ Settings imported');
+            logger.info('⚙️ Settings imported');
           } catch (error) {
-            console.warn('⚠️ Could not import settings:', error);
+            logger.warn('⚠️ Could not import settings:', error);
           }
         }
       }
@@ -279,9 +280,9 @@ class ImportExportService {
             if (ideState.previewOpen !== undefined) store.setPreviewOpen(ideState.previewOpen);
             if (ideState.aiOpen !== undefined) store.setAIOpen(ideState.aiOpen);
 
-            console.log('🖥️ IDE state imported');
+            logger.info('🖥️ IDE state imported');
           } catch (error) {
-            console.warn('⚠️ Could not import IDE state:', error);
+            logger.warn('⚠️ Could not import IDE state:', error);
           }
         }
       }
@@ -292,9 +293,9 @@ class ImportExportService {
         if (gitInfoFile) {
           try {
             const gitInfo = JSON.parse(await gitInfoFile.async('text'));
-            console.log('📚 Git info available for reference (manual setup required)');
+            logger.info('📚 Git info available for reference (manual setup required)');
           } catch (error) {
-            console.warn('⚠️ Could not import git info:', error);
+            logger.warn('⚠️ Could not import git info:', error);
           }
         }
       }
@@ -305,7 +306,7 @@ class ImportExportService {
       const fileTree = await fileSystem.buildFileTree(currentDir);
       store.setFileTree(fileTree);
 
-      console.log(`✅ Import complete: ${importedFiles} files imported`);
+      logger.info(`✅ Import complete: ${importedFiles} files imported`);
 
       return {
         success: true,
@@ -313,7 +314,7 @@ class ImportExportService {
         projectName: metadata.projectName,
       };
     } catch (error) {
-      console.error('❌ Import failed:', error);
+      logger.error('❌ Import failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Import failed',
@@ -335,7 +336,7 @@ class ImportExportService {
     document.body.removeChild(a);
 
     URL.revokeObjectURL(url);
-    console.log(`💾 Download started: ${projectName}_export.zip`);
+    logger.info(`💾 Download started: ${projectName}_export.zip`);
   }
 
   async validateExport(zipData: ArrayBuffer | Uint8Array): Promise<{

@@ -4,6 +4,8 @@
  * Manages undo history for destructive actions
  */
 
+import { logger } from '@/utils/logger';
+
 interface UndoAction {
   id: string;
   type: 'delete' | 'branch-delete' | 'commit-delete' | 'stash-drop';
@@ -46,7 +48,7 @@ class UndoManager {
   undoAction(actionId: string): boolean {
     const actionIndex = this.history.findIndex(a => a.id === actionId);
     if (actionIndex === -1) {
-      console.error('Undo action not found:', actionId);
+      logger.error('Undo action not found:', actionId);
       return false;
     }
 
@@ -71,7 +73,7 @@ class UndoManager {
     try {
       localStorage.setItem('undo-history', JSON.stringify(this.history));
     } catch (error) {
-      console.error('Failed to save undo history:', error);
+      logger.error('Failed to save undo history:', error);
     }
   }
 
@@ -85,7 +87,7 @@ class UndoManager {
         this.history = JSON.parse(stored);
       }
     } catch (error) {
-      console.error('Failed to load undo history:', error);
+      logger.error('Failed to load undo history:', error);
     }
   }
 

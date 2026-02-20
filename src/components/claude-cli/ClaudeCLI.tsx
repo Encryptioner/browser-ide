@@ -5,6 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { ClaudeCLIService, createCLIService, type CLIOptions, type CLIResult } from '@/services/claude-cli';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { logger } from '@/utils/logger';
 
 interface WorkspaceStatus {
   workingDirectory?: string;
@@ -20,7 +21,7 @@ interface WorkspaceStatus {
 interface ClaudeCLIProps {
   className?: string;
   options?: CLIOptions;
-  onCommand?: (command: string, result: CLIResult) => void;
+  onCommand?: (_command: string, _result: CLIResult) => void;
 }
 
 export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
@@ -58,7 +59,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         service.getStatus().then(setWorkspaceStatus);
       })
       .catch((error: Error) => {
-        console.error('Failed to initialize CLI:', error.message);
+        logger.error('Failed to initialize CLI:', error.message);
       });
 
     return () => {

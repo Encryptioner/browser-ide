@@ -663,7 +663,7 @@ describe('Terminal - Background Process Execution', () => {
     expect(parts[0]).toBe('fg');
     expect(parts[1]).toBe('%1');
 
-    const jobId = parseInt(parts[1].replace(/^\%/, ''), 10);
+    const jobId = parseInt(parts[1].replace(/^%/, ''), 10);
     expect(jobId).toBe(1);
   });
 

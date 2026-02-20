@@ -13,6 +13,7 @@ function copyCoiServiceWorker() {
       const targetPath = 'dist/coi-serviceworker.min.js';
       if (existsSync(sourcePath)) {
         copyFileSync(sourcePath, targetPath);
+        // eslint-disable-next-line no-console
         console.log('✅ Copied coi-serviceworker.min.js to dist/');
       }
     },
@@ -113,12 +114,15 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          monaco: ['@monaco-editor/react'],
+          monaco: ['@monaco-editor/react', 'monaco-editor'],
           terminal: ['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-web-links'],
           git: ['isomorphic-git', '@isomorphic-git/lightning-fs'],
+          ai: ['@anthropic-ai/sdk'],
+          webcontainer: ['@webcontainer/api'],
           vendor: ['react', 'react-dom', 'react-router-dom'],
           state: ['zustand', 'dexie', 'dexie-react-hooks'],
-          utils: ['date-fns', 'nanoid', 'clsx'],
+          utils: ['date-fns', 'nanoid', 'clsx', 'diff', 'diff2html'],
+          markdown: ['react-markdown', 'react-syntax-highlighter'],
         },
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',

@@ -392,9 +392,12 @@ describe('FileExplorer - File Operations', () => {
 
 describe('FileExplorer - Mobile Responsiveness', () => {
   it('should use touch-friendly sizing on mobile', async () => {
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      value: 375,
+    // Mock matchMedia for mobile viewport (375px)
+    window.matchMedia = vi.fn().mockImplementation((query: string) => {
+      const maxMatch = query.match(/max-width:\s*(\d+)px/);
+      const minMatch = query.match(/min-width:\s*(\d+)px/);
+      const matches = maxMatch ? 375 <= parseInt(maxMatch[1]) : minMatch ? 375 >= parseInt(minMatch[1]) : false;
+      return { matches, media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() };
     });
 
     const mockTree = [

@@ -1,4 +1,5 @@
 import type * as monaco from 'monaco-editor';
+import { logger } from '@/utils/logger';
 
 interface LintDiagnostic {
   severity: 'error' | 'warning' | 'info';
@@ -286,7 +287,7 @@ class LinterService {
           const providerDiagnostics = provider.lint(content, language);
           diagnostics.push(...providerDiagnostics);
         } catch (error) {
-          console.warn(`Linter provider ${provider.name} failed:`, error);
+          logger.warn(`Linter provider ${provider.name} failed:`, error);
         }
       }
     }
@@ -347,7 +348,7 @@ class LinterService {
 
       this.markers.set(filename, lintResult.diagnostics);
     } catch (error) {
-      console.error('Failed to update linting markers:', error);
+      logger.error('Failed to update linting markers:', error);
     }
   }
 

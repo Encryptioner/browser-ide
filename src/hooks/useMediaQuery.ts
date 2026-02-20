@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { minWidth, maxWidth, between } from '@/config/breakpoints';
 
 /**
  * Custom hook for responsive media queries
@@ -12,45 +13,33 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(query);
-
-    // Update state if query matches
     setMatches(mediaQuery.matches);
 
-    // Create event listener
     const handler = (event: MediaQueryListEvent) => {
       setMatches(event.matches);
     };
 
-    // Add listener (modern browsers)
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handler);
-      return () => mediaQuery.removeEventListener('change', handler);
-    } else {
-      // Fallback for older browsers
-      mediaQuery.addListener(handler);
-      return () => mediaQuery.removeListener(handler);
-    }
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
   }, [query]);
 
   return matches;
 }
 
-// Predefined breakpoint hooks
-export const useIsMobile = () => useMediaQuery('(max-width: 640px)');
-export const useIsTablet = () =>
-  useMediaQuery('(min-width: 641px) and (max-width: 1024px)');
-export const useIsDesktop = () => useMediaQuery('(min-width: 1025px)');
-export const useIsLargeScreen = () => useMediaQuery('(min-width: 1280px)');
-export const useIsXLargeScreen = () => useMediaQuery('(min-width: 1536px)');
+// Breakpoint hooks (using unified config from src/config/breakpoints.ts)
+export const useIsXSmall = () => useMediaQuery(maxWidth('xsm'));
+export const useIsMobile = () => useMediaQuery(maxWidth('md'));
+export const useIsTablet = () => useMediaQuery(between('md', 'lg'));
+export const useIsDesktop = () => useMediaQuery(minWidth('lg'));
+export const useIsLargeScreen = () => useMediaQuery(minWidth('xl'));
+export const useIsXLargeScreen = () => useMediaQuery(minWidth('2xl'));
 
 // Orientation
 export const useIsPortrait = () => useMediaQuery('(orientation: portrait)');
 export const useIsLandscape = () => useMediaQuery('(orientation: landscape)');
 
-// Prefers reduced motion (accessibility)
+// Accessibility / preferences
 export const usePrefersReducedMotion = () =>
   useMediaQuery('(prefers-reduced-motion: reduce)');
-
-// Dark mode preference
 export const usePrefersDarkMode = () =>
   useMediaQuery('(prefers-color-scheme: dark)');

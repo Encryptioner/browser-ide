@@ -5,6 +5,8 @@
  * Provides extension discovery, installation, and management
  */
 
+import { logger } from '@/utils/logger';
+
 export interface VSCodeExtension {
   id: string;
   name: string;
@@ -75,7 +77,7 @@ export class VSCodeExtensionManager {
         installed: this.installedExtensions.has(`${ext.namespace}.${ext.name}`),
       })) || [];
     } catch (error) {
-      console.error('Extension search error:', error);
+      logger.error('Extension search error:', error);
       return [];
     }
   }
@@ -108,7 +110,7 @@ export class VSCodeExtensionManager {
         installed: this.installedExtensions.has(extensionId),
       };
     } catch (error) {
-      console.error('Failed to get extension:', error);
+      logger.error('Failed to get extension:', error);
       return null;
     }
   }
@@ -139,10 +141,10 @@ export class VSCodeExtensionManager {
       // Persist to IndexedDB for offline access
       await this.saveToIndexedDB(extensionId, blob);
 
-      console.log(`✅ Installed extension: ${extension.name}`);
+      logger.info(`✅ Installed extension: ${extension.name}`);
       return true;
     } catch (error) {
-      console.error('Extension installation error:', error);
+      logger.error('Extension installation error:', error);
       return false;
     }
   }
@@ -154,10 +156,10 @@ export class VSCodeExtensionManager {
     try {
       this.installedExtensions.delete(extensionId);
       await this.removeFromIndexedDB(extensionId);
-      console.log(`✅ Uninstalled extension: ${extensionId}`);
+      logger.info(`✅ Uninstalled extension: ${extensionId}`);
       return true;
     } catch (error) {
-      console.error('Extension uninstallation error:', error);
+      logger.error('Extension uninstallation error:', error);
       return false;
     }
   }
@@ -272,7 +274,7 @@ export class VSCodeExtensionManager {
       const keys = await store.getAllKeys();
 
       if (!keys || !Array.isArray(keys)) {
-        console.log('No installed extensions found');
+        logger.info('No installed extensions found');
         return;
       }
 
@@ -286,11 +288,11 @@ export class VSCodeExtensionManager {
         }
       }
 
-      console.log(
+      logger.info(
         `✅ Loaded ${this.installedExtensions.size} installed extensions`
       );
     } catch (error) {
-      console.error('Failed to load installed extensions:', error);
+      logger.error('Failed to load installed extensions:', error);
       // Don't throw - just log and continue
     }
   }

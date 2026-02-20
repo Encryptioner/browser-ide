@@ -113,7 +113,7 @@ const { GitService } = await import('./git');
 // TEST UTILITIES
 // =============================================================================
 
-let gitService: GitService;
+let gitService: InstanceType<typeof GitService>;
 
 function resetAllMocks(): void {
   vi.clearAllMocks();

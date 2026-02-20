@@ -5,6 +5,8 @@
  * and protect against prototype pollution and other JSON-based attacks.
  */
 
+import { logger } from '@/utils/logger';
+
 /**
  * Safely parse JSON with error handling
  *
@@ -20,7 +22,7 @@ export function safeJSONParse<T>(json: string | null | undefined, fallback: T): 
   try {
     return JSON.parse(json) as T;
   } catch (error) {
-    console.warn('Failed to parse JSON:', error instanceof Error ? error.message : String(error));
+    logger.warn('Failed to parse JSON:', error instanceof Error ? error.message : String(error));
     return fallback;
   }
 }
@@ -41,7 +43,7 @@ export function safeParseFromStorage<T>(key: string, fallback: T): T {
     const item = localStorage.getItem(key);
     return safeJSONParse(item, fallback);
   } catch (error) {
-    console.warn(`Failed to read from localStorage (${key}):`, error);
+    logger.warn(`Failed to read from localStorage (${key}):`, error);
     return fallback;
   }
 }
@@ -56,7 +58,7 @@ export function safeJSONStringify<T>(value: T): string | undefined {
   try {
     return JSON.stringify(value);
   } catch (error) {
-    console.warn('Failed to stringify JSON:', error instanceof Error ? error.message : String(error));
+    logger.warn('Failed to stringify JSON:', error instanceof Error ? error.message : String(error));
     return undefined;
   }
 }
@@ -81,7 +83,7 @@ export function safeSaveToStorage<T>(key: string, value: T): boolean {
     }
     return false;
   } catch (error) {
-    console.warn(`Failed to save to localStorage (${key}):`, error);
+    logger.warn(`Failed to save to localStorage (${key}):`, error);
     return false;
   }
 }
@@ -120,7 +122,7 @@ export function safeJSONParseNoProto<T>(json: string, fallback: T): T {
 
     return parsed;
   } catch (error) {
-    console.warn('Failed to parse JSON safely:', error instanceof Error ? error.message : String(error));
+    logger.warn('Failed to parse JSON safely:', error instanceof Error ? error.message : String(error));
     return fallback;
   }
 }
@@ -148,7 +150,7 @@ export function safeJSONParseWithSchema<T>(
     return parsed;
   }
 
-  console.warn('JSON validation failed:', { json, parsed });
+  logger.warn('JSON validation failed:', { json, parsed });
   return fallback;
 }
 
@@ -168,7 +170,7 @@ export function safeClone<T>(value: T): T {
     // Fallback to JSON parse/stringify for basic types
     return JSON.parse(JSON.stringify(value));
   } catch (error) {
-    console.warn('Failed to clone value:', error instanceof Error ? error.message : String(error));
+    logger.warn('Failed to clone value:', error instanceof Error ? error.message : String(error));
     return value;
   }
 }

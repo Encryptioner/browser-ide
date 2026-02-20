@@ -343,21 +343,21 @@ export interface DebugConfiguration {
  
 export interface DebugAdapter {
   type: string;
-  start: (session: DebugSession) => Promise<void>;
+  start: (_session: DebugSession) => Promise<void>;
   stop: () => Promise<void>;
   restart: () => Promise<void>;
-  setBreakpoints: (breakpoints: DebugBreakpoint[]) => Promise<void>;
-  setExceptionBreakpoints: (filters: string[]) => Promise<void>;
+  setBreakpoints: (_breakpoints: DebugBreakpoint[]) => Promise<void>;
+  setExceptionBreakpoints: (_filters: string[]) => Promise<void>;
   configurationDone: () => Promise<void>;
-  continue: (threadId: number) => Promise<void>;
-  next: (threadId: number) => Promise<void>;
-  stepIn: (threadId: number) => Promise<void>;
-  stepOut: (threadId: number) => Promise<void>;
-  pause: (threadId: number) => Promise<void>;
-  stackTrace: (threadId: number) => Promise<DebugStackFrame[]>;
-  scopes: (frameId: number) => Promise<DebugScope[]>;
-  variables: (variablesReference: number) => Promise<DebugVariable[]>;
-  evaluate: (expression: string, frameId?: number) => Promise<DebugVariable>;
+  continue: (_threadId: number) => Promise<void>;
+  next: (_threadId: number) => Promise<void>;
+  stepIn: (_threadId: number) => Promise<void>;
+  stepOut: (_threadId: number) => Promise<void>;
+  pause: (_threadId: number) => Promise<void>;
+  stackTrace: (_threadId: number) => Promise<DebugStackFrame[]>;
+  scopes: (_frameId: number) => Promise<DebugScope[]>;
+  variables: (_variablesReference: number) => Promise<DebugVariable[]>;
+  evaluate: (_expression: string, _frameId?: number) => Promise<DebugVariable>;
 }
  
 

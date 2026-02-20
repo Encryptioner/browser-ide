@@ -8,14 +8,14 @@ interface ChangesViewProps {
   stagedFiles: GitStatus[];
   unstagedFiles: GitStatus[];
   commitMessage: string;
-  setCommitMessage: (value: string) => void;
+  setCommitMessage: (_value: string) => void;
   isCommitting: boolean;
-  onStage: (filepath: string) => void;
-  onUnstage: (filepath: string) => void;
+  onStage: (_filepath: string) => void;
+  onUnstage: (_filepath: string) => void;
   onStageAll: () => void;
   onUnstageAll: () => void;
   onCommit: () => void;
-  onShowDiff: (filepath: string) => void;
+  onShowDiff: (_filepath: string) => void;
 }
 
 function getStatusIcon(status: string) {
@@ -38,8 +38,8 @@ interface FileSectionProps {
   files: GitStatus[];
   actionLabel: string;
   onActionAll: () => void;
-  onFileAction: (filepath: string) => void;
-  onShowDiff: (filepath: string) => void;
+  onFileAction: (_filepath: string) => void;
+  onShowDiff: (_filepath: string) => void;
   actionSymbol: string;
 }
 

@@ -8,6 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { fileSystem } from './filesystem';
 import { gitService } from './git';
+import { logger } from '@/utils/logger';
 
 export interface ClaudeAgentConfig {
   apiKey: string;
@@ -408,7 +409,7 @@ export class ClaudeCodeAgent {
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('Agent execution error:', error);
+      logger.error('Agent execution error:', error);
       return {
         success: false,
         error: message,

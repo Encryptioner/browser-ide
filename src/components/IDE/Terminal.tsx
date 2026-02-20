@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { webContainer } from '@/services/webcontainer';
 import { useIDEStore } from '@/store/useIDEStore';
-import { useIsMobile } from '@/hooks/useKeyboardDetection';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { MobileInputWrapper } from '@/components/MobileOptimizedLayout';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { NanoEditor } from './NanoEditor';
@@ -15,6 +15,7 @@ import {
   type TerminalWriter,
 } from '@/services/terminalCommands';
 import '@xterm/xterm/css/xterm.css';
+import { logger } from '@/utils/logger';
 
 export function Terminal() {
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -70,22 +71,22 @@ export function Terminal() {
 
     async function initWebContainer() {
       if (webContainer.isBooted()) {
-        console.log('WebContainer already booted, setting ready state');
+        logger.info('WebContainer already booted, setting ready state');
         if (!cancelled) setBootStatus('ready');
         return;
       }
 
-      console.log('Booting WebContainer...');
+      logger.info('Booting WebContainer...');
       setBootStatus('booting');
       const result = await webContainer.boot();
 
       if (!cancelled) {
         if (result.success) {
-          console.log('WebContainer boot complete, setting ready state');
+          logger.info('WebContainer boot complete, setting ready state');
           setBootStatus('ready');
         } else {
           setBootStatus('error');
-          console.error('WebContainer failed to boot:', result.error);
+          logger.error('WebContainer failed to boot:', result.error);
         }
       }
     }
@@ -130,7 +131,7 @@ export function Terminal() {
         brightCyan: '#29b8db',
         brightWhite: '#ffffff',
       },
-      cols: isMobile ? Math.min(80, Math.floor(window.innerWidth / 8)) : 80,
+      cols: isMobile ? Math.min(80, Math.floor((typeof window !== 'undefined' ? window.innerWidth : 800) / 8)) : 80,
       rows: isMobile ? 15 : 24,
     });
 
@@ -146,7 +147,7 @@ export function Terminal() {
         fitAddon.fit();
         xterm.focus();
       } catch (err) {
-        console.warn('Terminal fit failed, will retry on resize:', err);
+        logger.warn('Terminal fit failed, will retry on resize:', err);
       }
     }, 100);
 

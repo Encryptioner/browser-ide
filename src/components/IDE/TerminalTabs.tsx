@@ -97,8 +97,7 @@ const DEFAULT_PROFILES: TerminalProfile[] = [
   },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function TerminalTabs({ className }: TerminalTabsProps) {
+export function TerminalTabs({ className: _className }: TerminalTabsProps) {
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showProfileSelector, setShowProfileSelector] = useState(false);

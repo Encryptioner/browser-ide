@@ -11,6 +11,7 @@
 import { webContainer } from '@/services/webcontainer';
 import { fileSystem } from '@/services/filesystem';
 import { ClaudeCodeAgent, createGLMAgent, createAnthropicAgent } from '@/services/claude-agent';
+import { logger } from '@/utils/logger';
 
 export interface CLIOptions {
   provider: 'anthropic' | 'glm';
@@ -58,7 +59,7 @@ export class ClaudeCLIService {
    */
   async initialize(): Promise<void> {
     try {
-      console.log('Initializing CLI environment via shared WebContainer...');
+      logger.info('Initializing CLI environment via shared WebContainer...');
 
       // Boot the shared WebContainer singleton (no-op if already booted)
       const bootResult = await webContainer.boot();
@@ -91,18 +92,18 @@ dist/
         await this.runAndWait('git', ['commit', '-m', 'Initial commit', '--quiet']);
       } catch {
         // Git initialization might fail if git is not available
-        console.log('Git initialization failed, continuing without git');
+        logger.info('Git initialization failed, continuing without git');
       }
 
       // Initialize Claude agent
       await this.initializeAgent();
 
       this.isInitialized = true;
-      console.log('CLI environment initialized');
+      logger.info('CLI environment initialized');
 
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('Failed to initialize CLI environment:', message);
+      logger.error('Failed to initialize CLI environment:', message);
       throw new Error(`CLI initialization failed: ${message}`);
     }
   }
@@ -134,7 +135,7 @@ dist/
    */
   private async initializeAgent(): Promise<void> {
     if (!this.options.apiKey) {
-      console.log('No API key provided, some features may be limited');
+      logger.info('No API key provided, some features may be limited');
       return;
     }
 
@@ -147,11 +148,11 @@ dist/
 
       if (this.agent) {
         this.agent.setWorkingDirectory(this.workingDirectory);
-        console.log(`Claude agent initialized with ${this.options.provider} provider`);
+        logger.info(`Claude agent initialized with ${this.options.provider} provider`);
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('Failed to initialize Claude agent:', message);
+      logger.error('Failed to initialize Claude agent:', message);
     }
   }
 
@@ -180,7 +181,7 @@ dist/
     this.history.push(`${command} ${args.join(' ')}`);
 
     try {
-      console.log(`$ ${command} ${args.join(' ')}`);
+      logger.info(`$ ${command} ${args.join(' ')}`);
 
       const { output, exitCode } = await this.runAndWait(command, args);
 
@@ -211,7 +212,7 @@ dist/
       await this.initialize();
     }
 
-    console.log(`Executing task: ${task}`);
+    logger.info(`Executing task: ${task}`);
 
     if (!this.agent) {
       return {
@@ -223,7 +224,7 @@ dist/
     try {
       const result = await this.agent.executeTask(task, (message) => {
         options.onProgress?.(message);
-        console.log(`Task progress: ${message}`);
+        logger.info(`Task progress: ${message}`);
       });
 
       // Sync file changes through the secure webContainer singleton
@@ -279,7 +280,7 @@ dist/
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('Failed to sync artifacts to WebContainer:', message);
+      logger.error('Failed to sync artifacts to WebContainer:', message);
     }
   }
 
@@ -386,7 +387,7 @@ dist/
     }
 
     try {
-      console.log(`Initializing ${projectType} project...`);
+      logger.info(`Initializing ${projectType} project...`);
 
       let commands: string[][] = [];
 
@@ -487,7 +488,7 @@ dist/
         this.agent.setWorkingDirectory(path);
       }
 
-      console.log(`Changed to directory: ${path}`);
+      logger.info(`Changed to directory: ${path}`);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to change directory: ${message}`);
@@ -502,7 +503,7 @@ dist/
   async cleanup(): Promise<void> {
     this.agent = null;
     this.isInitialized = false;
-    console.log('CLI service cleaned up');
+    logger.info('CLI service cleaned up');
   }
 
   /**

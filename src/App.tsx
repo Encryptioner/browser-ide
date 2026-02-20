@@ -2,13 +2,20 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {
   FileExplorer,
-  Editor,
-  Terminal,
-  Preview,
   StatusBar,
   WorkspaceSwitcher,
 } from '@/components/IDE';
+
+// Lazy-load heavy editor & terminal components (Monaco ~2.5MB, xterm ~300KB)
+const Editor = lazy(() => import('@/components/IDE/Editor').then(m => ({ default: m.Editor })));
+const Terminal = lazy(() => import('@/components/IDE/Terminal').then(m => ({ default: m.Terminal })));
+const Preview = lazy(() => import('@/components/IDE/Preview').then(m => ({ default: m.Preview })));
 import { MobileOptimizedLayout, MobileBottomPanel } from '@/components/MobileOptimizedLayout';
+import { BootScreen } from '@/components/BootScreen';
+import { ServiceBanner } from '@/components/ServiceBanner';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { useServiceReadiness } from '@/hooks/useServiceReadiness';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 // Lazy-loaded heavy panels & dialogs (only loaded when opened)
 const CloneDialog = lazy(() => import('@/components/IDE/CloneDialog').then(m => ({ default: m.CloneDialog })));
@@ -22,8 +29,6 @@ const SourceControlPanel = lazy(() => import('@/components/Git/SourceControlPane
 const MobileKeyboardTest = lazy(() => import('@/components/IDE/MobileKeyboardTest').then(m => ({ default: m.MobileKeyboardTest })));
 import { useIDEStore } from '@/store/useIDEStore';
 import { useShallow } from 'zustand/react/shallow';
-import { gitService } from '@/services/git';
-import { fileSystem } from '@/services/filesystem';
 import { logger } from '@/utils/logger';
 import { config } from '@/config/environment';
 import { useKeyboardDetection } from '@/hooks/useKeyboardDetection';
@@ -32,6 +37,8 @@ import { initSentry } from '@/services/sentry';
 
 function App() {
   useKeyboardDetection();
+  const services = useServiceReadiness();
+  const onlineStatus = useOnlineStatus();
 
   // UI state group
   const { sidebarOpen, terminalOpen, previewOpen, helpOpen, activeBottomPanel, terminalMaximized, bottomPanelSize } = useIDEStore(
@@ -101,29 +108,7 @@ function App() {
       setInstalled(true);
     }
 
-    // Initialize git repository if it exists
-    async function initGitIfExists() {
-      try {
-        // Check if current directory has a .git repository
-        const currentDir = fileSystem.getCurrentWorkingDirectory();
-        const fs = fileSystem.getFS();
-        const gitDir = await fs.promises.stat(`${currentDir}/.git`).catch(() => null);
-
-        if (!gitDir) {
-          // No git repo yet - this is fine, user can clone/init later
-          return;
-        }
-
-        const result = await gitService.initializeRepository(currentDir);
-        if (result.success && result.data) {
-          logger.info(`Git initialized: branch=${result.data.currentBranch}, files=${result.data.gitStatus.length}, commits=${result.data.commits.length}`);
-        }
-      } catch (error) {
-        logger.error('Error checking for repository:', error);
-      }
-    }
-
-    initGitIfExists();
+    // Git initialization is handled by useServiceReadiness (lazy, on demand)
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -176,9 +161,18 @@ function App() {
 
   const bottomPanelVisible = terminalOpen || previewOpen || showClaudeCode || showExtensions || showGit;
 
+  // Block render until critical services (filesystem + DB) are ready
+  if (!services.criticalReady) {
+    return <BootScreen services={services} />;
+  }
+
   return (
     <>
       <MobileOptimizedLayout className="app flex flex-col bg-gray-900 text-gray-100 overflow-hidden">
+      {/* Offline + service degradation banners */}
+      <OfflineIndicator status={onlineStatus} />
+      <ServiceBanner services={services} />
+
       {/* Title Bar */}
       <div className="titlebar flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-800 border-b border-gray-700 flex-shrink-0">
         <div className="titlebar-drag flex items-center gap-2 sm:gap-4 overflow-hidden flex-1 min-w-0">
@@ -399,7 +393,9 @@ function App() {
                 minSize={terminalMaximized ? 0 : 30}
                 maxSize={terminalMaximized ? (100 - bottomPanelSize) : 100}
               >
-                <Editor />
+                <Suspense fallback={<div className="flex items-center justify-center h-full bg-gray-900 text-gray-500 text-sm">Loading editor...</div>}>
+                  <Editor />
+                </Suspense>
               </Panel>
 
               {/* Bottom Panel */}
@@ -501,10 +497,10 @@ function App() {
                         </div>
                       </div>
                       <div className="bottom-panel-content flex-1 overflow-hidden">
-                        {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}
-                        {activeBottomPanel === 'terminal' && terminalOpen && <Terminal />}
-                        {activeBottomPanel === 'preview' && previewOpen && <Preview />}
                         <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading...</div>}>
+                          {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}
+                          {activeBottomPanel === 'terminal' && terminalOpen && <Terminal />}
+                          {activeBottomPanel === 'preview' && previewOpen && <Preview />}
                           {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
                           {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
                           {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}

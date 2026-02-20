@@ -3,6 +3,7 @@ import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface CloneDialogProps {
   onClose: () => void;
@@ -51,7 +52,7 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
         // Change to the cloned directory
         const changeResult = await fileSystem.changeDirectory(clonedPath);
         if (changeResult.success) {
-          console.log(`Changed to cloned directory: ${clonedPath}`);
+          logger.info(`Changed to cloned directory: ${clonedPath}`);
         }
       } else {
         toast.error('Failed to initialize repository. Please try opening the project manually.');

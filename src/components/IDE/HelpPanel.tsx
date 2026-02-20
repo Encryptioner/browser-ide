@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { BookOpen, Code, Terminal, GitBranch, Zap, Layers, X, ChevronLeft, Menu, Keyboard, Command } from 'lucide-react';
 import { clsx } from 'clsx';
-import { logger } from '@/utils/logger';
 
 // Rest of the help panel content and structure remains the same...
 
@@ -10,6 +10,7 @@ export function HelpPanel({ className }: { className?: string }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('quick');
   const [selectedSection, setSelectedSection] = useState('quick-reference');
+  const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Just read the state, we don't need to assign it
@@ -36,7 +37,7 @@ export function HelpPanel({ className }: { className?: string }) {
   const handleSectionSelect = (categoryId: string, sectionId: string) => {
     setSelectedCategory(categoryId);
     setSelectedSection(sectionId);
-    if (window.innerWidth < 768) {
+    if (isMobile) {
       setSidebarCollapsed(true);
     }
   };

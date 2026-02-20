@@ -5,6 +5,7 @@ import { useIDEStore } from '@/store/useIDEStore';
 import { useShallow } from 'zustand/react/shallow';
 import { linterService } from '@/services/linter';
 import { logger } from '@/utils/logger';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { EditorStatusBar } from './EditorStatusBar';
 import * as monaco from 'monaco-editor';
 
@@ -25,8 +26,8 @@ export function Editor() {
   const settings = useIDEStore(state => state.settings);
   const setCurrentFile = useIDEStore(state => state.setCurrentFile);
   const searchHighlight = useIDEStore(state => state.searchHighlight);
-  const clearSearchHighlight = useIDEStore(state => state.clearSearchHighlight);
 
+  const isMobile = useIsMobile();
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -256,7 +257,7 @@ export function Editor() {
       <div className="tabs flex bg-gray-800 border-b border-gray-700 overflow-x-auto" role="tablist" aria-label="Open file tabs">
         {openFiles.map((file) => {
           const filename = file.split('/').pop() || file;
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          const mobile = isMobile;
           const isUnsaved = unsavedChanges.has(file);
           return (
             <div
@@ -272,8 +273,8 @@ export function Editor() {
               onClick={() => setCurrentFile(file)}
               tabIndex={file === currentFile ? 0 : -1}
             >
-              <span className={`tab-name text-xs sm:text-sm ${isMobile ? 'truncate max-w-[100px]' : ''}`}>
-                {isMobile && filename.length > 12 ? filename.substring(0, 12) + '...' : filename}
+              <span className={`tab-name text-xs sm:text-sm ${mobile ? 'truncate max-w-[100px]' : ''}`}>
+                {mobile && filename.length > 12 ? filename.substring(0, 12) + '...' : filename}
               </span>
               {isUnsaved && (
                 <span
@@ -285,7 +286,7 @@ export function Editor() {
                 </span>
               )}
               <button
-                className={`tab-close hover:bg-gray-600 rounded px-1 text-xs sm:text-sm ${isMobile ? 'min-w-[20px] min-h-[20px]' : ''}`}
+                className={`tab-close hover:bg-gray-600 rounded px-1 text-xs sm:text-sm ${mobile ? 'min-w-[20px] min-h-[20px]' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   closeFile(file);
@@ -312,11 +313,11 @@ export function Editor() {
             theme={settings.theme}
             options={{
               // Mobile-optimized visual settings
-              fontSize: typeof window !== 'undefined' && window.innerWidth < 768 ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,
+              fontSize: isMobile ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,
               tabSize: settings.tabSize,
-              wordWrap: typeof window !== 'undefined' && window.innerWidth < 768 ? 'on' : (settings.wordWrap || 'off'),
-              minimap: { enabled: typeof window !== 'undefined' && window.innerWidth < 768 ? false : settings.minimap },
-              lineNumbers: typeof window !== 'undefined' && window.innerWidth < 768 ? 'off' : settings.lineNumbers,
+              wordWrap: isMobile ? 'on' : (settings.wordWrap || 'off'),
+              minimap: { enabled: isMobile ? false : settings.minimap },
+              lineNumbers: isMobile ? 'off' : settings.lineNumbers,
               automaticLayout: true,
               scrollBeyondLastLine: false,
 

@@ -26,3 +26,31 @@ afterEach(() => {
 // Configure global test timeout for async operations
 // Some services (IndexedDB, Git) can be slow
 vi.setConfig({ testTimeout: 10000 });
+
+// Default matchMedia mock (desktop - all min-width queries match above 1024px)
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  configurable: true,
+  value: vi.fn().mockImplementation((query: string) => {
+    // Default: desktop viewport (1024px)
+    const matches = (() => {
+      // Parse max-width: Npx
+      const maxMatch = query.match(/max-width:\s*(\d+)px/);
+      if (maxMatch) return 1024 <= parseInt(maxMatch[1]);
+      // Parse min-width: Npx
+      const minMatch = query.match(/min-width:\s*(\d+)px/);
+      if (minMatch) return 1024 >= parseInt(minMatch[1]);
+      return false;
+    })();
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+  }),
+});
