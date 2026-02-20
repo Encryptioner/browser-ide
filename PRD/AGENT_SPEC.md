@@ -1,6 +1,6 @@
 # Agent Specification
 
-## Browser IDE Pro v2.0 - AI Agent Working Specification
+## Browser IDE - AI Agent Working Specification
 
 **Document Version:** 1.0
 **Created:** February 2026

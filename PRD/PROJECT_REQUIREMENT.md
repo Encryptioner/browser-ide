@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-## Browser IDE Pro v2.0 - Professional Web-Based Development Environment
+## Browser IDE - Professional Web-Based Development Environment
 
 **Document Version:** 2.2
 **Last Updated:** December 16, 2024
@@ -30,7 +30,7 @@ See [CURRENT_STATE.md](../CURRENT_STATE.md) for detailed current status and [TAS
 
 ## Executive Summary
 
-Browser IDE Pro is a **browser-only**, fully-functional Integrated Development Environment (IDE) that runs entirely in web browsers across desktop and mobile devices. The platform enables professional software development workflows for **small to medium repositories (0-300MB)** including code editing, version control (Git), Node.js runtime, terminal operations, and AI-assisted development through Claude Code CLI integration with multi-LLM support (Anthropic Claude & Z.AI GLM).
+Browser IDE is a **browser-only**, fully-functional Integrated Development Environment (IDE) that runs entirely in web browsers across desktop and mobile devices. The platform enables professional software development workflows for **small to medium repositories (0-300MB)** including code editing, version control (Git), Node.js runtime, terminal operations, and AI-assisted development through Claude Code CLI integration with multi-LLM support (Anthropic Claude & Z.AI GLM).
 
 ### Project Scope: Browser-Only Architecture
 
@@ -450,7 +450,7 @@ Package Manager:       pnpm 8.14
 
 ### 4.1 Critical Understanding: Browser Storage is NOT Unlimited
 
-**This is the most important architectural concern for a browser-only IDE.** Unlike cloud-backed IDEs (Gitpod, Codespaces), Browser IDE Pro stores everything locally in IndexedDB, which has hard limits that vary by browser and device.
+**This is the most important architectural concern for a browser-only IDE.** Unlike cloud-backed IDEs (Gitpod, Codespaces), Browser IDE stores everything locally in IndexedDB, which has hard limits that vary by browser and device.
 
 ### 4.2 IndexedDB Storage Limits by Browser
 
@@ -1163,7 +1163,7 @@ This is similar to how Replit and Gitpod work: browser frontend + cloud backend 
 
 ```
                                                              
-                     Browser IDE Pro                         
+                     Browser IDE                         
                                                              $
                                                              
                                                      
@@ -2509,7 +2509,7 @@ Based on comprehensive technical research, competitive analysis, and existing pr
 
 **PROCEED WITH DEVELOPMENT**
 
-This project is ambitious but achievable. The technical feasibility is confirmed, market demand exists, and differentiation strategy is strong. With realistic timeline expectations (6-10 months) and proper mobile optimization, Browser IDE Pro has excellent potential to become the leading mobile-friendly browser IDE.
+This project is ambitious but achievable. The technical feasibility is confirmed, market demand exists, and differentiation strategy is strong. With realistic timeline expectations (6-10 months) and proper mobile optimization, Browser IDE has excellent potential to become the leading mobile-friendly browser IDE.
 
 **Critical Success Factors:**
 1. Mobile-first architecture from day 1 (not retrofitted)

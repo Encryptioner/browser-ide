@@ -1,6 +1,6 @@
 # Agent Boundaries & Safeguards
 
-## Browser IDE Pro v2.0 - Risk Management for AI Agents
+## Browser IDE - Risk Management for AI Agents
 
 **Document Version:** 1.0
 **Created:** February 2026

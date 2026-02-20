@@ -1,6 +1,6 @@
 # Requirements Breakdown
 
-## Browser IDE Pro v2.0 - Atomic Task Decomposition
+## Browser IDE - Atomic Task Decomposition
 
 **Document Version:** 1.0
 **Created:** February 2026

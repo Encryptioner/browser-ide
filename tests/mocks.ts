@@ -1,7 +1,7 @@
 /**
  * Test Mocks and Mock Factories
  *
- * Browser IDE Pro v2.0 - Mock Definitions
+ * Browser IDE - Mock Definitions
  *
  * This file provides mock implementations of all services
  * for isolated unit testing.

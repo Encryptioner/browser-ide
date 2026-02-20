@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-## Browser IDE Pro v2.0 - Key Technical Decisions
+## Browser IDE - Key Technical Decisions
 
 **Document Version:** 1.0
 **Created:** February 2026

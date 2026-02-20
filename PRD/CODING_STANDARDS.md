@@ -1,6 +1,6 @@
 # Coding Standards
 
-## Browser IDE Pro v2.0 - Development Guidelines
+## Browser IDE - Development Guidelines
 
 **Document Version:** 1.0
 **Created:** February 2026

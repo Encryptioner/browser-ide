@@ -1,6 +1,6 @@
 # AGENTS.md - AI Agent Knowledge Base
 
-## Browser IDE Pro v2.0 - Accumulated Wisdom
+## Browser IDE - Accumulated Wisdom
 
 **Purpose:** This file persists learnings across AI agent iterations
 **Reference:** [Self-Improving Agents by Addy Osmani](https://addyosmani.com/blog/self-improving-agents/)

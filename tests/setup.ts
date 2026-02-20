@@ -1,7 +1,7 @@
 /**
  * Vitest Test Setup
  *
- * Browser IDE Pro v2.0 - Test Environment Configuration
+ * Browser IDE - Test Environment Configuration
  *
  * This file runs before each test suite to:
  * - Extend Vitest's expect with jest-dom matchers

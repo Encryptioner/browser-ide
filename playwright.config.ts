@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright E2E Testing Configuration
  *
- * Browser IDE Pro v2.0 - E2E Test Setup
+ * Browser IDE - E2E Test Setup
  *
  * Features:
  * - Multi-browser testing (Chromium, Firefox, WebKit)

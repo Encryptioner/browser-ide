@@ -1,7 +1,7 @@
 /**
  * React Test Utilities
  *
- * Browser IDE Pro v2.0 - Component Testing Helpers
+ * Browser IDE - Component Testing Helpers
  *
  * This file provides utility functions for testing React components
  * with proper providers and context.

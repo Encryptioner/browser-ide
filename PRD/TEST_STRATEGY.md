@@ -1,6 +1,6 @@
 # Test Strategy
 
-## Browser IDE Pro v2.0 - Comprehensive Testing Approach
+## Browser IDE - Comprehensive Testing Approach
 
 **Document Version:** 1.0
 **Created:** February 2026
