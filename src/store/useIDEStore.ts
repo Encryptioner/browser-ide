@@ -20,6 +20,8 @@ import type {
   AIMessage,
 } from '@/types';
 import { TerminalTab } from '@/components/IDE/TerminalTabs';
+import { encryptSecrets, decryptSecrets } from '@/services/crypto';
+import { logger } from '@/utils/logger';
 
 // RecentProject is defined here since it doesn't exist in types
 export interface RecentProject {
@@ -599,15 +601,20 @@ export const useIDEStore = create<IDEState & IDEActions>()(
           settings: { ...state.settings, ...newSettings },
         }));
         // Sync sensitive keys to sessionStorage (survives refresh, not browser close)
+        // Keys are encrypted with an ephemeral AES-GCM key held in memory
         const merged = { ...get().settings, ...newSettings };
         try {
-          const secrets = {
+          const secrets: Record<string, string> = {
             anthropicKey: merged.ai?.anthropicKey || '',
             glmKey: merged.ai?.glmKey || '',
             openaiKey: merged.ai?.openaiKey || '',
             githubToken: merged.githubToken || '',
           };
-          sessionStorage.setItem('ide-secrets', JSON.stringify(secrets));
+          encryptSecrets(secrets).then((encrypted) => {
+            sessionStorage.setItem('ide-secrets', encrypted);
+          }).catch((err) => {
+            logger.error('Failed to encrypt and store secrets', err, 'IDEStore');
+          });
         } catch { /* sessionStorage may be unavailable */ }
       },
 
@@ -685,26 +692,23 @@ export const useIDEStore = create<IDEState & IDEActions>()(
         try {
           const raw = sessionStorage.getItem('ide-secrets');
           if (raw) {
-            const secrets = JSON.parse(raw) as {
-              anthropicKey?: string;
-              glmKey?: string;
-              openaiKey?: string;
-              githubToken?: string;
-            };
-            state.settings = {
-              ...state.settings,
-              ai: {
-                ...state.settings.ai,
-                anthropicKey: secrets.anthropicKey || '',
-                glmKey: secrets.glmKey || '',
-                openaiKey: secrets.openaiKey || '',
-              },
-              githubToken: secrets.githubToken || '',
-            };
+            decryptSecrets(raw).then((secrets) => {
+              state.settings = {
+                ...state.settings,
+                ai: {
+                  ...state.settings.ai,
+                  anthropicKey: secrets.anthropicKey || '',
+                  glmKey: secrets.glmKey || '',
+                  openaiKey: secrets.openaiKey || '',
+                },
+                githubToken: secrets.githubToken || '',
+              };
+            }).catch((err) => {
+              logger.error('Failed to decrypt secrets on rehydration', err, 'IDEStore');
+            });
           }
         } catch { /* sessionStorage may be unavailable */ }
       },
     }
   )
 );
-

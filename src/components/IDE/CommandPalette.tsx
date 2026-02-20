@@ -4,7 +4,7 @@ import { importExportService } from '@/services/importExport';
 import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { toast } from 'sonner';
-import * as monaco from 'monaco-editor';
+// Monaco is dynamically imported to avoid pulling the entire bundle eagerly
 
 interface Command {
   id: string;
@@ -246,7 +246,8 @@ export function CommandPalette() {
       description: 'Search within current file',
       shortcut: 'Ctrl+F',
       category: 'Editor',
-      action: () => {
+      action: async () => {
+        const monaco = await import('monaco-editor');
         const editors = monaco.editor.getEditors();
         if (editors.length > 0) {
           editors[0]?.trigger('keyboard', 'actions.find', null);
@@ -261,7 +262,8 @@ export function CommandPalette() {
       description: 'Find and replace within current file',
       shortcut: 'Ctrl+H',
       category: 'Editor',
-      action: () => {
+      action: async () => {
+        const monaco = await import('monaco-editor');
         const editors = monaco.editor.getEditors();
         if (editors.length > 0) {
           editors[0]?.trigger('keyboard', 'editor.action.startFindReplaceAction', null);
@@ -276,7 +278,8 @@ export function CommandPalette() {
       description: 'Format current file',
       shortcut: 'Shift+Alt+F',
       category: 'Editor',
-      action: () => {
+      action: async () => {
+        const monaco = await import('monaco-editor');
         const editors = monaco.editor.getEditors();
         if (editors.length > 0) {
           editors[0]?.trigger('keyboard', 'editor.action.formatDocument', null);

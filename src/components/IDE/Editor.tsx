@@ -7,7 +7,7 @@ import { linterService } from '@/services/linter';
 import { logger } from '@/utils/logger';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { EditorStatusBar } from './EditorStatusBar';
-import * as monaco from 'monaco-editor';
+import type * as Monaco from 'monaco-editor';
 
 export function Editor() {
   const { currentFile, openFiles, editorContent, unsavedChanges } = useIDEStore(
@@ -30,7 +30,8 @@ export function Editor() {
   const isMobile = useIsMobile();
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof Monaco | null>(null);
   const lintTimeout = useRef<number | undefined>(undefined);
   const searchDecorationsRef = useRef<string[]>([]);
   const autoSaveTimeoutRef = useRef<number | undefined>(undefined);
@@ -98,13 +99,14 @@ export function Editor() {
     );
 
     // Apply new highlight if it matches the current file
-    if (searchHighlight && searchHighlight.file === currentFile) {
+    if (searchHighlight && searchHighlight.file === currentFile && monacoRef.current) {
       const { line, column, text } = searchHighlight;
+      const m = monacoRef.current;
 
       // Create a decoration for the search result
-      const decorations: monaco.editor.IModelDeltaDecoration[] = [
+      const decorations: Monaco.editor.IModelDeltaDecoration[] = [
         {
-          range: new monaco.Range(
+          range: new m.Range(
             line,
             column,
             line,
@@ -112,10 +114,10 @@ export function Editor() {
           ),
           options: {
             className: 'searchHighlight',
-            stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            stickiness: m.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
             overviewRuler: {
               color: '#d4af37', // Gold color for search highlights
-              position: monaco.editor.OverviewRulerLane.Full,
+              position: m.editor.OverviewRulerLane.Full,
             },
           },
         },
@@ -172,13 +174,14 @@ export function Editor() {
     }
   }
 
-  function handleEditorDidMount(editor: monaco.editor.IStandaloneCodeEditor) {
+  function handleEditorDidMount(editor: Monaco.editor.IStandaloneCodeEditor, monacoInstance: typeof Monaco) {
     editorRef.current = editor;
+    monacoRef.current = monacoInstance;
 
     // Add save shortcut
     // Cmd+S or Ctrl+S
     editor.addCommand(
-      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
       () => {
         handleSave();
       }
@@ -311,6 +314,16 @@ export function Editor() {
             onChange={handleChange}
             onMount={handleEditorDidMount}
             theme={settings.theme}
+            loading={
+              <div className="flex items-center justify-center h-full bg-gray-900 text-gray-500">
+                <div className="text-center">
+                  <div className="animate-pulse mb-2">Loading editor...</div>
+                  <div className="w-48 h-1 bg-gray-800 rounded overflow-hidden">
+                    <div className="h-full bg-blue-600 rounded animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                  </div>
+                </div>
+              </div>
+            }
             options={{
               // Mobile-optimized visual settings
               fontSize: isMobile ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,

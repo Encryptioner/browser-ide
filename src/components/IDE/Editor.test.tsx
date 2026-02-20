@@ -63,7 +63,16 @@ vi.mock('@monaco-editor/react', () => ({
           setModel: vi.fn(),
           getValue: vi.fn(() => value),
         };
-        onMount(mockEditor);
+        const mockMonaco = {
+          KeyMod: { CtrlCmd: 2048 },
+          KeyCode: { KeyS: 49 },
+          Range: vi.fn(),
+          editor: {
+            TrackedRangeStickiness: { NeverGrowsWhenTypingAtEdges: 1 },
+            OverviewRulerLane: { Full: 7 },
+          },
+        };
+        onMount(mockEditor, mockMonaco);
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onMount]);
