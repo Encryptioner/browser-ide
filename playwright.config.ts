@@ -24,6 +24,12 @@ export default defineConfig({
     ['json', { outputFile: 'test-results.json' }],
     ['junit', { outputFile: 'junit-results.xml' }],
   ],
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixels: 100,
+      threshold: 0.3,
+    },
+  },
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',

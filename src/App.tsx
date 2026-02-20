@@ -4,7 +4,9 @@ import {
   FileExplorer,
   StatusBar,
   WorkspaceSwitcher,
+  BottomTabBar,
 } from '@/components/IDE';
+import type { TabItem } from '@/components/IDE';
 
 // Lazy-load heavy editor & terminal components (Monaco ~2.5MB, xterm ~300KB)
 const Editor = lazy(() => import('@/components/IDE/Editor').then(m => ({ default: m.Editor })));
@@ -412,90 +414,18 @@ function App() {
                     maxSize={terminalMaximized ? 100 : 100}
                   >
                     <MobileBottomPanel isOpen={bottomPanelVisible} className="bottom-panel flex flex-col h-full bg-gray-900">
-                      <div className="bottom-panel-tabs flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
-                        {terminalOpen && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'terminal-tabs'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('terminal-tabs')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">💻</span>
-                            <span className="hidden sm:inline">Terminal</span>
-                            <span className="sm:hidden text-xs">Term</span>
-                          </div>
-                        )}
-                        {previewOpen && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'preview'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('preview')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">👁️</span>
-                            <span className="hidden sm:inline">Preview</span>
-                            <span className="sm:hidden text-xs">View</span>
-                          </div>
-                        )}
-                        {showClaudeCode && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'claude-code'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('claude-code')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">🧠</span>
-                            <span className="hidden sm:inline">Claude</span>
-                            <span className="sm:hidden text-xs">AI</span>
-                          </div>
-                        )}
-                        {showExtensions && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'extensions'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('extensions')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">🧩</span>
-                            <span className="hidden sm:inline">Extensions</span>
-                            <span className="sm:hidden text-xs">Ext</span>
-                          </div>
-                        )}
-                        {showGit && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'git'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('git')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">🔀</span>
-                            <span className="hidden sm:inline">Git</span>
-                            <span className="sm:hidden text-xs">Git</span>
-                          </div>
-                        )}
-                        <div
-                          className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                            activeBottomPanel === 'help'
-                              ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                              : 'hover:bg-gray-700 text-gray-300'
-                          }`}
-                          onClick={() => setActiveBottomPanel('help')}
-                        >
-                          <span className="text-lg sm:text-base mb-1">📚</span>
-                          <span className="hidden sm:inline">Help</span>
-                          <span className="sm:hidden text-xs">Help</span>
-                        </div>
-                      </div>
+                      <BottomTabBar
+                        tabs={[
+                          ...(terminalOpen ? [{ id: 'terminal-tabs', label: 'Terminal', shortLabel: 'Term', icon: '💻' } satisfies TabItem] : []),
+                          ...(previewOpen ? [{ id: 'preview', label: 'Preview', shortLabel: 'View', icon: '👁️' } satisfies TabItem] : []),
+                          ...(showClaudeCode ? [{ id: 'claude-code', label: 'Claude', shortLabel: 'AI', icon: '🧠' } satisfies TabItem] : []),
+                          ...(showExtensions ? [{ id: 'extensions', label: 'Extensions', shortLabel: 'Ext', icon: '🧩' } satisfies TabItem] : []),
+                          ...(showGit ? [{ id: 'git', label: 'Git', shortLabel: 'Git', icon: '🔀' } satisfies TabItem] : []),
+                          { id: 'help', label: 'Help', shortLabel: 'Help', icon: '📚' },
+                        ]}
+                        activeTab={activeBottomPanel}
+                        onTabChange={(id) => setActiveBottomPanel(id as typeof activeBottomPanel)}
+                      />
                       <div className="bottom-panel-content flex-1 overflow-hidden">
                         <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading...</div>}>
                           {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}

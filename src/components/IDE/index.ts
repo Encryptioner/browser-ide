@@ -17,3 +17,5 @@ export { SplitEditor } from './SplitEditor';
 export { TerminalTabs } from './TerminalTabs';
 export { ProblemsPanel } from './ProblemsPanel';
 export { HelpPanel } from './HelpPanel';
+export { BottomTabBar } from './BottomTabBar';
+export type { TabItem } from './BottomTabBar';

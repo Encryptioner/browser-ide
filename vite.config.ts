@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 import { copyFileSync, existsSync } from 'fs';
 
 const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+const isAnalyze = process.env.ANALYZE === 'true';
 
 // Plugin to copy coi-serviceworker to dist
 function copyCoiServiceWorker() {
@@ -48,6 +50,13 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       copyCoiServiceWorker(),
+      isAnalyze &&
+        visualizer({
+          filename: 'dist/stats.html',
+          open: false,
+          gzipSize: true,
+          template: 'treemap',
+        }),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg', 'robots.txt'],

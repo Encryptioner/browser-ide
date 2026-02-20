@@ -76,6 +76,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**', '.git/**'],
+    ignores: ['dist/**', 'node_modules/**', '.git/**', 'public/**'],
   },
 ];
