@@ -303,7 +303,7 @@ export class ClaudeCodeAgent {
    */
   async executeTask(
     userMessage: string,
-    onProgress?: (message: string) => void
+    onProgress?: (_message: string) => void
   ): Promise<AgentExecutionResult> {
     try {
       // Add user message to conversation

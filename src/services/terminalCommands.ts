@@ -989,7 +989,7 @@ export async function executeCommand(
       return;
     }
 
-    logger.info('\u2705 Executing command:', cmd, args);
+    logger.info(`\u2705 Executing command: ${cmd} ${args.join(' ')}`);
     const spawnResult = await webContainer.spawn(cmd, args);
 
     if (spawnResult.success && spawnResult.process && spawnResult.processId && spawnResult.exit) {

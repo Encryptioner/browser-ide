@@ -205,8 +205,8 @@ dist/
    * Execute a task using Claude agent
    */
   async executeTask(task: string, options: {
-    onProgress?: (message: string) => void;
-    onOutput?: (output: string) => void;
+    onProgress?: (_message: string) => void;
+    onOutput?: (_output: string) => void;
   } = {}): Promise<CLIResult> {
     if (!this.isInitialized) {
       await this.initialize();

@@ -20,7 +20,7 @@ export interface ServiceReadiness {
   /** Whether critical services are ready (app can render) */
   criticalReady: boolean;
   /** Retry a specific service */
-  retry: (service: 'filesystem' | 'webcontainer' | 'git') => void;
+  retry: (_service: 'filesystem' | 'webcontainer' | 'git') => void;
 }
 
 const MAX_RETRIES = 3;

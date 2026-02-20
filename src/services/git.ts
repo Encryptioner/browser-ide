@@ -90,7 +90,7 @@ class GitService {
   async clone(
     url: string,
     token: string,
-    onProgress?: (progress: GitCloneProgress) => void
+    onProgress?: (_progress: GitCloneProgress) => void
   ): Promise<GitResult<string>> {
     const currentDir = fileSystem.getCurrentWorkingDirectory();
     // Create a subdirectory for the repo
@@ -446,7 +446,7 @@ class GitService {
         dir: directory,
         path,
       });
-    } catch (error) {
+    } catch (_error) {
       return undefined;
     }
   }
@@ -487,7 +487,7 @@ class GitService {
       const remotes = await this.listRemotes(directory);
       const found = remotes.find((r) => r.remote === remote);
       return found ? found.url : null;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -935,7 +935,7 @@ class GitService {
             fastForward: true,
           },
         };
-      } catch (ffError) {
+      } catch (_ffError) {
         // Fast-forward not possible
         if (options?.fastForwardOnly) {
           return {

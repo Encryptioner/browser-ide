@@ -18,7 +18,7 @@ interface LintResult {
 interface LintProvider {
   name: string;
   languages: string[];
-  lint: (content: string, language: string) => LintDiagnostic[];
+  lint: (_content: string, _language: string) => LintDiagnostic[];
 }
 
 class BasicJSLinter implements LintProvider {

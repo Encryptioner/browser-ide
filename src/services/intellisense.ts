@@ -50,11 +50,11 @@ export interface IntelliSenseCompletion {
   filterText?: string;
   sortText?: string;
   commitCharacters?: string[];
-  data?: any;
+  data?: unknown;
   command?: {
     title: string;
     command: string;
-    arguments?: any[];
+    arguments?: unknown[];
   };
 }
 
@@ -66,49 +66,49 @@ export interface IntelliSenseProvider {
 
   // Core completion methods
   provideCompletionItems(
-    document: string,
-    position: { line: number; character: number },
-    context?: CompletionContext
+    _document: string,
+    _position: { line: number; character: number },
+    _context?: CompletionContext
   ): Promise<CompletionItem[]>;
 
   // Hover information
   provideHover(
-    document: string,
-    position: { line: number; character: number }
+    _document: string,
+    _position: { line: number; character: number }
   ): Promise<Hover | null>;
 
   // Signature help for function calls
   provideSignatureHelp(
-    document: string,
-    position: { line: number; character: number }
+    _document: string,
+    _position: { line: number; character: number }
   ): Promise<SignatureHelp | null>;
 
   // Go to definition
   provideDefinition(
-    document: string,
-    position: { line: number; character: number }
+    _document: string,
+    _position: { line: number; character: number }
   ): Promise<Definition | null>;
 
   // Find references
   provideReferences(
-    document: string,
-    position: { line: number; character: number }
+    _document: string,
+    _position: { line: number; character: number }
   ): Promise<Reference[]>;
 
   // Document symbols
-  provideDocumentSymbols(document: string): Promise<LocalDocumentSymbol[]>;
+  provideDocumentSymbols(_document: string): Promise<LocalDocumentSymbol[]>;
 
   // Code actions (quick fixes, refactoring)
   provideCodeActions(
-    document: string,
-    range: { start: { line: number; character: number }; end: { line: number; character: number } }
+    _document: string,
+    _range: { start: { line: number; character: number }; end: { line: number; character: number } }
   ): Promise<CodeAction[]>;
 
   // Diagnostics (linting, type checking)
-  provideDiagnostics(document: string): Promise<Diagnostic[]>;
+  provideDiagnostics(_document: string): Promise<Diagnostic[]>;
 
   // Workspace symbols (global search)
-  provideWorkspaceSymbols(query: string): Promise<WorkspaceSymbol[]>;
+  provideWorkspaceSymbols(_query: string): Promise<WorkspaceSymbol[]>;
 
   // Provider lifecycle
   activate(): Promise<void>;
@@ -338,7 +338,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
   async provideCompletionItems(
     document: string,
     position: { line: number; character: number },
-    context?: CompletionContext
+    _context?: CompletionContext
   ): Promise<CompletionItem[]> {
     const completions: CompletionItem[] = [];
 
@@ -574,8 +574,8 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
   }
 
   async provideSignatureHelp(
-    document: string,
-    position: { line: number; character: number }
+    _document: string,
+    _position: { line: number; character: number }
   ): Promise<SignatureHelp | null> {
     // Basic signature help implementation
     // In a real implementation, this would parse function signatures and parameters
@@ -629,8 +629,8 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
   }
 
   async provideReferences(
-    document: string,
-    position: { line: number; character: number }
+    _document: string,
+    _position: { line: number; character: number }
   ): Promise<Reference[]> {
     // Basic references implementation
     // In a real implementation, this would search through all open files
@@ -648,8 +648,8 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
   }
 
   async provideCodeActions(
-    document: string,
-    range: { start: { line: number; character: number }; end: { line: number; character: number } }
+    _document: string,
+    _range: { start: { line: number; character: number }; end: { line: number; character: number } }
   ): Promise<CodeAction[]> {
     // Basic code actions implementation
     // In a real implementation, this would provide quick fixes and refactoring
@@ -710,7 +710,7 @@ export class JavaScriptIntelliSenseProvider implements IntelliSenseProvider {
     return diagnostics;
   }
 
-  async provideWorkspaceSymbols(query: string): Promise<WorkspaceSymbol[]> {
+  async provideWorkspaceSymbols(_query: string): Promise<WorkspaceSymbol[]> {
     // Basic workspace symbols implementation
     // In a real implementation, this would search through all workspace files
     return [];

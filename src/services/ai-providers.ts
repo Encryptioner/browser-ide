@@ -13,11 +13,11 @@ export interface LLMProvider {
   name: string;
    
   complete(
-    messages: AIMessage[],
-    config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    _messages: AIMessage[],
+    _config: AIProviderConfig,
+    _onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>>;
-  validateConfig(config: AIProviderConfig): Promise<boolean>;
+  validateConfig(_config: AIProviderConfig): Promise<boolean>;
    
 }
 
@@ -30,7 +30,7 @@ export class AnthropicProvider implements LLMProvider {
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -75,7 +75,7 @@ export class AnthropicProvider implements LLMProvider {
   private async handleStream(
     response: Response,
     config: AIProviderConfig,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
@@ -204,7 +204,7 @@ export class GLMProvider implements LLMProvider {
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     try {
       const baseUrl = config.baseUrl || 'https://api.z.ai/api/paas/v4';
@@ -249,7 +249,7 @@ export class GLMProvider implements LLMProvider {
   private async handleStream(
     response: Response,
     config: AIProviderConfig,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
@@ -375,7 +375,7 @@ export class OpenAIProvider implements LLMProvider {
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     // Similar implementation to GLM (OpenAI-compatible API)
     try {
@@ -419,7 +419,7 @@ export class OpenAIProvider implements LLMProvider {
   private async handleStreamLikeGLM(
     response: Response,
     config: AIProviderConfig,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     // Same as GLM implementation
     const glmProvider = new GLMProvider();
@@ -484,7 +484,7 @@ export class AIProviderRegistry {
     providerType: AIProvider,
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     const provider = this.get(providerType);
     if (!provider) {

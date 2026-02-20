@@ -86,13 +86,13 @@ const DEFAULT_CONFIG: AppMobileConfig = {
  */
 export function useMobileConfig(): {
   config: AppMobileConfig;
-  updateConfig: (updates: Partial<AppMobileConfig>) => void;
+  updateConfig: (_updates: Partial<AppMobileConfig>) => void;
   resetConfig: () => void;
   saveConfig: () => Promise<boolean>;
   loadConfig: () => Promise<boolean>;
 } {
   const [config, setConfig] = useState<AppMobileConfig>(DEFAULT_CONFIG);
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
 
   // Load config from localStorage or fetch from file
   const loadConfig = async (): Promise<boolean> => {

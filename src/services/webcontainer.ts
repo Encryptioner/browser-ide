@@ -166,7 +166,7 @@ class WebContainerService {
 
         // Listen for server events
         this.instance.on('server-ready', (port, url) => {
-          logger.info('🚀 Server ready on port', port, ':', url);
+          logger.info(`🚀 Server ready on port ${port}: ${url}`);
           this.serverUrl = url;
         });
 
