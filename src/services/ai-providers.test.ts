@@ -853,7 +853,7 @@ describe('AIProviderRegistry', () => {
     });
 
     it('should return undefined for unknown provider', () => {
-      const provider = registry.get('unknown' as any);
+      const provider = registry.get('unknown' as unknown as Parameters<typeof registry.get>[0]);
 
       expect(provider).toBeUndefined();
     });
@@ -866,7 +866,7 @@ describe('AIProviderRegistry', () => {
         name: 'Custom Provider',
         complete: vi.fn(),
         validateConfig: vi.fn(),
-      } as any;
+      } as unknown as Parameters<typeof registry.register>[1];
 
       registry.register('custom', customProvider);
 
@@ -880,7 +880,7 @@ describe('AIProviderRegistry', () => {
         name: 'New Anthropic',
         complete: vi.fn(),
         validateConfig: vi.fn(),
-      } as any;
+      } as unknown as Parameters<typeof registry.register>[1];
 
       registry.register('anthropic', newProvider);
 
@@ -889,8 +889,8 @@ describe('AIProviderRegistry', () => {
     });
 
     it('should handle multiple custom providers', () => {
-      const provider1 = { id: 'p1', name: 'P1', complete: vi.fn(), validateConfig: vi.fn() } as any;
-      const provider2 = { id: 'p2', name: 'P2', complete: vi.fn(), validateConfig: vi.fn() } as any;
+      const provider1 = { id: 'p1', name: 'P1', complete: vi.fn(), validateConfig: vi.fn() } as unknown as Parameters<typeof registry.register>[1];
+      const provider2 = { id: 'p2', name: 'P2', complete: vi.fn(), validateConfig: vi.fn() } as unknown as Parameters<typeof registry.register>[1];
 
       registry.register('p1', provider1);
       registry.register('p2', provider2);
@@ -958,7 +958,7 @@ describe('AIProviderRegistry', () => {
     });
 
     it('should return error for unknown provider', async () => {
-      const result = await registry.complete('unknown' as any, mockMessages, mockConfig);
+      const result = await registry.complete('unknown' as unknown as Parameters<typeof registry.complete>[0], mockMessages, mockConfig);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('not found');

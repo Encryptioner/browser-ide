@@ -586,7 +586,7 @@ export class SnippetManager {
   }
 
   removeSnippet(snippetId: string): boolean {
-    for (const [language, snippets] of this.snippets.entries()) {
+    for (const [, snippets] of this.snippets.entries()) {
       const index = snippets.findIndex(snippet => snippet.id === snippetId);
       if (index !== -1) {
         snippets.splice(index, 1);
@@ -597,7 +597,7 @@ export class SnippetManager {
   }
 
   updateSnippet(snippetId: string, updates: Partial<CodeSnippet>): boolean {
-    for (const [language, snippets] of this.snippets.entries()) {
+    for (const [, snippets] of this.snippets.entries()) {
       const snippet = snippets.find(s => s.id === snippetId);
       if (snippet) {
         Object.assign(snippet, updates);
@@ -657,7 +657,6 @@ export class SnippetManager {
     const placeholders: SnippetPlaceholder[] = [];
     const placeholderRegex = /\$(\d+)(?::([^$]*))?\$/g;
     let match;
-    const index = 0;
 
     for (const line of body) {
       while ((match = placeholderRegex.exec(line)) !== null) {

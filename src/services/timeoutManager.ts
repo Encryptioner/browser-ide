@@ -37,14 +37,12 @@ class TimeoutManager {
     } = options;
 
     const startTime = Date.now();
-    let warned = false;
 
     logger.info(`Started tracking: ${operationId} (${operationName})`);
 
     // Warning timeout
     const warningId = window.setTimeout(() => {
       if (this.activeTimeouts.has(operationId)) {
-        warned = true;
         const elapsed = Date.now() - startTime;
 
         logger.warn(`Warning: ${operationName} taking longer than expected (${elapsed}ms)`);

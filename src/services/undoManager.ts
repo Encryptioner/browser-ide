@@ -52,7 +52,6 @@ class UndoManager {
       return false;
     }
 
-    const action = this.history[actionIndex];
     this.history.splice(actionIndex, 1);
     this.saveToStorage();
     return true;

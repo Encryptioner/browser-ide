@@ -303,7 +303,8 @@ export class ClaudeCodeAgent {
    */
   async executeTask(
     userMessage: string,
-    onProgress?: (_message: string) => void
+    // eslint-disable-next-line no-unused-vars
+    onProgress?: (message: string) => void
   ): Promise<AgentExecutionResult> {
     try {
       // Add user message to conversation

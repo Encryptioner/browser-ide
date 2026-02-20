@@ -140,6 +140,8 @@ export function FileExplorer() {
   useEffect(() => {
     loadFileTree();
     loadGitStatus();
+    // loadFileTree and loadGitStatus are stable functions defined in component scope, only need to run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

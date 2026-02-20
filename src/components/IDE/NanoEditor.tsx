@@ -255,6 +255,8 @@ export function NanoEditor({ xterm, filePath, initialContent = '', onExit }: Nan
         }
         break;
     }
+    // performSearch is intentionally omitted to avoid circular dependency with handleKeyPress
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cursorLine, cursorCol, searchMode, searchQuery, handleSave, handleExit, onExit, renderEditor]);
 
   const performSearch = useCallback((query: string) => {

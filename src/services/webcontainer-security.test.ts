@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { isCommandAllowed, sanitizeArguments, ALLOWED_COMMANDS } from './webcontainer';
+import { isCommandAllowed, sanitizeArguments } from './webcontainer';
 
 describe('WebContainer Security Tests', () => {
   beforeEach(() => {

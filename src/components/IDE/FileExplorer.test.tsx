@@ -10,7 +10,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 // =============================================================================
@@ -76,7 +75,7 @@ let mockStoreState: Record<string, unknown> = {
 };
 
 vi.mock('@/store/useIDEStore', () => ({
-  useIDEStore: vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
+  useIDEStore: vi.fn((selector?: (_state: Record<string, unknown>) => unknown) => {
     if (typeof selector === 'function') {
       return selector(mockStoreState);
     }

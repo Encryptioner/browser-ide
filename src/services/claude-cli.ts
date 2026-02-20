@@ -205,8 +205,10 @@ dist/
    * Execute a task using Claude agent
    */
   async executeTask(task: string, options: {
-    onProgress?: (_message: string) => void;
-    onOutput?: (_output: string) => void;
+    // eslint-disable-next-line no-unused-vars
+    onProgress?: (message: string) => void;
+    // eslint-disable-next-line no-unused-vars
+    onOutput?: (output: string) => void;
   } = {}): Promise<CLIResult> {
     if (!this.isInitialized) {
       await this.initialize();

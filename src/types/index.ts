@@ -470,12 +470,14 @@ export interface ProblemRelatedInformation {
   endColumn: number;
 }
 
- 
+
 export enum ProblemTag {
+  // eslint-disable-next-line no-unused-vars
   Unnecessary = 1,
+  // eslint-disable-next-line no-unused-vars
   Deprecated = 2,
 }
- 
+
 
 export interface ProblemsCollection {
   resource: string;

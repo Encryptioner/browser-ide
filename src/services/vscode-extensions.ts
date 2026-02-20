@@ -65,6 +65,7 @@ export class VSCodeExtensionManager {
 
       const data = await response.json();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return data.extensions?.map((ext: any) => ({
         id: `${ext.namespace}.${ext.name}`,
         name: ext.displayName || ext.name,
@@ -245,6 +246,7 @@ export class VSCodeExtensionManager {
   /**
    * Open IndexedDB for extension storage
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async openDB(): Promise<any> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open('VSCodeExtensions', 1);
@@ -252,8 +254,8 @@ export class VSCodeExtensionManager {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
 
-      request.onupgradeneeded = (event: any) => {
-        const db = event.target.result;
+      request.onupgradeneeded = () => {
+        const db = request.result;
         if (!db.objectStoreNames.contains('extensions')) {
           db.createObjectStore('extensions', { keyPath: 'id' });
         }

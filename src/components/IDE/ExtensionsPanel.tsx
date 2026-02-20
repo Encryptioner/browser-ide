@@ -41,6 +41,8 @@ export function ExtensionsPanel() {
     if (activeTab === 'marketplace' && extensions.length === 0) {
       loadPopularExtensions();
     }
+    // extensions.length intentionally omitted - only load popular on tab switch, not when extensions change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const loadPopularExtensions = async () => {

@@ -54,7 +54,7 @@ let mockStoreState = {
 
 // Mock Monaco Editor - must be defined before imports
 vi.mock('@monaco-editor/react', () => ({
-  default: vi.fn(({ onChange, onMount, value, language, theme }) => {
+  default: vi.fn(({ onMount, value, language, theme }) => {
     React.useEffect(() => {
       if (onMount) {
         const mockEditor = {
@@ -65,6 +65,7 @@ vi.mock('@monaco-editor/react', () => ({
         };
         onMount(mockEditor);
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onMount]);
 
     // Don't automatically call onChange to avoid unintended side effects
@@ -120,12 +121,12 @@ const getMockStoreState = (): Record<string, unknown> => ({
 });
 
 vi.mock('@/store/useIDEStore', () => ({
-  useIDEStore: vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
-    const state = getMockStoreState();
+  useIDEStore: vi.fn((selector?: (_state: Record<string, unknown>) => unknown) => {
+    const currentState = getMockStoreState();
     if (typeof selector === 'function') {
-      return selector(state);
+      return selector(currentState);
     }
-    return state;
+    return currentState;
   }),
 }));
 

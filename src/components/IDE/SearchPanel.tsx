@@ -59,6 +59,8 @@ export function SearchPanel() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // clearSearchHighlight is a stable store action and does not need to trigger re-subscription
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, replaceMode]);
 
   // Focus input when opened

@@ -45,6 +45,8 @@ export function StatusBar() {
     if (showBranchMenu && isGitRepo && branches.length === 0) {
       loadBranches();
     }
+    // branches.length intentionally omitted - only load when menu opens, not when branches change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showBranchMenu, isGitRepo]);
 
   // Close menu when clicking outside

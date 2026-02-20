@@ -358,7 +358,7 @@ class FileSystemService {
             }
 
             nodes.push(node);
-          } catch (_error) {
+          } catch {
             // Add as file if stat fails
             nodes.push({
               name: fileName,

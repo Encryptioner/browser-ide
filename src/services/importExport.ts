@@ -30,12 +30,12 @@ export interface FileSystemExport {
 export interface ProjectExport {
   metadata: ExportMetadata;
   fileSystem: FileSystemExport;
-  settings?: any;
-  ideState?: any;
+  settings?: Record<string, unknown>;
+  ideState?: Record<string, unknown>;
   gitInfo?: {
     currentBranch: string;
     remotes: Array<{ remote: string; url: string }>;
-    commits: any[];
+    commits: unknown[];
   };
 }
 
@@ -73,7 +73,7 @@ class ImportExportService {
       const currentDir = fileSystem.getCurrentWorkingDirectory();
       logger.info(`📁 Exporting files from: ${currentDir}`);
 
-      const fileTree = await fileSystem.buildFileTree(currentDir, 10);
+      await fileSystem.buildFileTree(currentDir, 10);
       const files: FileSystemExport['files'] = [];
 
       // Collect all files recursively
@@ -292,7 +292,7 @@ class ImportExportService {
         const gitInfoFile = zipContent.file(this.GIT_INFO_FILE);
         if (gitInfoFile) {
           try {
-            const gitInfo = JSON.parse(await gitInfoFile.async('text'));
+            JSON.parse(await gitInfoFile.async('text'));
             logger.info('📚 Git info available for reference (manual setup required)');
           } catch (error) {
             logger.warn('⚠️ Could not import git info:', error);

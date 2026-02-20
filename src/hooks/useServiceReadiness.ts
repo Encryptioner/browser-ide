@@ -20,7 +20,8 @@ export interface ServiceReadiness {
   /** Whether critical services are ready (app can render) */
   criticalReady: boolean;
   /** Retry a specific service */
-  retry: (_service: 'filesystem' | 'webcontainer' | 'git') => void;
+  // eslint-disable-next-line no-unused-vars
+  retry: (service: 'filesystem' | 'webcontainer' | 'git') => void;
 }
 
 const MAX_RETRIES = 3;

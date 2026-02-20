@@ -133,7 +133,7 @@ test.describe('Editor Functionality', () => {
       await mainElement.focus();
 
       // Element should be focusable
-      const isFocused = await mainElement.evaluate((el) =>
+      await mainElement.evaluate((el) =>
         document.activeElement === el
       );
 
@@ -217,7 +217,7 @@ test.describe('Editor Functionality', () => {
     // Check for memory leaks by verifying no excessive event listeners accumulated
     const listenerCount = await page.evaluate(() => {
       // Rough check - if this grows unbounded, it indicates a memory leak
-      return (window as any).__listenerCount || 0;
+      return (window as unknown as Record<string, number>).__listenerCount || 0;
     });
 
     // This is a basic sanity check - in real scenarios you'd use more sophisticated tools

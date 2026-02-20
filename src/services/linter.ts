@@ -25,7 +25,7 @@ class BasicJSLinter implements LintProvider {
   name = 'JavaScript Linter';
   languages = ['javascript', 'typescript'];
 
-  lint(content: string, language: string): LintDiagnostic[] {
+  lint(content: string, _language: string): LintDiagnostic[] {
     const diagnostics: LintDiagnostic[] = [];
     const lines = content.split('\n');
 
@@ -156,7 +156,7 @@ class BasicHTMLLinter implements LintProvider {
   name = 'HTML Linter';
   languages = ['html', 'htm'];
 
-  lint(content: string, language: string): LintDiagnostic[] {
+  lint(content: string, _language: string): LintDiagnostic[] {
     const diagnostics: LintDiagnostic[] = [];
     const lines = content.split('\n');
 
@@ -173,7 +173,7 @@ class BasicHTMLLinter implements LintProvider {
     const closeTags = line.match(/<\/[^>]*>/g) || [];
 
     // Simple check - might have false positives
-    openTags.forEach((openTag, index) => {
+    openTags.forEach((openTag, _index) => {
       const tagName = openTag.match(/<(\w+)/)?.[1];
       if (tagName) {
         const hasClosingTag = closeTags.some(closeTag => closeTag.includes(`/${tagName}`));
@@ -213,7 +213,7 @@ class BasicCSSLinter implements LintProvider {
   name = 'CSS Linter';
   languages = ['css', 'scss', 'less'];
 
-  lint(content: string, language: string): LintDiagnostic[] {
+  lint(content: string, _language: string): LintDiagnostic[] {
     const diagnostics: LintDiagnostic[] = [];
     const lines = content.split('\n');
 

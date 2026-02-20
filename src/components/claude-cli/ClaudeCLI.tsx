@@ -124,6 +124,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         }
       }, 100);
     }
+    // handleTerminalInput is intentionally omitted - terminal input handler is set up once on initialization
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized, getActiveWorkspace]);
 
   const handleTerminalInput = useCallback((data: string, term: Terminal) => {
@@ -233,6 +235,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         }
         break;
     }
+    // executeCommand is intentionally omitted to prevent re-creating input handler on every command execution
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExecuting, commandHistory, historyIndex]);
 
   // Handle Claude Code slash commands
@@ -326,6 +330,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         term.writeln('💡 Type /help for available commands');
         break;
     }
+    // executeLsCommand and showStatusCommand are stable component-scoped functions, intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliService, commandHistory, workspaceStatus]);
 
   const executeCommand = useCallback(async (command: string, term: Terminal) => {
@@ -437,6 +443,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     }
 
     onCommand?.(command, { success: true });
+    // Command handler functions are stable component-scoped functions, intentionally omitted to avoid excessive re-creation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliService, workspaceStatus, onCommand]);
 
   const showHelpCommand = (term: Terminal) => {

@@ -152,6 +152,8 @@ export function TerminalTabs({ className: _className }: TerminalTabsProps) {
     setTimeout(() => {
       startTerminalProcess(newTab.id);
     }, 100);
+    // startTerminalProcess is intentionally omitted to avoid circular dependency between createNewTab and startTerminalProcess
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customProfiles]);
 
   const startTerminalProcess = useCallback(async (tabId: string) => {

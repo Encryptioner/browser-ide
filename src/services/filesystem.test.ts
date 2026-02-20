@@ -99,7 +99,7 @@ function setupMockBehaviors(): void {
 
   mockMkdir.mockImplementation((path: string) => {
     if (mockFSState.has(path)) {
-      const error: any = new Error(`EEXIST: file already exists, mkdir '${path}'`);
+      const error = new Error(`EEXIST: file already exists, mkdir '${path}'`) as Error & { code: string };
       error.code = 'EEXIST';
       return Promise.reject(error);
     }

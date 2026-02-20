@@ -28,6 +28,7 @@ import { logger } from '@/utils/logger';
 // --------------------------------------------------------------------------
 
 /** Callback interface for writing output to the terminal. */
+/* eslint-disable no-unused-vars */
 export interface TerminalWriter {
   /** Write a line (appends \r\n). */
   writeln(text: string): void;
@@ -36,6 +37,7 @@ export interface TerminalWriter {
   /** Clear the terminal screen. */
   clear(): void;
 }
+/* eslint-enable no-unused-vars */
 
 /** Tracks a background process. */
 export interface BackgroundJob {
@@ -48,6 +50,7 @@ export interface BackgroundJob {
 /** Callbacks the component must supply so the service can trigger UI-only actions. */
 export interface TerminalCallbacks {
   /** Open the nano editor with the given file path and content. */
+  // eslint-disable-next-line no-unused-vars
   openNano: (filePath: string, content: string) => void;
 }
 
@@ -868,6 +871,7 @@ async function handleFgCommand(
   args: string[],
   w: TerminalWriter,
   backgroundProcesses: Map<number, BackgroundJob>,
+  // eslint-disable-next-line no-unused-vars
   setCurrentProcess: (id: string | null) => void,
 ): Promise<void> {
   const jobId = args.length > 0 ? parseInt(args[0].replace(/^%/, ''), 10) : 1;
@@ -1080,6 +1084,7 @@ async function dispatchBuiltinCommand(
   cmd: string,
   args: string[],
   w: TerminalWriter,
+  // eslint-disable-next-line no-unused-vars
   writeError: (msg: string) => void,
   callbacks: TerminalCallbacks,
   sessionId: string,

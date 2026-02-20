@@ -49,7 +49,7 @@ export function initSentry(config: SentryConfig): void {
       },
 
       // Context filters
-      beforeBreadcrumb(breadcrumb, hint) {
+      beforeBreadcrumb(breadcrumb, _hint) {
         // Filter out breadcrumbs that might contain sensitive data
         return sanitizeBreadcrumb(breadcrumb);
       },

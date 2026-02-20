@@ -31,10 +31,10 @@ class MockXTermClass {
   cols = 80;
   rows = 24;
 
-  constructor(options?: any) {
+  constructor(options?: Record<string, unknown>) {
     // Store options if needed
-    if (options?.fontSize) this.cols = options.cols || 80;
-    if (options?.rows) this.rows = options.rows || 24;
+    if (options?.fontSize) this.cols = (options.cols as number) || 80;
+    if (options?.rows) this.rows = (options.rows as number) || 24;
   }
 }
 
@@ -162,12 +162,12 @@ const getTerminalMockStoreState = (): Record<string, unknown> => ({
 });
 
 vi.mock('@/store/useIDEStore', () => ({
-  useIDEStore: vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
-    const state = getTerminalMockStoreState();
+  useIDEStore: vi.fn((selector?: (_state: Record<string, unknown>) => unknown) => {
+    const currentState = getTerminalMockStoreState();
     if (typeof selector === 'function') {
-      return selector(state);
+      return selector(currentState);
     }
-    return state;
+    return currentState;
   }),
 }));
 

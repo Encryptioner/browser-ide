@@ -446,7 +446,7 @@ class GitService {
         dir: directory,
         path,
       });
-    } catch (_error) {
+    } catch {
       return undefined;
     }
   }
@@ -487,7 +487,7 @@ class GitService {
       const remotes = await this.listRemotes(directory);
       const found = remotes.find((r) => r.remote === remote);
       return found ? found.url : null;
-    } catch (_error) {
+    } catch {
       return null;
     }
   }
@@ -935,7 +935,7 @@ class GitService {
             fastForward: true,
           },
         };
-      } catch (_ffError) {
+      } catch {
         // Fast-forward not possible
         if (options?.fastForwardOnly) {
           return {

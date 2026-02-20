@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest';
-import type { GitStatus, GitCommit } from '@/types';
+
 
 // =============================================================================
 // MOCK SETUP
@@ -236,7 +236,7 @@ describe('GitService - Clone', () => {
 
   it('should call onProgress callback during clone', async () => {
     const onProgress = vi.fn();
-    mockClone.mockImplementation(({ onProgress: progressCb }: any) => {
+    mockClone.mockImplementation(({ onProgress: progressCb }: { onProgress?: (_progress: { phase: string; loaded: number; total: number }) => void }) => {
       progressCb?.({ phase: 'fetching', loaded: 50, total: 100 });
       return Promise.resolve();
     });
@@ -268,9 +268,9 @@ describe('GitService - Clone', () => {
 
   it('should authenticate with token', async () => {
     mockClone.mockResolvedValue(undefined);
-    let capturedOnAuth: any;
+    let capturedOnAuth: (() => { username: string; password: string }) | undefined;
 
-    mockClone.mockImplementation(({ onAuth }: any) => {
+    mockClone.mockImplementation(({ onAuth }: { onAuth?: () => { username: string; password: string } }) => {
       capturedOnAuth = onAuth;
       return Promise.resolve();
     });
@@ -692,7 +692,7 @@ describe('GitService - Stage and Commit', () => {
     it('should use default author if not provided', async () => {
       mockCommit.mockResolvedValue('sha123');
 
-      await gitService.commit('message', {} as any, '/repo');
+      await gitService.commit('message', {} as unknown as { name: string; email: string }, '/repo');
 
       expect(mockCommit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -707,7 +707,7 @@ describe('GitService - Stage and Commit', () => {
     it('should use default author for partial author', async () => {
       mockCommit.mockResolvedValue('sha123');
 
-      await gitService.commit('message', { name: 'Custom', email: '' } as any, '/repo');
+      await gitService.commit('message', { name: 'Custom', email: '' } as unknown as { name: string; email: string }, '/repo');
 
       expect(mockCommit).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -771,9 +771,9 @@ describe('GitService - Push and Pull', () => {
 
     it('should authenticate with token', async () => {
       mockPush.mockResolvedValue(undefined);
-      let capturedOnAuth: any;
+      let capturedOnAuth: (() => { username: string; password: string }) | undefined;
 
-      mockPush.mockImplementation(({ onAuth }: any) => {
+      mockPush.mockImplementation(({ onAuth }: { onAuth?: () => { username: string; password: string } }) => {
         capturedOnAuth = onAuth;
         return Promise.resolve();
       });
@@ -860,9 +860,9 @@ describe('GitService - Push and Pull', () => {
 
     it('should authenticate with token', async () => {
       mockPull.mockResolvedValue(undefined);
-      let capturedOnAuth: any;
+      let capturedOnAuth: (() => { username: string; password: string }) | undefined;
 
-      mockPull.mockImplementation(({ onAuth }: any) => {
+      mockPull.mockImplementation(({ onAuth }: { onAuth?: () => { username: string; password: string } }) => {
         capturedOnAuth = onAuth;
         return Promise.resolve();
       });
@@ -1188,7 +1188,7 @@ describe('GitService - Diff', () => {
   });
 
   it('should handle new files', async () => {
-    mockReadBlob.mockResolvedValue(null as any);
+    mockReadBlob.mockResolvedValue(null as unknown as { blob: Uint8Array });
     mockFileSystem.readFile.mockResolvedValue({
       success: true,
       data: 'new file content',
@@ -1231,7 +1231,7 @@ describe('GitService - Diff', () => {
 
 describe('GitService - Stash', () => {
   beforeEach(() => {
-    (global.localStorage.getItem as any).mockReturnValue(null);
+    (vi.mocked(global.localStorage.getItem)).mockReturnValue(null);
   });
 
   describe('stash', () => {
@@ -1260,7 +1260,7 @@ describe('GitService - Stash', () => {
 
       await gitService.stash(undefined, '/repo');
 
-      const setItemCall = (global.localStorage.setItem as any).mock.calls[0];
+      const setItemCall = (vi.mocked(global.localStorage.setItem)).mock.calls[0];
       const stashData = JSON.parse(setItemCall[1]);
       expect(stashData[0].message).toContain('WIP on branch:');
     });
@@ -1303,7 +1303,7 @@ describe('GitService - Stash', () => {
         { oid: 'abc', message: 'stash1', timestamp: 123 },
         { oid: 'def', message: 'stash2', timestamp: 456 },
       ];
-      (global.localStorage.getItem as any).mockReturnValue(JSON.stringify(stashes));
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(JSON.stringify(stashes));
 
       const result = await gitService.stashList();
 
@@ -1315,7 +1315,7 @@ describe('GitService - Stash', () => {
     });
 
     it('should return empty list when no stashes', async () => {
-      (global.localStorage.getItem as any).mockReturnValue(null);
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(null);
 
       const result = await gitService.stashList();
 
@@ -1324,7 +1324,7 @@ describe('GitService - Stash', () => {
     });
 
     it('should handle invalid localStorage data', async () => {
-      (global.localStorage.getItem as any).mockReturnValue('invalid json');
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue('invalid json');
 
       const result = await gitService.stashList();
 
@@ -1338,7 +1338,7 @@ describe('GitService - Stash', () => {
       const stashes = [
         { oid: 'abc123', message: 'test', timestamp: 123, parentOid: 'parent' },
       ];
-      (global.localStorage.getItem as any).mockReturnValue(JSON.stringify(stashes));
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(JSON.stringify(stashes));
       mockCheckout.mockResolvedValue(undefined);
 
       const result = await gitService.stashApply(0, '/repo');
@@ -1350,7 +1350,7 @@ describe('GitService - Stash', () => {
     });
 
     it('should return error for invalid index', async () => {
-      (global.localStorage.getItem as any).mockReturnValue('[]');
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue('[]');
 
       const result = await gitService.stashApply(0, '/repo');
 
@@ -1360,7 +1360,7 @@ describe('GitService - Stash', () => {
 
     it('should return error for out of range index', async () => {
       const stashes = [{ oid: 'abc', message: 'test', timestamp: 123, parentOid: 'p' }];
-      (global.localStorage.getItem as any).mockReturnValue(JSON.stringify(stashes));
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(JSON.stringify(stashes));
 
       const result = await gitService.stashApply(5, '/repo');
 
@@ -1375,13 +1375,13 @@ describe('GitService - Stash', () => {
         { oid: 'abc', message: 's1', timestamp: 123, parentOid: 'p' },
         { oid: 'def', message: 's2', timestamp: 456, parentOid: 'p' },
       ];
-      (global.localStorage.getItem as any).mockReturnValue(JSON.stringify(stashes));
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(JSON.stringify(stashes));
 
       const result = await gitService.stashDrop(0);
 
       expect(result.success).toBe(true);
 
-      const setItemCall = (global.localStorage.setItem as any).mock.calls[0];
+      const setItemCall = (vi.mocked(global.localStorage.setItem)).mock.calls[0];
       const remainingStashes = JSON.parse(setItemCall[1]);
       expect(remainingStashes).toHaveLength(1);
       expect(remainingStashes[0].message).toBe('s2');
@@ -1400,14 +1400,14 @@ describe('GitService - Stash', () => {
       const stashes = [
         { oid: 'abc', message: 's1', timestamp: 123, parentOid: 'p' },
       ];
-      (global.localStorage.getItem as any).mockReturnValue(JSON.stringify(stashes));
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(JSON.stringify(stashes));
       mockCheckout.mockResolvedValue(undefined);
 
       const result = await gitService.stashPop(0, '/repo');
 
       expect(result.success).toBe(true);
 
-      const setItemCall = (global.localStorage.setItem as any).mock.calls[0];
+      const setItemCall = (vi.mocked(global.localStorage.setItem)).mock.calls[0];
       const remainingStashes = JSON.parse(setItemCall[1]);
       expect(remainingStashes).toHaveLength(0);
     });
@@ -1416,7 +1416,7 @@ describe('GitService - Stash', () => {
       const stashes = [
         { oid: 'abc', message: 's1', timestamp: 123, parentOid: 'p' },
       ];
-      (global.localStorage.getItem as any).mockReturnValue(JSON.stringify(stashes));
+      (vi.mocked(global.localStorage.getItem)).mockReturnValue(JSON.stringify(stashes));
       mockCheckout.mockRejectedValue(new Error('Checkout failed'));
 
       const result = await gitService.stashPop(0, '/repo');
