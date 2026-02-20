@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { fileSystem } from '@/services/filesystem';
+import { features } from '@/config/features';
 import { logger } from '@/utils/logger';
 
 export type ServiceStatus = 'idle' | 'booting' | 'ready' | 'error' | 'degraded';
@@ -84,8 +85,15 @@ export function useServiceReadiness(): ServiceReadiness {
   }, [bootWithRetry]);
 
   // Boot important: WebContainer (after filesystem is ready)
+  // Skip entirely when the webContainer feature flag is disabled
   useEffect(() => {
     if (filesystem.status !== 'ready') return;
+
+    if (!features.webContainer) {
+      logger.info('WebContainer feature disabled - skipping boot');
+      setWebcontainer({ status: 'degraded', retryCount: 0 });
+      return;
+    }
 
     const bootWebContainer = async () => {
       const { webContainer } = await import('@/services/webcontainer');
@@ -114,6 +122,11 @@ export function useServiceReadiness(): ServiceReadiness {
         await fs.promises.readdir('/');
       }, setter);
     } else if (service === 'webcontainer') {
+      if (!features.webContainer) {
+        logger.info('WebContainer feature disabled - cannot retry');
+        setter({ status: 'degraded', retryCount: 0 });
+        return;
+      }
       (async () => {
         const { webContainer } = await import('@/services/webcontainer');
         await bootWithRetry('WebContainer', async () => {
