@@ -1,0 +1,103 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e6]: 🚀 Browser IDE v1.0.0
+      - generic [ref=e7]:
+        - button "Toggle Files" [ref=e8] [cursor=pointer]: 📁
+        - generic [ref=e9]:
+          - button "💻" [ref=e10] [cursor=pointer]
+          - button "👁️" [ref=e11] [cursor=pointer]
+          - button "🧠" [ref=e12] [cursor=pointer]
+          - button "🐛" [ref=e13] [cursor=pointer]
+          - button "📄" [ref=e14] [cursor=pointer]
+          - button "💻" [ref=e15] [cursor=pointer]
+          - button "⚠️" [ref=e16] [cursor=pointer]
+          - button "🧩" [ref=e17] [cursor=pointer]
+          - button "🔀" [ref=e18] [cursor=pointer]
+          - button "📚" [ref=e19] [cursor=pointer]
+        - button "📥 Clone" [ref=e20] [cursor=pointer]
+        - button "🤖" [ref=e21] [cursor=pointer]
+        - button "⚡" [ref=e22] [cursor=pointer]
+        - button "⚙️" [ref=e23] [cursor=pointer]
+    - generic [ref=e24]:
+      - generic [ref=e25]: 📱 Install Browser IDE for offline access
+      - generic [ref=e26]:
+        - button "Install" [ref=e27] [cursor=pointer]
+        - button "✕" [ref=e28] [cursor=pointer]
+    - generic [ref=e30]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Explorer" [level=3] [ref=e35]
+            - generic [ref=e36]:
+              - button "Refresh" [ref=e37] [cursor=pointer]:
+                - img [ref=e38]
+              - button "New File" [ref=e43] [cursor=pointer]:
+                - img [ref=e44]
+              - button "New Folder" [ref=e47] [cursor=pointer]:
+                - img [ref=e48]
+          - generic [ref=e50]:
+            - button "Go up directory" [disabled] [ref=e51]:
+              - img [ref=e52]
+            - generic [ref=e54]: /
+            - button "Go to root" [ref=e55] [cursor=pointer]:
+              - img [ref=e56]
+        - generic [ref=e60]:
+          - img [ref=e61]
+          - paragraph [ref=e63]: No files yet
+          - paragraph [ref=e64]: Clone a repository or create files to get started
+      - separator [ref=e65]
+      - generic [ref=e67]:
+        - region "Editor welcome screen" [ref=e69]:
+          - generic [ref=e70]:
+            - heading "Welcome to Browser IDE" [level=1] [ref=e71]
+            - paragraph [ref=e72]: A full-featured IDE that runs entirely in your browser
+            - generic [ref=e73]:
+              - generic [ref=e74]:
+                - generic [ref=e75]: File Management
+                - heading "File Management" [level=3] [ref=e76]
+                - paragraph [ref=e77]: Browse and edit files with a VS Code-like interface
+              - generic [ref=e78]:
+                - generic [ref=e79]: Git Integration
+                - heading "Git Integration" [level=3] [ref=e80]
+                - paragraph [ref=e81]: Clone, commit, and push directly to GitHub
+              - generic [ref=e82]:
+                - generic [ref=e83]: Run Code
+                - heading "Run Code" [level=3] [ref=e84]
+                - paragraph [ref=e85]: Execute Node.js apps with WebContainers
+              - generic [ref=e86]:
+                - generic [ref=e87]: AI Assistant
+                - heading "AI Assistant" [level=3] [ref=e88]
+                - paragraph [ref=e89]: Get coding help from multiple AI providers
+            - generic [ref=e90]:
+              - button "Clone Repository" [ref=e91] [cursor=pointer]
+              - button "Open Settings" [ref=e92] [cursor=pointer]
+        - separator [ref=e93]
+        - generic [ref=e95]:
+          - tablist "Bottom panel tabs" [ref=e97]:
+            - tab "💻 Terminal" [ref=e98] [cursor=pointer]:
+              - generic [ref=e99]: 💻
+              - generic [ref=e100]: Terminal
+            - tab "📚 Help" [ref=e101] [cursor=pointer]:
+              - generic [ref=e102]: 📚
+              - generic [ref=e103]: Help
+          - region "Integrated terminal" [ref=e106]:
+            - generic [ref=e108]: Terminal
+            - generic [ref=e109]:
+              - status [ref=e160]:
+                - generic [ref=e162]: Ready
+              - button "Maximize Terminal" [ref=e113] [cursor=pointer]:
+                - img [ref=e114]
+            - textbox "Terminal input/output" [ref=e119]:
+              - generic [ref=e122]:
+                - textbox "Terminal input" [active] [ref=e123]
+                - generic [ref=e124]:
+                  - generic [ref=e126]: Browser IDE Terminal
+                  - generic [ref=e129]: WebContainer VM Ready
+                  - generic [ref=e131]: "Supports: npm, pnpm, node, git, and bash commands"
+                  - generic [ref=e133]: Type "help" for available commands
+                  - generic [ref=e136]: $
+    - generic [ref=e156]:
+      - generic [ref=e158]: Ln 1, Col 1
+      - generic [ref=e159]: UTF-8
+  - region "Notifications alt+T"
