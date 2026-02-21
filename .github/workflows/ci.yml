@@ -70,6 +70,17 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Debug - List test files
+        run: |
+          echo "=== Working directory ==="
+          pwd
+          echo "=== Tests directory ==="
+          ls -la tests/e2e/
+          echo "=== Playwright config ==="
+          cat playwright.config.ts
+          echo "=== Playwright test listing ==="
+          pnpm exec playwright test --list --project=chromium || echo "Test listing failed"
+
       - name: Run E2E tests
         run: pnpm test:e2e -- --project=chromium
 
