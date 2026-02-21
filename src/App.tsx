@@ -80,7 +80,6 @@ function App() {
   const [showClaudeCode, setShowClaudeCode] = useState(false);
   const [showExtensions, setShowExtensions] = useState(false);
   const [showGit, setShowGit] = useState(false);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
   const [showSplitEditor, setShowSplitEditor] = useState(false);
   const [showTerminalTabs, setShowTerminalTabs] = useState(false);
@@ -326,14 +325,6 @@ function App() {
           </button>
 
           <button
-            onClick={() => setShowCommandPalette(true)}
-            title="Commands"
-            className="p-2 sm:px-3 sm:py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs sm:text-sm touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
-          >
-            <span className="text-base sm:text-sm">⚡</span>
-          </button>
-
-          <button
             onClick={() => setShowSettingsDialog(true)}
             title="Settings"
             className="p-2 sm:px-3 sm:py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs sm:text-sm touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
@@ -454,7 +445,7 @@ function App() {
         {showCloneDialog && <CloneDialog onClose={() => setShowCloneDialog(false)} />}
         {showSettingsDialog && <SettingsDialog onClose={() => setShowSettingsDialog(false)} />}
         {showAIAssistant && <AIAssistant onClose={() => setShowAIAssistant(false)} />}
-        {showCommandPalette && <CommandPalette />}
+        <CommandPalette /> {/* Always rendered to handle keyboard shortcut */}
       </Suspense>
 
       {/* Mobile File Explorer Overlay */}
