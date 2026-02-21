@@ -153,30 +153,45 @@
 
 ### Command Palette Tests (TC-038 to TC-039)
 
-| ID | Test Case | Result | Notes |
-|----|-----------|--------|-------|
-| TC-038 | Open and search commands | **PASS** | Ctrl+Shift+P opens command palette |
-| TC-039 | Execute view toggle commands | **PASS** | Toggle commands work for sidebar, terminal |
+| ID | Test Case | Result | Evidence | Notes |
+|----|-----------|--------|----------|-------|
+| TC-038 | Open and search commands | **PASS** | Screenshot: `TC-038-command-palette.png` | Ctrl+Shift+P opens command palette with search |
+| TC-039 | Execute view toggle commands | **PASS** | Screenshot: `TC-039-command-toggle.png` | Toggle commands work for sidebar, terminal |
+
+**Bug Fixed During Testing:**
+- BUG-004: CommandPalette keyboard shortcut (Ctrl+Shift+P) was non-functional
+- Root cause: Component was conditionally rendered, preventing keyboard event listener from working
+- Fix: Always render `<CommandPalette />` component (commit 355adcf)
+
+**Screenshots:**
+- `TC-038-command-palette.png` - Command palette opened via Ctrl+Shift+P
+- `TC-039-command-toggle.png` - Command executed successfully
 
 ---
 
 ### Bottom Tab Bar Tests (TC-040 to TC-042)
 
-| ID | Test Case | Result | Notes |
-|----|-----------|--------|-------|
-| TC-040 | Tab click switches panel content | **PASS** | Terminal/Help/Claude tabs switch correctly |
+| ID | Test Case | Result | Evidence | Notes |
+|----|-----------|--------|----------|-------|
+| TC-040 | Tab click switches panel content | **PASS** | Screenshot: `TC-040-042-bottom-tabs.png` | Terminal/Help/Claude tabs switch correctly |
 | TC-041 | Keyboard navigation (ArrowLeft/Right/Home/End) | **PASS** | Arrow keys navigate tabs |
 | TC-042 | Swipe gestures on mobile | **PASS** | Touch gestures work on mobile |
+
+**Screenshots:**
+- `TC-040-042-bottom-tabs.png` - Bottom tab bar with multiple tabs
 
 ---
 
 ### Settings Tests (TC-043 to TC-045)
 
-| ID | Test Case | Result | Notes |
-|----|-----------|--------|-------|
-| TC-043 | Open settings dialog | **PASS** | Settings modal opens with all sections |
+| ID | Test Case | Result | Evidence | Notes |
+|----|-----------|--------|----------|-------|
+| TC-043 | Open settings dialog | **PASS** | Screenshot: `TC-043-045-settings.png` | Settings modal opens with all sections |
 | TC-044 | Change editor theme and font size | **PASS** | Settings persist to IndexedDB |
 | TC-045 | Configure Git username and email | **PASS** | Git settings saved |
+
+**Screenshots:**
+- `TC-043-045-settings.png` - Settings dialog with multiple configuration sections
 
 ---
 
@@ -195,11 +210,14 @@
 
 ### Regression Tests (TC-051 to TC-053)
 
-| ID | Test Case | Result | Notes |
-|----|-----------|--------|-------|
-| TC-051 | App works after page reload | **PASS** | Settings and files persist |
+| ID | Test Case | Result | Evidence | Notes |
+|----|-----------|--------|----------|-------|
+| TC-051 | App works after page reload | **PASS** | Screenshot: `TC-051-053-regression.png` | Settings and files persist via IndexedDB |
 | TC-052 | No console errors on clean start | **PASS** | 0 errors on fresh load |
-| TC-053 | File operations work without Git repo | **PASS** | No .git directory required for basic operations |
+| TC-053 | File operations work without Git repo | **PASS** | File operations work without .git directory |
+
+**Screenshots:**
+- `TC-051-053-regression.png` - Regression tests - app persistence verified
 
 ---
 
@@ -222,6 +240,12 @@
 - **Root Cause:** Demo/placeholder response in current build
 - **Resolution:** Requires valid Anthropic/z.ai API key in production
 - **Status:** ⚠️ Expected behavior - functional with API key
+
+### BUG-004: Command Palette Keyboard Shortcut (Fixed in commit 355adcf)
+- **Issue:** Command Palette (Ctrl+Shift+P) keyboard shortcut was non-functional
+- **Root Cause:** App.tsx only rendered `<CommandPalette />` when `showCommandPalette` state was true, but component's internal keyboard listener can't work if not mounted
+- **Fix:** Always render `<CommandPalette />` component, removed unused `showCommandPalette` state, removed non-functional ⚡ button
+- **Status:** ✅ Fixed - Ctrl+Shift+P now opens command palette reliably
 
 ---
 
@@ -330,11 +354,19 @@ All screenshots saved to: `test-results/`
 5. `TC-034-help-panel.png` - Help documentation
 6. `TC-048-mobile-375px.png` - Mobile responsive layout
 
+**New Test Screenshots (Command Palette, Settings, Bottom Tabs, Regression):**
+7. `TC-038-command-palette.png` - Command palette opened
+8. `TC-038-command-palette-open.png` - Command palette with search
+9. `TC-039-command-toggle.png` - Command toggle executed
+10. `TC-040-042-bottom-tabs.png` - Bottom tab bar navigation
+11. `TC-043-045-settings.png` - Settings dialog
+12. `TC-051-053-regression.png` - Regression tests completed
+
 **New Edge Case & Performance Screenshots:**
-7. `TC-054-special-chars.png` - Files with spaces and unicode characters
-8. `TC-055-large-file.png` - Large file opened in editor
-9. `TC-056-multitab.png` - Second browser tab with IndexedDB sync
-10. `TC-057-offline.png` - Offline mode file operations
-11. `TC-058-load-time.png` - Performance test - app load time
-12. `TC-059-memory-leaks.png` - Memory leak test results
-13. `TC-060-terminal-rapid.png` - Terminal responsiveness test
+13. `TC-054-special-chars.png` - Files with spaces and unicode characters
+14. `TC-055-large-file.png` - Large file opened in editor
+15. `TC-056-multitab.png` - Second browser tab with IndexedDB sync
+16. `TC-057-offline.png` - Offline mode file operations
+17. `TC-058-load-time.png` - Performance test - app load time
+18. `TC-059-memory-leaks.png` - Memory leak test results
+19. `TC-060-terminal-rapid.png` - Terminal responsiveness test
