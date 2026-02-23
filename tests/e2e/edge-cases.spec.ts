@@ -19,7 +19,7 @@ test.describe('Edge Cases', () => {
 
   test('TC-054: Create file with special characters in name', async ({ page }) => {
     // Wait for sidebar to be visible
-    const sidebar = page.locator('#sidebar');
+    const sidebar = page.locator('[data-panel-id="sidebar"]');
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // Create file with spaces - use the New File button
@@ -56,7 +56,7 @@ test.describe('Edge Cases', () => {
   });
 
   test('TC-055: Open very large file', async ({ page }) => {
-    const sidebar = page.locator('#sidebar');
+    const sidebar = page.locator('[data-panel-id="sidebar"]');
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // Create a large file by using terminal to write content

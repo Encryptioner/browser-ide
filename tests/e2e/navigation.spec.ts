@@ -182,7 +182,7 @@ test.describe('Responsive Layout - Mobile', () => {
     await expect(mobileOverlay).toBeVisible({ timeout: 3000 });
 
     // The overlay should have a "Files" heading
-    const filesHeading = mobileOverlay.getByText('Files');
+    const filesHeading = mobileOverlay.getByRole('heading', { name: 'Files' });
     await expect(filesHeading).toBeVisible();
   });
 

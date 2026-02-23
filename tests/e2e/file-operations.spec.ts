@@ -99,7 +99,7 @@ test.describe('File Operations', () => {
 
     // The sidebar should be open by default; verify file explorer is present
     // The sidebar panel contains the FileExplorer component
-    const sidebarPanel = page.locator('#sidebar');
+    const sidebarPanel = page.locator('[data-panel-id="sidebar"]');
     const isSidebarVisible = await sidebarPanel.isVisible().catch(() => false);
 
     if (isSidebarVisible) {
