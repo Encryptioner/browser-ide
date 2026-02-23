@@ -2,6 +2,7 @@ import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/web';
 import { fileSystem } from './filesystem';
 import type { GitStatus, GitCommit, GitBranch } from '@/types';
+import { logger } from '@/utils/logger';
 
 export interface GitResult<T = unknown> {
   success: boolean;
@@ -31,7 +32,7 @@ class GitService {
         dir,
       }) || null;
     } catch (error) {
-      console.error('Get current branch error:', error);
+      logger.error('Get current branch error:', error);
       return null;
     }
   }
@@ -67,7 +68,7 @@ class GitService {
       store.setGitStatus(gitStatus);
       store.setCommits(commits);
 
-      console.log(`✅ Repository initialized: branch=${branch}, status=${gitStatus.length} files, commits=${commits.length}`);
+      logger.info(`✅ Repository initialized: branch=${branch}, status=${gitStatus.length} files, commits=${commits.length}`);
 
       return {
         success: true,
@@ -78,7 +79,7 @@ class GitService {
         },
       };
     } catch (error) {
-      console.error('Initialize repository error:', error);
+      logger.error('Initialize repository error:', error);
       return {
         success: false,
         error: String(error),
@@ -89,7 +90,7 @@ class GitService {
   async clone(
     url: string,
     token: string,
-    onProgress?: (progress: GitCloneProgress) => void
+    onProgress?: (_progress: GitCloneProgress) => void
   ): Promise<GitResult<string>> {
     const currentDir = fileSystem.getCurrentWorkingDirectory();
     // Create a subdirectory for the repo
@@ -119,14 +120,14 @@ class GitService {
           password: 'x-oauth-basic',
         }),
         onProgress: (progress) => {
-          console.log('Clone progress:', progress);
+          logger.info('Clone progress:', progress);
           if (onProgress) onProgress(progress);
         },
       });
 
       return { success: true, data: dir };
     } catch (error) {
-      console.error('Clone error:', error);
+      logger.error('Clone error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -140,7 +141,7 @@ class GitService {
       });
       return branch || null;
     } catch (error) {
-      console.error('Get current branch error:', error);
+      logger.error('Get current branch error:', error);
       return null;
     }
   }
@@ -176,14 +177,14 @@ class GitService {
         current: name === currentBranch,
       }));
 
-      console.log(`📋 Found ${branchList.length} branches:`, branchList.map(b => b.name));
+      logger.info(`📋 Found ${branchList.length} branches:`, branchList.map(b => b.name));
 
       return {
         success: true,
         data: branchList,
       };
     } catch (error) {
-      console.error('List branches error:', error);
+      logger.error('List branches error:', error);
       return {
         success: false,
         error: String(error),
@@ -201,7 +202,7 @@ class GitService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Create branch error:', error);
+      logger.error('Create branch error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -216,7 +217,7 @@ class GitService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Checkout error:', error);
+      logger.error('Checkout error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -231,7 +232,7 @@ class GitService {
       });
       return status;
     } catch (error) {
-      console.error('Status error:', error);
+      logger.error('Status error:', error);
       return 'unmodified';
     }
   }
@@ -239,8 +240,15 @@ class GitService {
   async statusMatrix(dir?: string): Promise<GitStatus[]> {
     const directory = dir || fileSystem.getCurrentWorkingDirectory();
     try {
+      // Check if .git directory exists before attempting status
+      const fs = fileSystem.getFS();
+      const gitDirExists = await fs.promises.stat(`${directory}/.git`).catch(() => null);
+      if (!gitDirExists) {
+        return [];
+      }
+
       const matrix = await git.statusMatrix({
-        fs: fileSystem.getFS(),
+        fs,
         dir: directory,
       });
 
@@ -249,7 +257,7 @@ class GitService {
         status: this.getStatusFromMatrix(head, workdir, stage),
       }));
     } catch (error) {
-      console.error('Status matrix error:', error);
+      logger.error('Status matrix error:', error);
       return [];
     }
   }
@@ -286,7 +294,7 @@ class GitService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Add error:', error);
+      logger.error('Add error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -302,7 +310,7 @@ class GitService {
       }
       return { success: true };
     } catch (error) {
-      console.error('Add all error:', error);
+      logger.error('Add all error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -321,7 +329,7 @@ class GitService {
       });
       return { success: true, data: sha };
     } catch (error) {
-      console.error('Commit error:', error);
+      logger.error('Commit error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -336,7 +344,7 @@ class GitService {
       const currentBranch = await this.getCurrentBranch(dir);
       const pushRef = remoteRef || currentBranch || 'main';
 
-      console.log(`📤 Pushing branch: ${pushRef} to ${remote}`);
+      logger.info(`📤 Pushing branch: ${pushRef} to ${remote}`);
 
       await git.push({
         fs: fileSystem.getFS(),
@@ -350,14 +358,14 @@ class GitService {
           password: 'x-oauth-basic',
         }),
         onProgress: (progress) => {
-          console.log('Push progress:', progress);
+          logger.info('Push progress:', progress);
         },
       });
 
-      console.log(`✅ Successfully pushed ${pushRef} to ${remote}`);
+      logger.info(`✅ Successfully pushed ${pushRef} to ${remote}`);
       return { success: true, data: pushRef };
     } catch (error) {
-      console.error('Push error:', error);
+      logger.error('Push error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -374,7 +382,7 @@ class GitService {
       const currentBranch = await this.getCurrentBranch(directory);
       const pullRef = remoteRef || currentBranch || 'main';
 
-      console.log(`📥 Pulling branch: ${pullRef} from ${remote}`);
+      logger.info(`📥 Pulling branch: ${pullRef} from ${remote}`);
 
       await git.pull({
         fs: fileSystem.getFS(),
@@ -393,10 +401,10 @@ class GitService {
         },
       });
 
-      console.log(`✅ Successfully pulled ${pullRef} from ${remote}`);
+      logger.info(`✅ Successfully pulled ${pullRef} from ${remote}`);
       return { success: true, data: pullRef };
     } catch (error) {
-      console.error('Pull error:', error);
+      logger.error('Pull error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -425,7 +433,7 @@ class GitService {
         },
       }));
     } catch (error) {
-      console.error('Log error:', error);
+      logger.error('Log error:', error);
       return [];
     }
   }
@@ -438,7 +446,7 @@ class GitService {
         dir: directory,
         path,
       });
-    } catch (error) {
+    } catch {
       return undefined;
     }
   }
@@ -454,7 +462,7 @@ class GitService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Set config error:', error);
+      logger.error('Set config error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -468,7 +476,7 @@ class GitService {
       });
       return remotes;
     } catch (error) {
-      console.error('List remotes error:', error);
+      logger.error('List remotes error:', error);
       return [];
     }
   }
@@ -479,7 +487,7 @@ class GitService {
       const remotes = await this.listRemotes(directory);
       const found = remotes.find((r) => r.remote === remote);
       return found ? found.url : null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -496,7 +504,7 @@ class GitService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Remove error:', error);
+      logger.error('Remove error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -535,7 +543,7 @@ class GitService {
 
       return { success: true };
     } catch (error) {
-      console.error('Reset error:', error);
+      logger.error('Reset error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -552,7 +560,7 @@ class GitService {
       });
       return { success: true };
     } catch (error) {
-      console.error('Delete branch error:', error);
+      logger.error('Delete branch error:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -591,7 +599,7 @@ class GitService {
         data: diff,
       };
     } catch (error) {
-      console.error('Diff error:', error);
+      logger.error('Diff error:', error);
       return {
         success: false,
         error: String(error),
@@ -725,13 +733,13 @@ class GitService {
         force: true,
       });
 
-      console.log(`📦 Created stash: ${stashMessage}`);
+      logger.info(`📦 Created stash: ${stashMessage}`);
       return {
         success: true,
         data: stashOid,
       };
     } catch (error) {
-      console.error('Stash error:', error);
+      logger.error('Stash error:', error);
       return {
         success: false,
         error: String(error),
@@ -794,10 +802,10 @@ class GitService {
         force: false,
       });
 
-      console.log(`✅ Applied stash ${stashIndex}: ${stash.message}`);
+      logger.info(`✅ Applied stash ${stashIndex}: ${stash.message}`);
       return { success: true };
     } catch (error) {
-      console.error('Stash apply error:', error);
+      logger.error('Stash apply error:', error);
       return {
         success: false,
         error: String(error),
@@ -822,7 +830,7 @@ class GitService {
       stashes.splice(stashIndex, 1);
       localStorage.setItem('git-stashes', JSON.stringify(stashes));
 
-      console.log(`🗑️ Dropped stash ${stashIndex}`);
+      logger.info(`🗑️ Dropped stash ${stashIndex}`);
       return { success: true };
     } catch (error) {
       return {
@@ -919,7 +927,7 @@ class GitService {
           dryRun: false,
         });
 
-        console.log(`✅ Fast-forward merge completed: ${currentBranch} ← ${branchName}`);
+        logger.info(`✅ Fast-forward merge completed: ${currentBranch} ← ${branchName}`);
         return {
           success: true,
           data: {
@@ -927,7 +935,7 @@ class GitService {
             fastForward: true,
           },
         };
-      } catch (ffError) {
+      } catch {
         // Fast-forward not possible
         if (options?.fastForwardOnly) {
           return {
@@ -951,7 +959,7 @@ class GitService {
             },
           });
 
-          console.log(`✅ Merge completed: ${currentBranch} ← ${branchName}`);
+          logger.info(`✅ Merge completed: ${currentBranch} ← ${branchName}`);
           return {
             success: true,
             data: {
@@ -960,7 +968,7 @@ class GitService {
             },
           };
         } catch (mergeError) {
-          console.error('Merge error:', mergeError);
+          logger.error('Merge error:', mergeError);
           return {
             success: false,
             error: `Merge failed: ${String(mergeError)}`,
@@ -968,7 +976,7 @@ class GitService {
         }
       }
     } catch (error) {
-      console.error('Merge error:', error);
+      logger.error('Merge error:', error);
       return {
         success: false,
         error: String(error),
@@ -993,10 +1001,10 @@ class GitService {
         force: true,
       });
 
-      console.log('✅ Merge aborted');
+      logger.info('✅ Merge aborted');
       return { success: true };
     } catch (error) {
-      console.error('Abort merge error:', error);
+      logger.error('Abort merge error:', error);
       return {
         success: false,
         error: String(error),
@@ -1056,4 +1064,8 @@ class GitService {
   }
 }
 
+// Export class for testing purposes
+export { GitService };
+
+// Export singleton
 export const gitService = new GitService();

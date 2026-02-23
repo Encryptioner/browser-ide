@@ -8,6 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { fileSystem } from './filesystem';
 import { gitService } from './git';
+import { logger } from '@/utils/logger';
 
 export interface ClaudeAgentConfig {
   apiKey: string;
@@ -20,7 +21,7 @@ export interface ClaudeAgentConfig {
 export interface AgentTool {
   name: string;
   description: string;
-  input_schema: Record<string, any>;
+  input_schema: Record<string, unknown>;
 }
 
 export interface AgentExecutionResult {
@@ -33,6 +34,12 @@ export interface AgentExecutionResult {
     filesDeleted?: string[];
     commandsExecuted?: string[];
   };
+}
+
+interface FileTreeNode {
+  type: string;
+  path: string;
+  children?: FileTreeNode[];
 }
 
 /**
@@ -183,7 +190,7 @@ export class ClaudeCodeAgent {
    */
   private async executeTool(
     toolName: string,
-    toolInput: Record<string, any>
+    toolInput: Record<string, string>
   ): Promise<string> {
     try {
       switch (toolName) {
@@ -244,7 +251,7 @@ export class ClaudeCodeAgent {
           );
           const results: string[] = [];
 
-          const searchFiles = async (nodes: any[]) => {
+          const searchFiles = async (nodes: FileTreeNode[]) => {
             for (const node of nodes) {
               if (node.type === 'file') {
                 const result = await fileSystem.readFile(node.path);
@@ -284,8 +291,9 @@ export class ClaudeCodeAgent {
         default:
           return `Unknown tool: ${toolName}`;
       }
-    } catch (error: any) {
-      return `Error executing ${toolName}: ${error.message}`;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return `Error executing ${toolName}: ${message}`;
     }
   }
 
@@ -295,6 +303,7 @@ export class ClaudeCodeAgent {
    */
   async executeTask(
     userMessage: string,
+    // eslint-disable-next-line no-unused-vars
     onProgress?: (message: string) => void
   ): Promise<AgentExecutionResult> {
     try {
@@ -324,7 +333,7 @@ export class ClaudeCodeAgent {
           max_tokens: this.config.maxTokens!,
           temperature: this.config.temperature,
           messages: this.conversationHistory,
-          tools: this.getTools() as any,
+          tools: this.getTools() as Anthropic.Messages.Tool[],
         });
 
         // Check stop reason
@@ -341,11 +350,11 @@ export class ClaudeCodeAgent {
           continueLoop = false;
         } else if (response.stop_reason === 'tool_use') {
           // Agent wants to use tools
-          const toolResults: any[] = [];
+          const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
 
           for (const content of response.content) {
             if (content.type === 'tool_use') {
-              const toolInput = content.input as Record<string, any>;
+              const toolInput = content.input as Record<string, string>;
 
               onProgress?.(
                 `🔧 Using tool: ${content.name} with input: ${JSON.stringify(toolInput)}`
@@ -399,11 +408,12 @@ export class ClaudeCodeAgent {
         output: 'Task completed',
         artifacts,
       };
-    } catch (error: any) {
-      console.error('Agent execution error:', error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Agent execution error:', error);
       return {
         success: false,
-        error: error.message,
+        error: message,
       };
     }
   }
@@ -433,10 +443,10 @@ export class ClaudeCodeAgent {
 /**
  * Create a Claude Code agent instance configured for GLM-4.6
  */
-export function createGLMAgent(apiKey: string): ClaudeCodeAgent {
+export function createGLMAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgent {
   return new ClaudeCodeAgent({
     apiKey,
-    baseUrl: 'https://api.z.ai/api/anthropic',
+    baseUrl: baseUrl || 'https://api.z.ai/api/anthropic',
     model: 'claude-sonnet-4-20250514', // Maps to GLM-4.6
   });
 }
@@ -444,10 +454,10 @@ export function createGLMAgent(apiKey: string): ClaudeCodeAgent {
 /**
  * Create a Claude Code agent instance configured for Anthropic
  */
-export function createAnthropicAgent(apiKey: string): ClaudeCodeAgent {
+export function createAnthropicAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgent {
   return new ClaudeCodeAgent({
     apiKey,
-    baseUrl: 'https://api.anthropic.com/v1',
+    baseUrl: baseUrl || 'https://api.anthropic.com/v1',
     model: 'claude-sonnet-4-20250514',
   });
 }

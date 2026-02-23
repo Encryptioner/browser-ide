@@ -99,8 +99,9 @@ export function NanoEditor({ xterm, filePath, initialContent = '', onExit }: Nan
         setStatusMessage(`[ Error: ${result.error} ]`);
         setTimeout(() => setStatusMessage(''), 2000);
       }
-    } catch (error: any) {
-      setStatusMessage(`[ Error: ${error.message} ]`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatusMessage(`[ Error: ${message} ]`);
       setTimeout(() => setStatusMessage(''), 2000);
     }
   }, [filePath]);
@@ -254,6 +255,8 @@ export function NanoEditor({ xterm, filePath, initialContent = '', onExit }: Nan
         }
         break;
     }
+    // performSearch is intentionally omitted to avoid circular dependency with handleKeyPress
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cursorLine, cursorCol, searchMode, searchQuery, handleSave, handleExit, onExit, renderEditor]);
 
   const performSearch = useCallback((query: string) => {

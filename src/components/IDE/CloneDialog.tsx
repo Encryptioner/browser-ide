@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
+import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface CloneDialogProps {
   onClose: () => void;
@@ -11,12 +13,14 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
   const [repoUrl, setRepoUrl] = useState('');
   const [isCloning, setIsCloning] = useState(false);
   const [progress, setProgress] = useState('');
-  const { settings, addRecentProject } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const settings = useIDEStore(state => state.settings);
+  const addRecentProject = useIDEStore(state => state.addRecentProject);
 
   async function handleClone() {
     if (!repoUrl) return;
     if (!settings.githubToken) {
-      alert('Please set GitHub token in settings first');
+      toast.error('Please set GitHub token in settings first');
       return;
     }
 
@@ -43,22 +47,25 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
       const initResult = await gitService.initializeRepository(clonedPath);
 
       if (initResult.success) {
-        alert(`Repository cloned successfully! Branch: ${initResult.data?.currentBranch}`);
+        toast.success(`Repository cloned successfully! Branch: ${initResult.data?.currentBranch}`);
 
         // Change to the cloned directory
         const changeResult = await fileSystem.changeDirectory(clonedPath);
         if (changeResult.success) {
-          console.log(`Changed to cloned directory: ${clonedPath}`);
+          logger.info(`Changed to cloned directory: ${clonedPath}`);
         }
       } else {
-        alert('Repository cloned but failed to initialize state');
+        toast.error('Failed to initialize repository. Please try opening the project manually.');
       }
 
       onClose();
       // Reload to refresh file tree and store state
-      window.location.reload();
+      const listResult = await fileSystem.listCurrentDirectory();
+      if (listResult.success && listResult.data) {
+        useIDEStore.getState().setFileTree(listResult.data);
+      }
     } else {
-      alert('Failed to clone: ' + result.error);
+      toast.error('Failed to clone: ' + result.error);
       setProgress('');
     }
     setIsCloning(false);

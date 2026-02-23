@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef, JSX } from 'react';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   File,
   Folder,
@@ -24,18 +27,19 @@ import {
   Scissors,
 } from 'lucide-react';
 import type { FileNode } from '@/types';
+import { logger } from '@/utils/logger';
 
- 
+
 interface ContextMenuProps {
   x: number;
   y: number;
   node: FileNode;
   onClose: () => void;
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  onAction: (action: string, node: FileNode) => void;
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+   
+  onAction: (_action: string, _node: FileNode) => void;
+   
 }
- 
+
 
 function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -82,6 +86,8 @@ function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
     <div
       ref={ref}
       className="fixed z-50 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl py-1 min-w-[180px]"
+      role="tree"
+      aria-label="File explorer"
       style={{ left: x, top: y }}
     >
       {menuItems.map((item) => (
@@ -104,25 +110,38 @@ function ContextMenu({ x, y, node, onClose, onAction }: ContextMenuProps) {
 }
 
 export function FileExplorer() {
+  const isMobile = useIsMobile();
   const [expandedDirs, setExpandedDirs] = useState(new Set<string>(['/']));
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [newItemParent, setNewItemParent] = useState<{ path: string; type: 'file' | 'folder' } | null>(null);
   const [gitStatusMap, setGitStatusMap] = useState<Map<string, string>>(new Map());
-  const {
-    fileTree,
-    currentFile,
-    setCurrentFile,
-    addOpenFile,
-    setFileTree,
-    gitStatus,
-  } = useIDEStore();
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    node: FileNode | null;
+  } | null>(null);
+
+  // Granular selectors - useShallow for related state, individual for actions
+  const { fileTree, currentFile, gitStatus } = useIDEStore(
+    useShallow(state => ({
+      fileTree: state.fileTree,
+      currentFile: state.currentFile,
+      gitStatus: state.gitStatus,
+    }))
+  );
+  const setCurrentFile = useIDEStore(state => state.setCurrentFile);
+  const addOpenFile = useIDEStore(state => state.addOpenFile);
+  const setFileTree = useIDEStore(state => state.setFileTree);
 
   const currentDirectory = fileSystem.getCurrentWorkingDirectory();
 
   useEffect(() => {
     loadFileTree();
     loadGitStatus();
+    // loadFileTree and loadGitStatus are stable functions defined in component scope, only need to run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -149,7 +168,7 @@ export function FileExplorer() {
       });
       setGitStatusMap(statusMap);
     } catch (error) {
-      console.error('Failed to load git status:', error);
+      logger.error('Failed to load git status:', error);
     }
   }
 
@@ -216,9 +235,17 @@ export function FileExplorer() {
     }
   }
 
-  async function handleDelete(node: FileNode) {
-    const confirmed = confirm(`Delete ${node.name}?`);
-    if (!confirmed) return;
+  function handleDelete(node: FileNode) {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Item',
+      message: `Are you sure you want to delete ${node.name}?`,
+      node,
+    });
+  }
+
+  async function confirmDelete(node: FileNode | null) {
+    if (!node) return;
 
     const result = await fileSystem.deletePath(node.path);
     if (result.success) {
@@ -228,6 +255,7 @@ export function FileExplorer() {
     } else {
       toast.error(`Failed to delete: ${result.error}`);
     }
+    setConfirmDialog(null);
   }
 
   async function handleRename(oldPath: string, newName: string) {
@@ -355,7 +383,7 @@ export function FileExplorer() {
             <>
               <div
                 className={`tree-item-row directory flex items-center gap-2 cursor-pointer hover:bg-gray-700 transition-colors ${
-                  window.innerWidth < 768 ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'
+                  isMobile ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'
                 }`}
                 style={{ paddingLeft: `${level * 16 + 8}px` }}
                 onClick={() => toggleDir(item.path)}
@@ -455,7 +483,7 @@ export function FileExplorer() {
             <div
               className={`tree-item-row file group flex items-center gap-2 cursor-pointer hover:bg-gray-700 transition-colors ${
                 currentFile === item.path ? 'bg-blue-600 text-white' : ''
-              } ${window.innerWidth < 768 ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'}`}
+              } ${isMobile ? 'py-3 px-2 min-h-[44px]' : 'py-1.5 px-2'}`}
               style={{ paddingLeft: `${level * 16 + 24}px` }}
               onClick={() => handleFileClick(item)}
               onContextMenu={(e) => handleContextMenu(e, item)}
@@ -656,6 +684,15 @@ export function FileExplorer() {
           onAction={handleContextAction}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog?.isOpen ?? false}
+        onClose={() => setConfirmDialog(null)}
+        title={confirmDialog?.title ?? ''}
+        message={confirmDialog?.message ?? ''}
+        onConfirm={() => confirmDelete(confirmDialog?.node ?? null)}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </div>
   );
 }

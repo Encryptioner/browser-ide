@@ -5,8 +5,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { initializeDatabase } from '@/lib/database';
 import { validateEnvironment } from '@/config/environment';
 import { logger } from '@/utils/logger';
+import { reportWebVitals } from '@/utils/web-vitals';
 import { registerSW } from 'virtual:pwa-register';
 import { Buffer } from 'buffer';
+import { toast } from 'sonner';
 import './index.css';
 
 // Polyfill Buffer for isomorphic-git
@@ -25,9 +27,12 @@ if ('serviceWorker' in navigator) {
   const updateSW = registerSW({
     onNeedRefresh() {
       logger.info('New version available');
-      if (confirm('New version available! Reload to update?')) {
-        updateSW(true);
-      }
+      toast('New version available!', {
+        action: {
+          label: 'Reload to update',
+          onClick: () => updateSW(true),
+        },
+      });
     },
     onOfflineReady() {
       logger.info('App ready to work offline');
@@ -70,18 +75,6 @@ window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault();
 });
 
-// Performance monitoring (development only)
-if (import.meta.env.DEV) {
-  window.addEventListener('load', () => {
-    const perfData = performance.getEntriesByType('navigation')[0];
-    if (perfData && 'loadEventEnd' in perfData) {
-      const loadTime = (perfData as PerformanceNavigationTiming).loadEventEnd -
-                       (perfData as PerformanceNavigationTiming).fetchStart;
-      logger.debug(`Page load time: ${loadTime.toFixed(2)}ms`);
-    }
-  });
-}
-
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 root.render(
@@ -91,3 +84,6 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+// Report Core Web Vitals after render
+reportWebVitals();

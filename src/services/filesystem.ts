@@ -1,5 +1,6 @@
 import LightningFS from '@isomorphic-git/lightning-fs';
 import type { FileNode } from '@/types';
+import { logger } from '@/utils/logger';
 
 export interface FileStats {
   name: string;
@@ -13,6 +14,11 @@ export interface FileSystemResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+interface FileSystemError {
+  code?: string;
+  message?: string;
 }
 
 class FileSystemService {
@@ -36,10 +42,10 @@ class FileSystemService {
     try {
       // Ensure root structure exists
       await this.ensureDir('/');
-      console.log('✅ FileSystem initialized with root directory support');
+      logger.info('✅ FileSystem initialized with root directory support');
       this.initialized = true;
     } catch (error) {
-      console.error('❌ Error initializing filesystem:', error);
+      logger.error('❌ Error initializing filesystem:', error);
     }
   }
 
@@ -71,7 +77,7 @@ class FileSystemService {
       }
 
       this.currentWorkingDirectory = resolvedPath;
-      console.log(`📁 Changed directory to: ${resolvedPath}`);
+      logger.info(`📁 Changed directory to: ${resolvedPath}`);
 
       return {
         success: true,
@@ -139,7 +145,7 @@ class FileSystemService {
             modified: stats.mtimeMs || Date.now()
           });
         } catch (error) {
-          console.warn(`⚠️ Could not stat file: ${fullPath}`, error);
+          logger.warn(`⚠️ Could not stat file: ${fullPath}`, error);
           fileNodes.push({
             name: fileName,
             path: fullPath,
@@ -197,7 +203,7 @@ class FileSystemService {
         await this.ensureDir(dirPath);
       }
       await this.pfs.writeFile(fullPath, content, 'utf8');
-      console.log(`💾 Saved file: ${fullPath}`);
+      logger.info(`💾 Saved file: ${fullPath}`);
       return { success: true };
     } catch (error) {
       return {
@@ -221,7 +227,7 @@ class FileSystemService {
         await this.pfs.unlink(fullPath);
       }
 
-      console.log(`🗑️ Deleted: ${fullPath}`);
+      logger.info(`🗑️ Deleted: ${fullPath}`);
       return { success: true };
     } catch (error) {
       return {
@@ -240,7 +246,7 @@ class FileSystemService {
       const fullNewPath = this.resolvePath(newPath);
 
       await this.pfs.rename(fullOldPath, fullNewPath);
-      console.log(`✏️ Renamed: ${fullOldPath} → ${fullNewPath}`);
+      logger.info(`✏️ Renamed: ${fullOldPath} → ${fullNewPath}`);
       return { success: true };
     } catch (error) {
       return {
@@ -257,7 +263,7 @@ class FileSystemService {
     try {
       const fullPath = this.resolvePath(path);
       await this.ensureDir(fullPath);
-      console.log(`📁 Created directory: ${fullPath}`);
+      logger.info(`📁 Created directory: ${fullPath}`);
       return { success: true };
     } catch (error) {
       return {
@@ -273,7 +279,7 @@ class FileSystemService {
       await this.pfs.mkdir(path);
     } catch (error) {
       // Directory might already exist
-      const err = error as any;
+      const err = error as FileSystemError;
       if (err.code !== 'EEXIST') {
         throw error;
       }
@@ -352,7 +358,7 @@ class FileSystemService {
             }
 
             nodes.push(node);
-          } catch (error) {
+          } catch {
             // Add as file if stat fails
             nodes.push({
               name: fileName,
@@ -370,7 +376,7 @@ class FileSystemService {
           return a.name.localeCompare(b.name);
         });
       } catch (error) {
-        console.warn(`Could not read directory ${currentPath}:`, error);
+        logger.warn(`Could not read directory ${currentPath}:`, error);
         return [];
       }
     };
@@ -433,6 +439,9 @@ class FileSystemService {
     return languageMap[ext || ''] || 'plaintext';
   }
 }
+
+// Export class for testing purposes
+export { FileSystemService };
 
 // Export singleton
 export const fileSystem = new FileSystemService();

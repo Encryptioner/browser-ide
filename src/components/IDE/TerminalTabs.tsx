@@ -97,8 +97,7 @@ const DEFAULT_PROFILES: TerminalProfile[] = [
   },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function TerminalTabs({ className }: TerminalTabsProps) {
+export function TerminalTabs({ className: _className }: TerminalTabsProps) {
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showProfileSelector, setShowProfileSelector] = useState(false);
@@ -108,7 +107,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
   const [terminalInput, setTerminalInput] = useState<Record<string, string>>({});
   const terminalRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const { webContainerService } = useIDEStore();
+  // Granular selector - individual selector for single state value
+  const webContainerService = useIDEStore(state => state.webContainerService);
 
   // Initialize with one default tab
   useEffect(() => {
@@ -152,6 +152,8 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     setTimeout(() => {
       startTerminalProcess(newTab.id);
     }, 100);
+    // startTerminalProcess is intentionally omitted to avoid circular dependency between createNewTab and startTerminalProcess
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customProfiles]);
 
   const startTerminalProcess = useCallback(async (tabId: string) => {
@@ -264,7 +266,7 @@ export function TerminalTabs({ className }: TerminalTabsProps) {
     setShowTabMenu(null);
   }, []);
 
-   
+
   const splitTab = useCallback((tabId: string, _direction: 'horizontal' | 'vertical' = 'horizontal') => {
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;

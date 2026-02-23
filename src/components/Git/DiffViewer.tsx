@@ -52,8 +52,8 @@ export function DiffViewer({ filepath, onClose }: DiffViewerProps) {
       // Parse diff into lines
       const lines = parseDiff(result.data);
       setDiffLines(lines);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     }
 
     setIsLoading(false);

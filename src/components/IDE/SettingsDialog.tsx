@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { toast } from 'sonner';
 
 interface SettingsDialogProps {
   onClose: () => void;
 }
 
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
-  const { settings, updateSettings } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const settings = useIDEStore(state => state.settings);
+  const updateSettings = useIDEStore(state => state.updateSettings);
   const [localSettings, setLocalSettings] = useState(settings);
 
   function handleSave() {
     updateSettings(localSettings);
-    alert('Settings saved!');
+    toast.success('Settings saved!');
     onClose();
   }
 
@@ -89,6 +92,16 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   value={localSettings.ai.anthropicKey}
                   onChange={(e) => updateAISetting('anthropicKey', e.target.value)}
                   placeholder="sk-ant-xxxxxxxxxxxx"
+                  className="w-full px-3 py-2 bg-gray-700 text-gray-100 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm text-gray-300 block mb-1">Anthropic Base URL (for z.ai proxy):</span>
+                <input
+                  type="text"
+                  value={localSettings.ai.anthropicBaseUrl}
+                  onChange={(e) => updateAISetting('anthropicBaseUrl', e.target.value)}
+                  placeholder="https://api.anthropic.com"
                   className="w-full px-3 py-2 bg-gray-700 text-gray-100 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
                 />
               </label>

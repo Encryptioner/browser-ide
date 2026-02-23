@@ -1,10 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { gitService } from '@/services/git';
 import type { GitBranch } from '@/types';
 
 export function StatusBar() {
-  const { currentFile, currentBranch, gitStatus, setCurrentBranch, currentRepo } = useIDEStore();
+  // Granular selectors - useShallow for related state, individual for actions
+  const { currentFile, currentBranch, gitStatus, currentRepo } = useIDEStore(
+    useShallow(state => ({
+      currentFile: state.currentFile,
+      currentBranch: state.currentBranch,
+      gitStatus: state.gitStatus,
+      currentRepo: state.currentRepo,
+    }))
+  );
+  const setCurrentBranch = useIDEStore(state => state.setCurrentBranch);
+
   const [showBranchMenu, setShowBranchMenu] = useState(false);
   const [branches, setBranches] = useState<GitBranch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +45,8 @@ export function StatusBar() {
     if (showBranchMenu && isGitRepo && branches.length === 0) {
       loadBranches();
     }
+    // branches.length intentionally omitted - only load when menu opens, not when branches change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showBranchMenu, isGitRepo]);
 
   // Close menu when clicking outside

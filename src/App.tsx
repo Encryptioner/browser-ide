@@ -1,51 +1,77 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {
   FileExplorer,
-  Editor,
-  Terminal,
-  Preview,
   StatusBar,
-  CloneDialog,
-  SettingsDialog,
-  AIAssistant,
-  ClaudeCodePanel,
-  ExtensionsPanel,
   WorkspaceSwitcher,
-  CommandPalette,
-  HelpPanel,
+  BottomTabBar,
 } from '@/components/IDE';
-import { SourceControlPanel } from '@/components/Git';
+import type { TabItem } from '@/components/IDE';
+
+// Lazy-load heavy editor & terminal components (Monaco ~2.5MB, xterm ~300KB)
+const Editor = lazy(() => import('@/components/IDE/Editor').then(m => ({ default: m.Editor })));
+const Terminal = lazy(() => import('@/components/IDE/Terminal').then(m => ({ default: m.Terminal })));
+const Preview = lazy(() => import('@/components/IDE/Preview').then(m => ({ default: m.Preview })));
 import { MobileOptimizedLayout, MobileBottomPanel } from '@/components/MobileOptimizedLayout';
-import { MobileKeyboardTest } from '@/components/IDE/MobileKeyboardTest';
+import { BootScreen } from '@/components/BootScreen';
+import { ServiceBanner } from '@/components/ServiceBanner';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { useServiceReadiness } from '@/hooks/useServiceReadiness';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+
+// Lazy-loaded heavy panels & dialogs (only loaded when opened)
+const CloneDialog = lazy(() => import('@/components/IDE/CloneDialog').then(m => ({ default: m.CloneDialog })));
+const SettingsDialog = lazy(() => import('@/components/IDE/SettingsDialog').then(m => ({ default: m.SettingsDialog })));
+const AIAssistant = lazy(() => import('@/components/IDE/AIAssistant').then(m => ({ default: m.AIAssistant })));
+const ClaudeCodePanel = lazy(() => import('@/components/IDE/ClaudeCodePanel').then(m => ({ default: m.ClaudeCodePanel })));
+const ExtensionsPanel = lazy(() => import('@/components/IDE/ExtensionsPanel').then(m => ({ default: m.ExtensionsPanel })));
+const CommandPalette = lazy(() => import('@/components/IDE/CommandPalette').then(m => ({ default: m.CommandPalette })));
+const HelpPanel = lazy(() => import('@/components/IDE/HelpPanel').then(m => ({ default: m.HelpPanel })));
+const SourceControlPanel = lazy(() => import('@/components/Git/SourceControlPanel').then(m => ({ default: m.SourceControlPanel })));
+const MobileKeyboardTest = lazy(() => import('@/components/IDE/MobileKeyboardTest').then(m => ({ default: m.MobileKeyboardTest })));
 import { useIDEStore } from '@/store/useIDEStore';
-import { gitService } from '@/services/git';
-import { fileSystem } from '@/services/filesystem';
+import { useShallow } from 'zustand/react/shallow';
 import { logger } from '@/utils/logger';
 import { config } from '@/config/environment';
 import { useKeyboardDetection } from '@/hooks/useKeyboardDetection';
 import { Toaster } from 'sonner';
+import { initSentry } from '@/services/sentry';
 
 function App() {
   useKeyboardDetection();
-  const {
-    sidebarOpen,
-    terminalOpen,
-    previewOpen,
-    isInstalled,
-    installPromptEvent,
-    setInstallPrompt,
-    setInstalled,
-    toggleSidebar,
-    toggleTerminal,
-    togglePreview,
-    toggleHelp,
-    helpOpen,
-    activeBottomPanel,
-    setActiveBottomPanel,
-    terminalMaximized,
-    bottomPanelSize,
-  } = useIDEStore();
+  const services = useServiceReadiness();
+  const onlineStatus = useOnlineStatus();
+
+  // UI state group
+  const { sidebarOpen, terminalOpen, previewOpen, helpOpen, activeBottomPanel, terminalMaximized, bottomPanelSize } = useIDEStore(
+    useShallow(state => ({
+      sidebarOpen: state.sidebarOpen,
+      terminalOpen: state.terminalOpen,
+      previewOpen: state.previewOpen,
+      helpOpen: state.helpOpen,
+      activeBottomPanel: state.activeBottomPanel,
+      terminalMaximized: state.terminalMaximized,
+      bottomPanelSize: state.bottomPanelSize,
+    }))
+  );
+
+  // PWA state group
+  const { isInstalled, installPromptEvent } = useIDEStore(
+    useShallow(state => ({
+      isInstalled: state.isInstalled,
+      installPromptEvent: state.installPromptEvent,
+    }))
+  );
+
+  // Actions (stable references)
+  const setInstallPrompt = useIDEStore(state => state.setInstallPrompt);
+  const setInstalled = useIDEStore(state => state.setInstalled);
+  const toggleSidebar = useIDEStore(state => state.toggleSidebar);
+  const toggleTerminal = useIDEStore(state => state.toggleTerminal);
+  const togglePreview = useIDEStore(state => state.togglePreview);
+  const toggleHelp = useIDEStore(state => state.toggleHelp);
+  const setActiveBottomPanel = useIDEStore(state => state.setActiveBottomPanel);
+  const settings = useIDEStore(state => state.settings);
 
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -54,7 +80,6 @@ function App() {
   const [showClaudeCode, setShowClaudeCode] = useState(false);
   const [showExtensions, setShowExtensions] = useState(false);
   const [showGit, setShowGit] = useState(false);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
   const [showSplitEditor, setShowSplitEditor] = useState(false);
   const [showTerminalTabs, setShowTerminalTabs] = useState(false);
@@ -62,6 +87,16 @@ function App() {
 
   useEffect(() => {
     logger.info(`Browser IDE v${config.APP_VERSION} - Starting...`);
+
+    // Initialize Sentry if configured
+    if (settings.monitoring?.sentryEnabled && settings.monitoring.sentryDsn) {
+      initSentry({
+        dsn: settings.monitoring.sentryDsn,
+        environment: settings.monitoring.sentryEnvironment,
+        tracesSampleRate: settings.monitoring.tracesSampleRate,
+        enabled: settings.monitoring.sentryEnabled,
+      });
+    }
 
     // Hide loading screen
     const loading = document.getElementById('loading');
@@ -74,32 +109,12 @@ function App() {
       setInstalled(true);
     }
 
-    // Initialize git repository if it exists
-    async function initGitIfExists() {
-      try {
-        // Check if current directory has a git repository
-        const currentDir = fileSystem.getCurrentWorkingDirectory();
-        const fs = fileSystem.getFS();
-        const stats = await fs.promises.stat(currentDir).catch(() => null);
-
-        if (stats && stats.isDirectory()) {
-          const result = await gitService.initializeRepository(currentDir);
-
-          if (result.success && result.data) {
-            logger.info(`Git initialized: branch=${result.data.currentBranch}, files=${result.data.gitStatus.length}, commits=${result.data.commits.length}`);
-          }
-        }
-      } catch (error) {
-        logger.error('Error checking for repository:', error);
-      }
-    }
-
-    initGitIfExists();
+    // Git initialization is handled by useServiceReadiness (lazy, on demand)
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e);
+      setInstallPrompt(e as Event & { prompt(): Promise<{ outcome: 'accepted' | 'dismissed' }>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> });
       if (!isInstalled) {
         setShowInstallPrompt(true);
       }
@@ -135,12 +150,8 @@ function App() {
 
   const handleInstallClick = async () => {
     if (installPromptEvent) {
-      const promptEvent = installPromptEvent as Event & {
-        prompt: () => Promise<{ outcome: 'accepted' | 'dismissed' }>;
-        userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-      };
-      promptEvent.prompt();
-      const { outcome } = await promptEvent.userChoice;
+      installPromptEvent.prompt();
+      const { outcome } = await installPromptEvent.userChoice;
       if (outcome === 'accepted') {
         setInstalled(true);
         setShowInstallPrompt(false);
@@ -151,9 +162,18 @@ function App() {
 
   const bottomPanelVisible = terminalOpen || previewOpen || showClaudeCode || showExtensions || showGit;
 
+  // Block render until critical services (filesystem + DB) are ready
+  if (!services.criticalReady) {
+    return <BootScreen services={services} />;
+  }
+
   return (
     <>
       <MobileOptimizedLayout className="app flex flex-col bg-gray-900 text-gray-100 overflow-hidden">
+      {/* Offline + service degradation banners */}
+      <OfflineIndicator status={onlineStatus} />
+      <ServiceBanner services={services} />
+
       {/* Title Bar */}
       <div className="titlebar flex items-center justify-between px-2 sm:px-4 py-2 bg-gray-800 border-b border-gray-700 flex-shrink-0">
         <div className="titlebar-drag flex items-center gap-2 sm:gap-4 overflow-hidden flex-1 min-w-0">
@@ -305,14 +325,6 @@ function App() {
           </button>
 
           <button
-            onClick={() => setShowCommandPalette(true)}
-            title="Commands"
-            className="p-2 sm:px-3 sm:py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs sm:text-sm touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
-          >
-            <span className="text-base sm:text-sm">⚡</span>
-          </button>
-
-          <button
             onClick={() => setShowSettingsDialog(true)}
             title="Settings"
             className="p-2 sm:px-3 sm:py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs sm:text-sm touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
@@ -374,7 +386,9 @@ function App() {
                 minSize={terminalMaximized ? 0 : 30}
                 maxSize={terminalMaximized ? (100 - bottomPanelSize) : 100}
               >
-                <Editor />
+                <Suspense fallback={<div className="flex items-center justify-center h-full bg-gray-900 text-gray-500 text-sm">Loading editor...</div>}>
+                  <Editor />
+                </Suspense>
               </Panel>
 
               {/* Bottom Panel */}
@@ -391,98 +405,28 @@ function App() {
                     maxSize={terminalMaximized ? 100 : 100}
                   >
                     <MobileBottomPanel isOpen={bottomPanelVisible} className="bottom-panel flex flex-col h-full bg-gray-900">
-                      <div className="bottom-panel-tabs flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
-                        {terminalOpen && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'terminal-tabs'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('terminal-tabs')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">💻</span>
-                            <span className="hidden sm:inline">Terminal</span>
-                            <span className="sm:hidden text-xs">Term</span>
-                          </div>
-                        )}
-                        {previewOpen && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'preview'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('preview')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">👁️</span>
-                            <span className="hidden sm:inline">Preview</span>
-                            <span className="sm:hidden text-xs">View</span>
-                          </div>
-                        )}
-                        {showClaudeCode && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'claude-code'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('claude-code')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">🧠</span>
-                            <span className="hidden sm:inline">Claude</span>
-                            <span className="sm:hidden text-xs">AI</span>
-                          </div>
-                        )}
-                        {showExtensions && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'extensions'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('extensions')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">🧩</span>
-                            <span className="hidden sm:inline">Extensions</span>
-                            <span className="sm:hidden text-xs">Ext</span>
-                          </div>
-                        )}
-                        {showGit && (
-                          <div
-                            className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                              activeBottomPanel === 'git'
-                                ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                                : 'hover:bg-gray-700 text-gray-300'
-                            }`}
-                            onClick={() => setActiveBottomPanel('git')}
-                          >
-                            <span className="text-lg sm:text-base mb-1">🔀</span>
-                            <span className="hidden sm:inline">Git</span>
-                            <span className="sm:hidden text-xs">Git</span>
-                          </div>
-                        )}
-                        <div
-                          className={`tab px-2 sm:px-4 py-2 cursor-pointer text-xs sm:text-sm touch-manipulation min-w-[60px] sm:min-w-0 flex flex-col items-center justify-center whitespace-nowrap ${
-                            activeBottomPanel === 'help'
-                              ? 'active bg-gray-900 text-blue-400 border-b-2 border-blue-500'
-                              : 'hover:bg-gray-700 text-gray-300'
-                          }`}
-                          onClick={() => setActiveBottomPanel('help')}
-                        >
-                          <span className="text-lg sm:text-base mb-1">📚</span>
-                          <span className="hidden sm:inline">Help</span>
-                          <span className="sm:hidden text-xs">Help</span>
-                        </div>
-                      </div>
+                      <BottomTabBar
+                        tabs={[
+                          ...(terminalOpen ? [{ id: 'terminal-tabs', label: 'Terminal', shortLabel: 'Term', icon: '💻' } satisfies TabItem] : []),
+                          ...(previewOpen ? [{ id: 'preview', label: 'Preview', shortLabel: 'View', icon: '👁️' } satisfies TabItem] : []),
+                          ...(showClaudeCode ? [{ id: 'claude-code', label: 'Claude', shortLabel: 'AI', icon: '🧠' } satisfies TabItem] : []),
+                          ...(showExtensions ? [{ id: 'extensions', label: 'Extensions', shortLabel: 'Ext', icon: '🧩' } satisfies TabItem] : []),
+                          ...(showGit ? [{ id: 'git', label: 'Git', shortLabel: 'Git', icon: '🔀' } satisfies TabItem] : []),
+                          { id: 'help', label: 'Help', shortLabel: 'Help', icon: '📚' },
+                        ]}
+                        activeTab={activeBottomPanel}
+                        onTabChange={(id) => setActiveBottomPanel(id as typeof activeBottomPanel)}
+                      />
                       <div className="bottom-panel-content flex-1 overflow-hidden">
-                        {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}
-                        {activeBottomPanel === 'terminal' && terminalOpen && <Terminal />}
-                        {activeBottomPanel === 'preview' && previewOpen && <Preview />}
-                        {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
-                        {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
-                        {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}
-                        {activeBottomPanel === 'help' && helpOpen && <HelpPanel />}
+                        <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-500 text-sm">Loading...</div>}>
+                          {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}
+                          {activeBottomPanel === 'terminal' && terminalOpen && <Terminal />}
+                          {activeBottomPanel === 'preview' && previewOpen && <Preview />}
+                          {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
+                          {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
+                          {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}
+                          {activeBottomPanel === 'help' && <HelpPanel />}
+                        </Suspense>
                       </div>
                     </MobileBottomPanel>
                   </Panel>
@@ -496,15 +440,13 @@ function App() {
       {/* Status Bar */}
       <StatusBar />
 
-      {/* Dialogs */}
-      {showCloneDialog && <CloneDialog onClose={() => setShowCloneDialog(false)} />}
-
-      {showSettingsDialog && <SettingsDialog onClose={() => setShowSettingsDialog(false)} />}
-
-      {showAIAssistant && <AIAssistant onClose={() => setShowAIAssistant(false)} />}
-
-      {/* Overlays */}
-      {showCommandPalette && <CommandPalette />}
+      {/* Dialogs (lazy-loaded) */}
+      <Suspense fallback={null}>
+        {showCloneDialog && <CloneDialog onClose={() => setShowCloneDialog(false)} />}
+        {showSettingsDialog && <SettingsDialog onClose={() => setShowSettingsDialog(false)} />}
+        {showAIAssistant && <AIAssistant onClose={() => setShowAIAssistant(false)} />}
+        <CommandPalette /> {/* Always rendered to handle keyboard shortcut */}
+      </Suspense>
 
       {/* Mobile File Explorer Overlay */}
       {sidebarOpen && (
@@ -530,7 +472,9 @@ function App() {
     </MobileOptimizedLayout>
 
     {/* Mobile Keyboard Test - only visible in development */}
-      <MobileKeyboardTest />
+      <Suspense fallback={null}>
+        <MobileKeyboardTest />
+      </Suspense>
 
       {/* Toast Notifications */}
       <Toaster position="top-right" richColors closeButton />

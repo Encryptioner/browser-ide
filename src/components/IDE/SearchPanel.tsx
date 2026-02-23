@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
 import { logger } from '@/utils/logger';
+import { toast } from 'sonner';
 
 interface SearchResult {
   file: string;
@@ -27,7 +28,10 @@ export function SearchPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [replaceMode, setReplaceMode] = useState(false);
 
-  const { setCurrentFile } = useIDEStore();
+  // Granular selectors - individual selectors for actions (stable references)
+  const setCurrentFile = useIDEStore(state => state.setCurrentFile);
+  const setSearchHighlight = useIDEStore(state => state.setSearchHighlight);
+  const clearSearchHighlight = useIDEStore(state => state.clearSearchHighlight);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Handle keyboard shortcuts
@@ -42,6 +46,7 @@ export function SearchPanel() {
 
       // Escape to close
       if (e.key === 'Escape' && isOpen) {
+        clearSearchHighlight();
         setIsOpen(false);
       }
 
@@ -54,6 +59,8 @@ export function SearchPanel() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // clearSearchHighlight is a stable store action and does not need to trigger re-subscription
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, replaceMode]);
 
   // Focus input when opened
@@ -66,6 +73,9 @@ export function SearchPanel() {
   // Perform search
   const performSearch = async () => {
     if (!searchTerm.trim()) return;
+
+    // Clear any existing highlight when starting a new search
+    clearSearchHighlight();
 
     setIsSearching(true);
     const searchResults: SearchResult[] = [];
@@ -133,7 +143,13 @@ export function SearchPanel() {
   // Navigate to search result
   const goToResult = (result: SearchResult) => {
     setCurrentFile(result.file);
-    // TODO: Add line and column highlighting in Monaco editor
+    // Set search highlight to be picked up by Editor component
+    setSearchHighlight({
+      file: result.file,
+      line: result.line,
+      column: result.column,
+      text: result.text,
+    });
   };
 
   // Replace function (simplified)
@@ -168,7 +184,7 @@ export function SearchPanel() {
       }
     }
 
-    alert(`Replaced ${replaceCount} occurrences in ${filesToReplace.size} files`);
+    toast.success(`Replaced ${replaceCount} occurrences in ${filesToReplace.size} files`);
     // Re-search to update results
     await performSearch();
   };

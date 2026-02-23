@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { safeJSONParse } from '@/utils/json';
+import { logger } from '@/utils/logger';
 
 interface MobileKeyboardConfig {
   enabled: boolean;
@@ -84,13 +86,13 @@ const DEFAULT_CONFIG: AppMobileConfig = {
  */
 export function useMobileConfig(): {
   config: AppMobileConfig;
-  updateConfig: (updates: Partial<AppMobileConfig>) => void;
+  updateConfig: (_updates: Partial<AppMobileConfig>) => void;
   resetConfig: () => void;
   saveConfig: () => Promise<boolean>;
   loadConfig: () => Promise<boolean>;
 } {
   const [config, setConfig] = useState<AppMobileConfig>(DEFAULT_CONFIG);
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
 
   // Load config from localStorage or fetch from file
   const loadConfig = async (): Promise<boolean> => {
@@ -105,7 +107,7 @@ export function useMobileConfig(): {
 
         // Merge with localStorage config if it exists
         const localConfigStr = localStorage.getItem('browser-ide-mobile-config');
-        const localConfig = localConfigStr ? JSON.parse(localConfigStr) : {};
+        const localConfig = safeJSONParse(localConfigStr, {} as Record<string, unknown>);
 
         const mergedConfig = {
           ...DEFAULT_CONFIG,
@@ -114,7 +116,7 @@ export function useMobileConfig(): {
         };
 
         setConfig(mergedConfig);
-        console.log('📱 Mobile config loaded from file and localStorage:', mergedConfig);
+        logger.info('📱 Mobile config loaded from file and localStorage:', mergedConfig);
         return true;
       } else {
         // Response not OK, use defaults
@@ -122,7 +124,7 @@ export function useMobileConfig(): {
         return false;
       }
     } catch (error) {
-      console.warn('📱 Failed to load config.json, using defaults:', error);
+      logger.warn('📱 Failed to load config.json, using defaults:', error);
 
       // Fallback to localStorage only
       try {
@@ -131,16 +133,16 @@ export function useMobileConfig(): {
           const localConfig = JSON.parse(localConfigStr);
           const mergedConfig = { ...DEFAULT_CONFIG, ...localConfig };
           setConfig(mergedConfig);
-          console.log('📱 Mobile config loaded from localStorage:', mergedConfig);
+          logger.info('📱 Mobile config loaded from localStorage:', mergedConfig);
           return true;
         }
       } catch (localError) {
-        console.warn('📱 Failed to load localStorage config:', localError);
+        logger.warn('📱 Failed to load localStorage config:', localError);
       }
 
       // Use defaults
       setConfig(DEFAULT_CONFIG);
-      console.log('📱 Using default mobile config:', DEFAULT_CONFIG);
+      logger.info('📱 Using default mobile config:', DEFAULT_CONFIG);
       return false;
     } finally {
       setIsLoading(false);
@@ -151,10 +153,10 @@ export function useMobileConfig(): {
   const saveConfig = async (): Promise<boolean> => {
     try {
       localStorage.setItem('browser-ide-mobile-config', JSON.stringify(config));
-      console.log('📱 Mobile config saved to localStorage:', config);
+      logger.info('📱 Mobile config saved to localStorage:', config);
       return true;
     } catch (error) {
-      console.error('📱 Failed to save mobile config:', error);
+      logger.error('📱 Failed to save mobile config:', error);
       return false;
     }
   };
@@ -171,7 +173,7 @@ export function useMobileConfig(): {
     try {
       localStorage.setItem('browser-ide-mobile-config', JSON.stringify(newConfig));
     } catch (error) {
-      console.warn('📱 Failed to auto-save config:', error);
+      logger.warn('📱 Failed to auto-save config:', error);
     }
   };
 
@@ -180,9 +182,9 @@ export function useMobileConfig(): {
     setConfig(DEFAULT_CONFIG);
     try {
       localStorage.removeItem('browser-ide-mobile-config');
-      console.log('📱 Mobile config reset to defaults');
+      logger.info('📱 Mobile config reset to defaults');
     } catch (error) {
-      console.warn('📱 Failed to clear localStorage config:', error);
+      logger.warn('📱 Failed to clear localStorage config:', error);
     }
   };
 
@@ -251,17 +253,17 @@ export function useKeyboardTestingControls() {
 
       // Try to use Virtual Keyboard API if available
       if ('virtualKeyboard' in navigator && keyboardConfig.virtualKeyboardAPI.enabled) {
-        (navigator.virtualKeyboard as any).show();
+        navigator.virtualKeyboard?.show();
       }
 
-      console.log('📱 Keyboard forced to show for testing');
+      logger.info('📱 Keyboard forced to show for testing');
 
       // Remove after 5 seconds
       setTimeout(() => {
         document.body.removeChild(tempInput);
       }, 5000);
     } catch (error) {
-      console.error('📱 Failed to force show keyboard:', error);
+      logger.error('📱 Failed to force show keyboard:', error);
     }
   };
 
@@ -271,7 +273,7 @@ export function useKeyboardTestingControls() {
     try {
       // Try to use Virtual Keyboard API if available
       if ('virtualKeyboard' in navigator && keyboardConfig.virtualKeyboardAPI.enabled) {
-        (navigator.virtualKeyboard as any).hide();
+        navigator.virtualKeyboard?.hide();
       }
 
       // Blur any active input
@@ -280,9 +282,9 @@ export function useKeyboardTestingControls() {
         activeElement.blur();
       }
 
-      console.log('📱 Keyboard forced to hide for testing');
+      logger.info('📱 Keyboard forced to hide for testing');
     } catch (error) {
-      console.error('📱 Failed to force hide keyboard:', error);
+      logger.error('📱 Failed to force hide keyboard:', error);
     }
   };
 

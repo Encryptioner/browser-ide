@@ -10,10 +10,9 @@ interface SplitEditorProps {
 }
 
 export function SplitEditor({ className }: SplitEditorProps) {
-  const {
-    splitEditorState,
-    setSplitEditorState,
-  } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const splitEditorState = useIDEStore(state => state.splitEditorState);
+  const setSplitEditorState = useIDEStore(state => state.setSplitEditorState);
 
   // Initialize split editor state if not present
   useEffect(() => {
@@ -52,22 +51,22 @@ export function SplitEditor({ className }: SplitEditorProps) {
   }, []);
 
   // The following functions are kept for future implementation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const addEditorToGroup = useCallback(() => {
     // Future: Add editor to a specific group
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const removeEditorFromGroup = useCallback(() => {
     // Future: Remove editor from a specific group
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const splitGroup = useCallback(() => {
     // Future: Split a group into two
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const _mergeGroups = useCallback(() => {
     // Future: Merge two groups into one
   }, []);

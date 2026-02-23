@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { importExportService } from '@/services/importExport';
+import { fileSystem } from '@/services/filesystem';
+import { gitService } from '@/services/git';
+import { toast } from 'sonner';
+// Monaco is dynamically imported to avoid pulling the entire bundle eagerly
 
 interface Command {
   id: string;
@@ -38,15 +42,14 @@ export function CommandPalette() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    toggleSidebar,
-    toggleTerminal,
-    togglePreview,
-    settings,
-    openFiles,
-    closeFile,
-    currentRepo
-  } = useIDEStore();
+  // Granular selectors - individual selectors for each property
+  const toggleSidebar = useIDEStore(state => state.toggleSidebar);
+  const toggleTerminal = useIDEStore(state => state.toggleTerminal);
+  const togglePreview = useIDEStore(state => state.togglePreview);
+  const settings = useIDEStore(state => state.settings);
+  const openFiles = useIDEStore(state => state.openFiles);
+  const closeFile = useIDEStore(state => state.closeFile);
+  const currentRepo = useIDEStore(state => state.currentRepo);
 
   // Import/Export handlers
   const handleExport = useCallback(async () => {
@@ -61,10 +64,10 @@ export function CommandPalette() {
       if (result.success && result.data) {
         importExportService.downloadExport(result.data, projectName);
       } else {
-        alert(`Export failed: ${result.error}`);
+        toast.error(`Export failed: ${result.error}`);
       }
     } catch {
-      alert('Export failed - please try again');
+      toast.error('Export failed - please try again');
     } finally {
       setIsExporting(false);
       setShowExportDialog(false);
@@ -74,7 +77,7 @@ export function CommandPalette() {
   const handleImport = useCallback(async (file: File) => {
     // Validate file first
     if (!file.name.endsWith('.zip')) {
-      alert('Please select a valid ZIP export file');
+      toast.error('Please select a valid ZIP export file');
       return;
     }
 
@@ -102,12 +105,12 @@ export function CommandPalette() {
       const result = await importExportService.importProject(arrayBuffer, importOptions);
 
       if (result.success) {
-        alert(`✅ Import successful: ${result.importedFiles} files imported from "${result.projectName}"`);
+        toast.success(`✅ Import successful: ${result.importedFiles} files imported from "${result.projectName}"`);
       } else {
-        alert(`❌ Import failed: ${result.error}`);
+        toast.error(`❌ Import failed: ${result.error}`);
       }
     } catch {
-      alert('❌ Import failed - please try again');
+      toast.error('❌ Import failed - please try again');
     } finally {
       setIsImporting(false);
       setShowImportDialog(false);
@@ -136,7 +139,19 @@ export function CommandPalette() {
       description: 'Create a new file',
       shortcut: 'Ctrl+N',
       category: 'File',
-      action: () => console.log('New file')
+      action: () => {
+        const store = useIDEStore.getState();
+        // Generate a unique untitled filename
+        let counter = 1;
+        let fileName = '/untitled-1';
+        while (store.openFiles.includes(fileName)) {
+          counter++;
+          fileName = `/untitled-${counter}`;
+        }
+        store.addOpenFile(fileName);
+        store.setCurrentFile(fileName);
+        toast.success(`Created new file: ${fileName}`);
+      }
     },
     {
       id: 'save-file',
@@ -144,7 +159,26 @@ export function CommandPalette() {
       description: 'Save current file',
       shortcut: 'Ctrl+S',
       category: 'File',
-      action: () => console.log('Save file')
+      action: async () => {
+        const store = useIDEStore.getState();
+        const { currentFile, editorContent } = store;
+        if (!currentFile) {
+          toast.info('No file is currently open');
+          return;
+        }
+        const content = editorContent[currentFile] ?? '';
+        try {
+          const result = await fileSystem.writeFile(currentFile, content);
+          if (result.success) {
+            store.markFileSaved(currentFile);
+            toast.success(`Saved: ${currentFile}`);
+          } else {
+            toast.error(`Failed to save: ${result.error}`);
+          }
+        } catch {
+          toast.error('Failed to save file');
+        }
+      }
     },
     {
       id: 'close-file',
@@ -212,7 +246,15 @@ export function CommandPalette() {
       description: 'Search within current file',
       shortcut: 'Ctrl+F',
       category: 'Editor',
-      action: () => console.log('Find in file')
+      action: async () => {
+        const monaco = await import('monaco-editor');
+        const editors = monaco.editor.getEditors();
+        if (editors.length > 0) {
+          editors[0]?.trigger('keyboard', 'actions.find', null);
+        } else {
+          toast.info('Use Ctrl+F in the editor to find');
+        }
+      }
     },
     {
       id: 'replace-in-file',
@@ -220,7 +262,15 @@ export function CommandPalette() {
       description: 'Find and replace within current file',
       shortcut: 'Ctrl+H',
       category: 'Editor',
-      action: () => console.log('Replace in file')
+      action: async () => {
+        const monaco = await import('monaco-editor');
+        const editors = monaco.editor.getEditors();
+        if (editors.length > 0) {
+          editors[0]?.trigger('keyboard', 'editor.action.startFindReplaceAction', null);
+        } else {
+          toast.info('Use Ctrl+H in the editor to find and replace');
+        }
+      }
     },
     {
       id: 'format-document',
@@ -228,7 +278,15 @@ export function CommandPalette() {
       description: 'Format current file',
       shortcut: 'Shift+Alt+F',
       category: 'Editor',
-      action: () => console.log('Format document')
+      action: async () => {
+        const monaco = await import('monaco-editor');
+        const editors = monaco.editor.getEditors();
+        if (editors.length > 0) {
+          editors[0]?.trigger('keyboard', 'editor.action.formatDocument', null);
+        } else {
+          toast.info('Use Shift+Alt+F in the editor to format');
+        }
+      }
     },
 
     // Git operations
@@ -238,7 +296,12 @@ export function CommandPalette() {
       description: 'Show git status',
       shortcut: 'Ctrl+Shift+G',
       category: 'Git',
-      action: () => console.log('Git status')
+      action: () => {
+        const store = useIDEStore.getState();
+        store.setActiveBottomPanel('git');
+        store.setTerminalOpen(true);
+        toast.success('Git panel opened');
+      }
     },
     {
       id: 'git-commit',
@@ -246,7 +309,12 @@ export function CommandPalette() {
       description: 'Commit changes',
       shortcut: 'Ctrl+K Ctrl+S',
       category: 'Git',
-      action: () => console.log('Git commit')
+      action: () => {
+        const store = useIDEStore.getState();
+        store.setActiveBottomPanel('git');
+        store.setTerminalOpen(true);
+        toast.info('Git panel opened - enter your commit message');
+      }
     },
     {
       id: 'git-push',
@@ -254,7 +322,25 @@ export function CommandPalette() {
       description: 'Push to remote',
       shortcut: 'Ctrl+K Ctrl+P',
       category: 'Git',
-      action: () => console.log('Git push')
+      action: async () => {
+        const store = useIDEStore.getState();
+        const token = store.settings.githubToken;
+        if (!token) {
+          toast.error('GitHub token not configured. Set it in Settings to push.');
+          return;
+        }
+        toast.info('Pushing to remote...');
+        try {
+          const result = await gitService.push(token);
+          if (result.success) {
+            toast.success('Successfully pushed to remote');
+          } else {
+            toast.error(`Push failed: ${result.error}`);
+          }
+        } catch {
+          toast.error('Push failed - please try again');
+        }
+      }
     }
   ];
 

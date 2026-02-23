@@ -13,6 +13,7 @@ function copyCoiServiceWorker() {
       const targetPath = 'dist/coi-serviceworker.min.js';
       if (existsSync(sourcePath)) {
         copyFileSync(sourcePath, targetPath);
+        // eslint-disable-next-line no-console
         console.log('✅ Copied coi-serviceworker.min.js to dist/');
       }
     },

@@ -1,5 +1,6 @@
 import { WebContainer, type FileSystemTree } from '@webcontainer/api';
 import type { WebContainerProcess as WCProcessType } from '@webcontainer/api';
+import { logger } from '@/utils/logger';
 
 export interface WebContainerResult<T = unknown> {
   success: boolean;
@@ -14,6 +15,123 @@ export interface ProcessResult {
   output?: ReadableStream;
   exit?: Promise<number>;
   error?: string;
+}
+
+/**
+ * Command allowlist for WebContainer spawn
+ * These are the only commands allowed to run for security reasons
+ */
+const ALLOWED_COMMANDS = new Set([
+  // Node.js
+  'node',
+  'npm',
+  'npx',
+  'pnpm',
+  'yarn',
+  'bun',
+
+  // Python
+  'python',
+  'python3',
+  'pip',
+  'pip3',
+
+  // Git
+  'git',
+
+  // Shell built-ins (available in most shells)
+  'ls',
+  'cd',
+  'pwd',
+  'cat',
+  'echo',
+  'mkdir',
+  'rm',
+  'rmdir',
+  'touch',
+  'cp',
+  'mv',
+  'head',
+  'tail',
+  'grep',
+  'find',
+  'wc',
+  'sort',
+  'uniq',
+  'xargs',
+
+  // Utilities
+  'curl',
+  'wget',
+  'tar',
+  'zip',
+  'unzip',
+  'chmod',
+  'chown',
+
+  // Editors (often needed)
+  'nano',
+  'vim',
+  'vi',
+
+  // Build tools
+  'make',
+  'cmake',
+  'cargo',
+  'rustc',
+  'go',
+  'javac',
+  'java',
+  'gcc',
+  'g++',
+  'clang',
+  'clang++',
+]);
+
+/**
+ * Check if a command is in the allowlist
+ */
+function isCommandAllowed(command: string): boolean {
+  // Check base command (without path)
+  const baseCommand = command.split('/').pop() || command;
+  return ALLOWED_COMMANDS.has(baseCommand);
+}
+
+/**
+ * Sanitize command arguments to prevent injection
+ * Removes dangerous shell operators and characters
+ */
+function sanitizeArguments(args: string[]): string[] {
+  const dangerousPatterns = [
+    ';',       // Command separator
+    '|',       // Pipe
+    '&',       // Background or command chaining
+    '&&',      // AND operator
+    '||',      // OR operator
+    '>',       // Output redirect
+    '>>',      // Append redirect
+    '<',       // Input redirect
+    '`',       // Command substitution
+    '$(',      // Command substitution
+    '\n',      // Newline (command separator)
+    '\r',      // Carriage return
+    '\t',      // Tab
+    '\\',      // Escape character (can be dangerous in combinations)
+  ];
+
+  return args.filter(arg => {
+    // Check if argument contains dangerous patterns
+    for (const pattern of dangerousPatterns) {
+      if (arg.includes(pattern)) {
+        return false;
+      }
+    }
+    // Check for environment variable assignment at start
+    if (arg.startsWith('=')) {
+      return false;
+    }
+    return true;
+  });
 }
 
 class WebContainerService {
@@ -34,37 +152,31 @@ class WebContainerService {
     }
 
     // Check for required COOP/COEP headers
+    // Note: crossOriginIsolated may be false with 'credentialless' COEP mode,
+    // but WebContainers support credentialless mode. We log a warning instead of blocking.
     if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
-      const errorMsg = 'WebContainers require COOP/COEP headers (Cross-Origin-Opener-Policy: same-origin and Cross-Origin-Embedder-Policy: require-corp). ' +
-        'GitHub Pages does not support these headers. Please use a hosting provider that supports custom headers like Netlify, Vercel, or Cloudflare Pages. ' +
-        'See: https://webcontainers.io/guides/coop-coep';
-
-      console.error('❌ WebContainer Error:', errorMsg);
-      return {
-        success: false,
-        error: errorMsg
-      };
+      logger.warn('⚠️ window.crossOriginIsolated is false. WebContainer will attempt to boot with credentialless COEP mode.');
     }
 
     // Start new boot process
     this.bootPromise = (async () => {
       try {
         this.instance = await WebContainer.boot({ coep: 'credentialless' });
-        console.log('✅ WebContainer booted successfully (credentialless mode)');
+        logger.info('✅ WebContainer booted successfully (credentialless mode)');
 
         // Listen for server events
         this.instance.on('server-ready', (port, url) => {
-          console.log('🚀 Server ready on port', port, ':', url);
+          logger.info(`🚀 Server ready on port ${port}: ${url}`);
           this.serverUrl = url;
         });
 
         this.instance.on('error', (error) => {
-          console.error('❌ WebContainer error:', error);
+          logger.error('❌ WebContainer error:', error);
         });
 
         return { success: true, data: this.instance };
       } catch (error) {
-        console.error('❌ Failed to boot WebContainer:', error);
+        logger.error('❌ Failed to boot WebContainer:', error);
         this.bootPromise = null; // Reset on error
         return { success: false, error: String(error) };
       } finally {
@@ -83,10 +195,10 @@ class WebContainerService {
 
     try {
       await this.instance!.mount(fileTree);
-      console.log('📁 Files mounted successfully');
+      logger.info('📁 Files mounted successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Failed to mount files:', error);
+      logger.error('❌ Failed to mount files:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -101,7 +213,7 @@ class WebContainerService {
       await this.instance!.fs.writeFile(path, content);
       return { success: true };
     } catch (error) {
-      console.error('❌ Failed to write file:', error);
+      logger.error('❌ Failed to write file:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -115,7 +227,7 @@ class WebContainerService {
       const content = await this.instance.fs.readFile(path, 'utf-8');
       return { success: true, data: content };
     } catch (error) {
-      console.error('❌ Failed to read file:', error);
+      logger.error('❌ Failed to read file:', error);
       return { success: false, error: String(error) };
     }
   }
@@ -130,8 +242,23 @@ class WebContainerService {
       if (!result.success) return { success: false, error: result.error };
     }
 
+    // Security: Check if command is allowed
+    if (!isCommandAllowed(command)) {
+      const error = `Command "${command}" is not allowed for security reasons. ` +
+        `Allowed commands: ${Array.from(ALLOWED_COMMANDS).sort().join(', ')}`;
+      logger.error(`❌ ${error}`);
+      return { success: false, error };
+    }
+
+    // Security: Sanitize arguments
+    const sanitizedArgs = sanitizeArguments(args);
+    if (sanitizedArgs.length !== args.length) {
+      const filtered = args.filter((_, i) => !sanitizedArgs.includes(args[i]));
+      logger.warn(`⚠️ Filtered potentially dangerous arguments:`, filtered);
+    }
+
     try {
-      const process = await this.instance!.spawn(command, args, options);
+      const process = await this.instance!.spawn(command, sanitizedArgs, options);
 
       const processId = `${command}-${Date.now()}`;
       this.processes.set(processId, process);
@@ -144,13 +271,13 @@ class WebContainerService {
         exit: process.exit,
       };
     } catch (error) {
-      console.error(`❌ Failed to spawn ${command}:`, error);
+      logger.error(`❌ Failed to spawn ${command}:`, error);
       return { success: false, error: String(error) };
     }
   }
 
   async install(): Promise<ProcessResult> {
-    console.log('📦 Installing dependencies...');
+    logger.info('📦 Installing dependencies...');
     const result = await this.spawn('pnpm', ['install']);
 
     if (result.success && result.process) {
@@ -158,20 +285,20 @@ class WebContainerService {
       result.process.output.pipeTo(
         new WritableStream({
           write(data) {
-            console.log(data);
+            logger.info(data);
           },
         })
       );
 
       await result.process.exit;
-      console.log('✅ Dependencies installed');
+      logger.info('✅ Dependencies installed');
     }
 
     return result;
   }
 
   async run(script = 'dev'): Promise<ProcessResult> {
-    console.log(`🚀 Running pnpm run ${script}...`);
+    logger.info(`🚀 Running pnpm run ${script}...`);
     const result = await this.spawn('pnpm', ['run', script]);
 
     if (result.success && result.process) {
@@ -179,7 +306,7 @@ class WebContainerService {
       result.process.output.pipeTo(
         new WritableStream({
           write(data) {
-            console.log(data);
+            logger.info(data);
           },
         })
       );
@@ -189,7 +316,7 @@ class WebContainerService {
   }
 
   async exec(command: string): Promise<ProcessResult> {
-    console.log(`⚡ Executing: ${command}`);
+    logger.info(`⚡ Executing: ${command}`);
     const parts = command.split(' ');
     const cmd = parts[0];
     const args = parts.slice(1);
@@ -254,9 +381,13 @@ class WebContainerService {
       await this.instance.teardown();
       this.instance = null;
       this.serverUrl = null;
-      console.log('🛑 WebContainer torn down');
+      logger.info('🛑 WebContainer torn down');
     }
   }
 }
 
+// Export singleton instance
 export const webContainer = new WebContainerService();
+
+// Export functions for testing
+export { isCommandAllowed, sanitizeArguments, ALLOWED_COMMANDS };

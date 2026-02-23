@@ -43,26 +43,26 @@ interface WorkspaceState {
   workspaces: Record<string, Workspace>;
 
   // Workspace management
-  createWorkspace: (project: Project) => string;
-  switchWorkspace: (id: string) => void;
-  closeWorkspace: (id: string) => void;
-  updateWorkspaceData: (id: string, data: Partial<WorkspaceData>) => void;
+  createWorkspace: (_project: Project) => string;
+  switchWorkspace: (_id: string) => void;
+  closeWorkspace: (_id: string) => void;
+  updateWorkspaceData: (_id: string, _data: Partial<WorkspaceData>) => void;
 
   // Getters
   getActiveWorkspace: () => Workspace | null;
-  getWorkspace: (id: string) => Workspace | null;
+  getWorkspace: (_id: string) => Workspace | null;
   getAllWorkspaces: () => Workspace[];
 
   // File operations in workspace
-  addOpenFile: (workspaceId: string, file: OpenFile) => void;
-  removeOpenFile: (workspaceId: string, filePath: string) => void;
-  setCurrentFile: (workspaceId: string, filePath: string | null) => void;
-  updateFileContent: (workspaceId: string, filePath: string, content: string) => void;
+  addOpenFile: (_workspaceId: string, _file: OpenFile) => void;
+  removeOpenFile: (_workspaceId: string, _filePath: string) => void;
+  setCurrentFile: (_workspaceId: string, _filePath: string | null) => void;
+  updateFileContent: (_workspaceId: string, _filePath: string, _content: string) => void;
 
   // Git operations in workspace
-  setGitStatus: (workspaceId: string, status: GitStatus[]) => void;
-  setCommits: (workspaceId: string, commits: GitCommit[]) => void;
-  setCurrentBranch: (workspaceId: string, branch: string) => void;
+  setGitStatus: (_workspaceId: string, _status: GitStatus[]) => void;
+  setCommits: (_workspaceId: string, _commits: GitCommit[]) => void;
+  setCurrentBranch: (_workspaceId: string, _branch: string) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(

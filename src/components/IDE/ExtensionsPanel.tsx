@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { extensionManager, VSCodeExtension, POPULAR_EXTENSIONS } from '@/services/vscode-extensions';
+import { logger } from '@/utils/logger';
 
 export function ExtensionsPanel() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +41,8 @@ export function ExtensionsPanel() {
     if (activeTab === 'marketplace' && extensions.length === 0) {
       loadPopularExtensions();
     }
+    // extensions.length intentionally omitted - only load popular on tab switch, not when extensions change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const loadPopularExtensions = async () => {
@@ -48,7 +51,7 @@ export function ExtensionsPanel() {
       const popular = await extensionManager.getPopularExtensions(20);
       setExtensions(popular);
     } catch (error) {
-      console.error('Failed to load popular extensions:', error);
+      logger.error('Failed to load popular extensions:', error);
     } finally {
       setLoading(false);
     }
@@ -70,7 +73,7 @@ export function ExtensionsPanel() {
       });
       setExtensions(results);
     } catch (error) {
-      console.error('Search failed:', error);
+      logger.error('Search failed:', error);
     } finally {
       setLoading(false);
     }
@@ -100,6 +103,13 @@ export function ExtensionsPanel() {
         )
       );
     }
+  };
+
+  const triggerSearch = () => {
+    const syntheticEvent = {
+      preventDefault: () => { /* no-op */ },
+    } as React.FormEvent;
+    handleSearch(syntheticEvent);
   };
 
   const renderExtensionCard = (extension: VSCodeExtension, showUninstall: boolean = false) => (
@@ -225,7 +235,7 @@ export function ExtensionsPanel() {
             onChange={(e) => {
               setSelectedCategory(e.target.value);
               // Trigger search with new category
-              handleSearch(new Event('submit') as any);
+              triggerSearch();
             }}
             className="w-full px-3 py-2 text-sm bg-gray-700 text-gray-100 border border-gray-600 rounded"
           >

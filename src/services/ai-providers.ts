@@ -5,19 +5,20 @@ import type {
   StreamChunk,
   APIResponse,
 } from '@/types';
+import { logger } from '@/utils/logger';
 
 // ========== Base Provider Interface ==========
 export interface LLMProvider {
   id: string;
   name: string;
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+   
   complete(
-    messages: AIMessage[],
-    config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    _messages: AIMessage[],
+    _config: AIProviderConfig,
+    _onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>>;
-  validateConfig(config: AIProviderConfig): Promise<boolean>;
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+  validateConfig(_config: AIProviderConfig): Promise<boolean>;
+   
 }
 
 // ========== Anthropic Claude Provider ==========
@@ -25,11 +26,11 @@ export class AnthropicProvider implements LLMProvider {
   id = 'anthropic';
   name = 'Anthropic Claude';
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+   
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -68,13 +69,13 @@ export class AnthropicProvider implements LLMProvider {
       };
     }
   }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+   
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+   
   private async handleStream(
     response: Response,
     config: AIProviderConfig,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
@@ -114,7 +115,7 @@ export class AnthropicProvider implements LLMProvider {
                 }
               }
             } catch (e) {
-              console.error('Failed to parse SSE data:', e);
+              logger.error('Failed to parse SSE data:', e);
             }
           }
         }
@@ -148,7 +149,7 @@ export class AnthropicProvider implements LLMProvider {
       };
     }
   }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+   
 
   private async handleNonStream(
     response: Response,
@@ -199,11 +200,11 @@ export class GLMProvider implements LLMProvider {
   id = 'glm';
   name = 'Z.ai GLM';
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+   
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     try {
       const baseUrl = config.baseUrl || 'https://api.z.ai/api/paas/v4';
@@ -242,13 +243,13 @@ export class GLMProvider implements LLMProvider {
       };
     }
   }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+   
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+   
   private async handleStream(
     response: Response,
     config: AIProviderConfig,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     const reader = response.body?.getReader();
     if (!reader) throw new Error('No response body');
@@ -285,7 +286,7 @@ export class GLMProvider implements LLMProvider {
                 outputTokens = parsed.usage.completion_tokens || 0;
               }
             } catch (e) {
-              console.error('Failed to parse SSE data:', e);
+              logger.error('Failed to parse SSE data:', e);
             }
           }
         }
@@ -319,7 +320,7 @@ export class GLMProvider implements LLMProvider {
       };
     }
   }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+   
 
   private async handleNonStream(
     response: Response,
@@ -370,11 +371,11 @@ export class OpenAIProvider implements LLMProvider {
   id = 'openai';
   name = 'OpenAI';
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
+   
   async complete(
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     // Similar implementation to GLM (OpenAI-compatible API)
     try {
@@ -418,7 +419,7 @@ export class OpenAIProvider implements LLMProvider {
   private async handleStreamLikeGLM(
     response: Response,
     config: AIProviderConfig,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     // Same as GLM implementation
     const glmProvider = new GLMProvider();
@@ -483,7 +484,7 @@ export class AIProviderRegistry {
     providerType: AIProvider,
     messages: AIMessage[],
     config: AIProviderConfig,
-    onChunk?: (chunk: StreamChunk) => void
+    onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     const provider = this.get(providerType);
     if (!provider) {

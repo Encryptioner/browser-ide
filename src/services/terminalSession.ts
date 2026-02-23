@@ -10,6 +10,8 @@
  */
 
 import { fileSystem } from './filesystem';
+import { safeJSONParse } from '@/utils/json';
+import { logger } from '@/utils/logger';
 
 export interface TerminalSession {
   id: string;
@@ -299,7 +301,7 @@ class TerminalSessionService {
         }
       }
     } catch (error) {
-      console.error('Path completion error:', error);
+      logger.error('Path completion error:', error);
     }
 
     return matches;
@@ -354,7 +356,7 @@ class TerminalSessionService {
       localStorage.setItem('terminal-sessions', JSON.stringify(sessionsData));
       localStorage.setItem('current-session-id', this.currentSessionId || '');
     } catch (error) {
-      console.error('Failed to save terminal sessions:', error);
+      logger.error('Failed to save terminal sessions:', error);
     }
   }
 
@@ -367,7 +369,7 @@ class TerminalSessionService {
       const currentSessionId = localStorage.getItem('current-session-id');
 
       if (sessionsData) {
-        const sessions: TerminalSession[] = JSON.parse(sessionsData);
+        const sessions: TerminalSession[] = safeJSONParse(sessionsData, []);
         sessions.forEach(session => {
           this.sessions.set(session.id, session);
         });
@@ -377,7 +379,7 @@ class TerminalSessionService {
         this.currentSessionId = currentSessionId;
       }
     } catch (error) {
-      console.error('Failed to load terminal sessions:', error);
+      logger.error('Failed to load terminal sessions:', error);
     }
   }
 

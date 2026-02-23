@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertCircle, AlertTriangle, Info, Filter, Search, ChevronDown, ChevronRight, CheckCircle, FileText, ExternalLink, RefreshCw, Settings } from 'lucide-react';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Problem, ProblemTag, ProblemsFilter } from '@/types';
 import { clsx } from 'clsx';
 import { logger } from '@/utils/logger';
@@ -27,7 +28,14 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<number>(Date.now());
 
-  const { openFiles, diagnostics, getDiagnostics } = useIDEStore();
+  // Granular selectors - useShallow for related state, individual for actions
+  const { openFiles, diagnostics } = useIDEStore(
+    useShallow(state => ({
+      openFiles: state.openFiles,
+      diagnostics: state.diagnostics,
+    }))
+  );
+  const getDiagnostics = useIDEStore(state => state.getDiagnostics);
 
   // Refresh problems when files change
   useEffect(() => {
@@ -65,7 +73,7 @@ export function ProblemsPanel({ className }: ProblemsPanelProps) {
         externalDiagnostics.forEach(diagnostic => {
           const problem: Problem = {
             id: `external-${Date.now()}-${Math.random()}`,
-            resource: diagnostic.resource,
+            resource: diagnostic.resource || 'unknown',
             severity: diagnostic.severity as 'error' | 'warning' | 'info',
             message: diagnostic.message,
             code: diagnostic.code,

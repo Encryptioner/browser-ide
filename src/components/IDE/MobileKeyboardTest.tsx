@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useKeyboardConfig, useKeyboardTestingControls } from '@/hooks/useMobileConfig';
-import { useKeyboardDetection, useIsMobile } from '@/hooks/useKeyboardDetection';
-import { useVirtualKeyboardControls } from '@/hooks/useKeyboardDetection';
+import { useKeyboardDetection, useIsMobileDevice, useVirtualKeyboardControls } from '@/hooks/useKeyboardDetection';
+import { logger } from '@/utils/logger';
 
 /**
  * Mobile Keyboard Testing Component
@@ -12,7 +12,7 @@ export function MobileKeyboardTest() {
   const keyboardConfig = useKeyboardConfig();
   const { showControls, enableDebugLogs } = useKeyboardTestingControls();
   const keyboardState = useKeyboardDetection();
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobileDevice();
   const { showKeyboard, hideKeyboard, isVirtualKeyboardEnabled } = useVirtualKeyboardControls();
 
   const [testText, setTestText] = useState('');
@@ -60,7 +60,9 @@ export function MobileKeyboardTest() {
     // Test 4: Virtual Keyboard Control
     if ('virtualKeyboard' in navigator && keyboardConfig.virtualKeyboardAPI.enabled) {
       try {
-        (navigator.virtualKeyboard as any).overlaysContent = keyboardConfig.virtualKeyboardAPI.overlaysContent;
+        if (navigator.virtualKeyboard) {
+          navigator.virtualKeyboard.overlaysContent = keyboardConfig.virtualKeyboardAPI.overlaysContent;
+        }
         results[3] = {
           feature: 'Virtual Keyboard Control',
           status: 'pass' as const,
@@ -100,7 +102,7 @@ export function MobileKeyboardTest() {
   };
 
   if (enableDebugLogs) {
-    console.log('📱 Mobile Keyboard Test State:', {
+    logger.info('📱 Mobile Keyboard Test State:', {
       keyboardState,
       keyboardConfig,
       isMobile,

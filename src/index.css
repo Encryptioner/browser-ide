@@ -278,3 +278,23 @@ body {
 .terminal-header .maximize-button:active {
   transform: scale(0.95) !important;
 }
+
+/* Search result highlight in Monaco editor */
+.searchHighlight {
+  background-color: rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  border-radius: 2px;
+}
+
+/* For dark theme, use a different color */
+.monaco-editor.vs-dark .searchHighlight,
+.monaco-editor.vs .searchHighlight {
+  background-color: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+/* For light theme */
+.monaco-editor.vs-light .searchHighlight {
+  background-color: rgba(255, 215, 0, 0.4);
+  border: 1px solid rgba(255, 215, 0, 0.7);
+}

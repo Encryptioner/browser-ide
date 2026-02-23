@@ -1,27 +1,44 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import { fileSystem } from '@/services/filesystem';
 import { useIDEStore } from '@/store/useIDEStore';
+import { useShallow } from 'zustand/react/shallow';
 import { linterService } from '@/services/linter';
 import { logger } from '@/utils/logger';
+import { useIsMobile } from '@/hooks/useMediaQuery';
+import { EditorStatusBar } from './EditorStatusBar';
+import { DiffEditor } from './DiffEditor';
+import type * as Monaco from 'monaco-editor';
 
 export function Editor() {
-  const {
-    currentFile,
-    openFiles,
-    closeFile,
-    editorContent,
-    updateEditorContent,
-    markFileUnsaved,
-    markFileSaved,
-    settings,
-    setCurrentFile,
-  } = useIDEStore();
+  const { currentFile, openFiles, editorContent, unsavedChanges } = useIDEStore(
+    useShallow(state => ({
+      currentFile: state.currentFile,
+      openFiles: state.openFiles,
+      editorContent: state.editorContent,
+      unsavedChanges: state.unsavedChanges,
+    }))
+  );
 
+  const closeFile = useIDEStore(state => state.closeFile);
+  const updateEditorContent = useIDEStore(state => state.updateEditorContent);
+  const markFileUnsaved = useIDEStore(state => state.markFileUnsaved);
+  const markFileSaved = useIDEStore(state => state.markFileSaved);
+  const settings = useIDEStore(state => state.settings);
+  const setCurrentFile = useIDEStore(state => state.setCurrentFile);
+  const searchHighlight = useIDEStore(state => state.searchHighlight);
+  const pendingDiff = useIDEStore(state => state.pendingDiff);
+  const acceptDiff = useIDEStore(state => state.acceptDiff);
+  const rejectDiff = useIDEStore(state => state.rejectDiff);
+
+  const isMobile = useIsMobile();
   const [content, setContent] = useState('');
   const [language, setLanguage] = useState('javascript');
-  const editorRef = useRef<unknown | null>(null);
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof Monaco | null>(null);
   const lintTimeout = useRef<number | undefined>(undefined);
+  const searchDecorationsRef = useRef<string[]>([]);
+  const autoSaveTimeoutRef = useRef<number | undefined>(undefined);
 
   const loadFile = useCallback(async (path: string) => {
     // Check if already in memory
@@ -39,11 +56,86 @@ export function Editor() {
     setLanguage(lang);
   }, [editorContent, updateEditorContent]);
 
+  // Autosave functionality
+  const triggerAutoSave = useCallback(async (file: string, fileContent: string) => {
+    if (!settings.autoSave) return;
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout for autosave
+    autoSaveTimeoutRef.current = window.setTimeout(async () => {
+      try {
+        await fileSystem.writeFile(file, fileContent);
+        markFileSaved(file);
+        logger.info(`Autosaved: ${file}`);
+      } catch (error) {
+        logger.error('Autosave failed:', error);
+      }
+    }, settings.autoSaveDelay);
+  }, [settings.autoSave, settings.autoSaveDelay, markFileSaved]);
+
   useEffect(() => {
     if (currentFile) {
       loadFile(currentFile);
     }
+
+    // Cleanup autosave timeout on unmount or file change
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
   }, [currentFile, loadFile]);
+
+  // Apply search highlight decorations (use layout effect to avoid concurrent mode issues)
+  useLayoutEffect(() => {
+    if (!editorRef.current) return;
+
+    const editor = editorRef.current;
+
+    // Clear existing decorations first
+    searchDecorationsRef.current = editor.deltaDecorations(
+      searchDecorationsRef.current,
+      []
+    );
+
+    // Apply new highlight if it matches the current file
+    if (searchHighlight && searchHighlight.file === currentFile && monacoRef.current) {
+      const { line, column, text } = searchHighlight;
+      const m = monacoRef.current;
+
+      // Create a decoration for the search result
+      const decorations: Monaco.editor.IModelDeltaDecoration[] = [
+        {
+          range: new m.Range(
+            line,
+            column,
+            line,
+            column + text.length
+          ),
+          options: {
+            className: 'searchHighlight',
+            stickiness: m.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            overviewRuler: {
+              color: '#d4af37', // Gold color for search highlights
+              position: m.editor.OverviewRulerLane.Full,
+            },
+          },
+        },
+      ];
+
+      searchDecorationsRef.current = editor.deltaDecorations(
+        [],
+        decorations
+      );
+
+      // Reveal the line in the editor
+      editor.revealLineInCenter(line);
+    }
+  }, [searchHighlight, currentFile]);
 
   function handleChange(value: string | undefined) {
     const newValue = value || '';
@@ -51,6 +143,9 @@ export function Editor() {
     if (currentFile) {
       updateEditorContent(currentFile, newValue);
       markFileUnsaved(currentFile);
+
+      // Trigger autosave
+      triggerAutoSave(currentFile, newValue);
 
       // Update linting in real-time (debounced)
       if (editorRef.current) {
@@ -83,24 +178,18 @@ export function Editor() {
     }
   }
 
-  function handleEditorDidMount(editor: unknown) {
+  function handleEditorDidMount(editor: Monaco.editor.IStandaloneCodeEditor, monacoInstance: typeof Monaco) {
     editorRef.current = editor;
+    monacoRef.current = monacoInstance;
 
     // Add save shortcut
-
-    if (editor && typeof editor === 'object' && 'addCommand' in editor) {
-      /* eslint-disable @typescript-eslint/no-unused-vars */
-      const monacoEditor = editor as { addCommand: (shortcut: number, callback: () => void) => void };
-      /* eslint-enable @typescript-eslint/no-unused-vars */
-      // Cmd+S or Ctrl+S
-      monacoEditor.addCommand(
-        (window.navigator.platform.match('Mac') ? 2048 : 2048) | 49, // KeyMod.CtrlCmd | KeyCode.KeyS
-        () => {
-          handleSave();
-        }
-      );
-    }
-
+    // Cmd+S or Ctrl+S
+    editor.addCommand(
+      monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS,
+      () => {
+        handleSave();
+      }
+    );
   }
 
   // Handlers for welcome screen buttons
@@ -114,9 +203,9 @@ export function Editor() {
 
   if (!currentFile) {
     return (
-      <div className="editor-empty flex items-center justify-center h-full bg-gray-900 text-gray-100 px-4 py-8">
+      <div className="editor-empty flex items-center justify-center h-full bg-gray-900 text-gray-100 px-4 py-8" role="region" aria-label="Editor welcome screen">
         <div className="welcome max-w-4xl text-center">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-4">Welcome to Browser IDE</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-4" id="welcome-heading">Welcome to Browser IDE</h1>
           <p className="text-base sm:text-xl text-gray-400 mb-6 sm:mb-8">
             A full-featured IDE that runs entirely in your browser
           </p>
@@ -169,32 +258,51 @@ export function Editor() {
     );
   }
 
+  // Check if we should show the diff editor for the current file
+  const showDiff = pendingDiff !== null && pendingDiff.file === currentFile;
+
   return (
-    <div className="editor-container flex flex-col h-full bg-gray-900">
+    <div className="editor-container flex flex-col h-full bg-gray-900" role="region" aria-label="Code editor">
       {/* Mobile-optimized Tabs */}
-      <div className="tabs flex bg-gray-800 border-b border-gray-700 overflow-x-auto">
+      <div className="tabs flex bg-gray-800 border-b border-gray-700 overflow-x-auto" role="tablist" aria-label="Open file tabs">
         {openFiles.map((file) => {
           const filename = file.split('/').pop() || file;
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          const mobile = isMobile;
+          const isUnsaved = unsavedChanges.has(file);
           return (
             <div
               key={file}
+              role="tab"
+              aria-selected={file === currentFile}
+              aria-label={`File: ${filename}${isUnsaved ? ' (unsaved changes)' : ''}`}
               className={`tab flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2 border-r border-gray-700 cursor-pointer min-w-max touch-manipulation ${
                 file === currentFile
                   ? 'active bg-gray-900 text-blue-400'
                   : 'hover:bg-gray-700 text-gray-300'
               }`}
               onClick={() => setCurrentFile(file)}
+              tabIndex={file === currentFile ? 0 : -1}
             >
-              <span className={`tab-name text-xs sm:text-sm ${isMobile ? 'truncate max-w-[100px]' : ''}`}>
-                {isMobile && filename.length > 12 ? filename.substring(0, 12) + '...' : filename}
+              <span className={`tab-name text-xs sm:text-sm ${mobile ? 'truncate max-w-[100px]' : ''}`}>
+                {mobile && filename.length > 12 ? filename.substring(0, 12) + '...' : filename}
               </span>
+              {isUnsaved && (
+                <span
+                  className="unsaved-indicator text-blue-400 text-xs"
+                  aria-label="Unsaved changes"
+                  title="Unsaved changes"
+                >
+                  ●
+                </span>
+              )}
               <button
-                className={`tab-close hover:bg-gray-600 rounded px-1 text-xs sm:text-sm ${isMobile ? 'min-w-[20px] min-h-[20px]' : ''}`}
+                className={`tab-close hover:bg-gray-600 rounded px-1 text-xs sm:text-sm ${mobile ? 'min-w-[20px] min-h-[20px]' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   closeFile(file);
                 }}
+                aria-label={`Close file ${filename}`}
+                title={`Close ${filename}`}
               >
                 ×
               </button>
@@ -203,100 +311,126 @@ export function Editor() {
         })}
       </div>
 
-      {/* Monaco Editor */}
-      <div className="editor-wrapper flex-1">
-        <MonacoEditor
-          height="100%"
-          language={language}
-          value={content}
-          onChange={handleChange}
-          onMount={handleEditorDidMount}
-          theme={settings.theme}
-          options={{
-            // Mobile-optimized visual settings
-            fontSize: typeof window !== 'undefined' && window.innerWidth < 768 ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,
-            tabSize: settings.tabSize,
-            wordWrap: typeof window !== 'undefined' && window.innerWidth < 768 ? 'on' : (settings.wordWrap || 'off'),
-            minimap: { enabled: typeof window !== 'undefined' && window.innerWidth < 768 ? false : settings.minimap },
-            lineNumbers: typeof window !== 'undefined' && window.innerWidth < 768 ? 'off' : settings.lineNumbers,
-            automaticLayout: true,
-            scrollBeyondLastLine: false,
+      {/* Diff Editor or Monaco Editor */}
+      {showDiff ? (
+        <div className="flex-1 min-h-0">
+          <DiffEditor
+            originalContent={pendingDiff.original}
+            modifiedContent={pendingDiff.modified}
+            fileName={pendingDiff.file}
+            language={pendingDiff.language}
+            onAccept={acceptDiff}
+            onReject={rejectDiff}
+          />
+        </div>
+      ) : (
+        <div className="editor-wrapper flex-1 flex flex-col" role="tabpanel" aria-label="Code editing area">
+          <div className="flex-1 min-h-0">
+            <MonacoEditor
+              height="100%"
+              language={language}
+              value={content}
+              onChange={handleChange}
+              onMount={handleEditorDidMount}
+              theme={settings.theme}
+              loading={
+                <div className="flex items-center justify-center h-full bg-gray-900 text-gray-500">
+                  <div className="text-center">
+                    <div className="animate-pulse mb-2">Loading editor...</div>
+                    <div className="w-48 h-1 bg-gray-800 rounded overflow-hidden">
+                      <div className="h-full bg-blue-600 rounded animate-[loading_1.5s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                    </div>
+                  </div>
+                </div>
+              }
+              options={{
+                // Mobile-optimized visual settings
+                fontSize: isMobile ? Math.max(settings.fontSize - 2, 12) : settings.fontSize,
+                tabSize: settings.tabSize,
+                wordWrap: isMobile ? 'on' : (settings.wordWrap || 'off'),
+                minimap: { enabled: isMobile ? false : settings.minimap },
+                lineNumbers: isMobile ? 'off' : settings.lineNumbers,
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
 
-            // Enhanced IntelliSense and completion
-            suggestOnTriggerCharacters: true,
-            quickSuggestions: {
-              other: true,
-              comments: true,
-              strings: true
-            },
-            suggestSelection: 'first',
-            showUnused: true,
-            showDeprecated: true,
+                // Enhanced IntelliSense and completion
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: {
+                  other: true,
+                  comments: true,
+                  strings: true
+                },
+                suggestSelection: 'first',
+                showUnused: true,
+                showDeprecated: true,
 
-            // Error detection and linting
-            colorDecorators: true,
-            codeLens: true,
-            lightbulb: {
-              enabled: true
-            } as never,
+                // Error detection and linting
+                colorDecorators: true,
+                codeLens: true,
+                lightbulb: {
+                  enabled: true
+                } as never,
 
-            // Advanced editing features
-            multiCursorModifier: 'ctrlCmd',
-            multiCursorMergeOverlapping: true,
-            renderWhitespace: 'selection',
-            renderControlCharacters: true,
+                // Advanced editing features
+                multiCursorModifier: 'ctrlCmd',
+                multiCursorMergeOverlapping: true,
+                renderWhitespace: 'selection',
+                renderControlCharacters: true,
 
-            // Find/Replace enhancements
-            find: {
-              addExtraSpaceOnTop: false,
-              autoFindInSelection: 'never',
-              seedSearchStringFromSelection: 'never'
-            },
+                // Find/Replace enhancements
+                find: {
+                  addExtraSpaceOnTop: false,
+                  autoFindInSelection: 'never',
+                  seedSearchStringFromSelection: 'never'
+                },
 
-            // Folding and outlining
-            folding: true,
-            foldingStrategy: 'auto',
-            foldingHighlight: true,
-            showFoldingControls: 'always',
+                // Folding and outlining
+                folding: true,
+                foldingStrategy: 'auto',
+                foldingHighlight: true,
+                showFoldingControls: 'always',
 
-            // Bracket matching and highlighting
-            matchBrackets: 'always',
-            guides: {
-              bracketPairs: true,
-              indentation: true
-            },
+                // Bracket matching and highlighting
+                matchBrackets: 'always',
+                guides: {
+                  bracketPairs: true,
+                  indentation: true
+                },
 
-            // Enhanced language features
-            acceptSuggestionOnCommitCharacter: true,
-            acceptSuggestionOnEnter: 'on',
-            accessibilitySupport: 'auto',
+                // Enhanced language features
+                acceptSuggestionOnCommitCharacter: true,
+                acceptSuggestionOnEnter: 'on',
+                accessibilitySupport: 'auto',
 
-            // Performance optimizations
-            stablePeek: true,
-            fastScrollSensitivity: 5,
-            smoothScrolling: true,
+                // Performance optimizations
+                stablePeek: true,
+                fastScrollSensitivity: 5,
+                smoothScrolling: true,
 
-            // Context menu and hover
-            contextmenu: true,
-            hover: {
-              enabled: true,
-              delay: 300,
-              above: false
-            },
+                // Context menu and hover
+                contextmenu: true,
+                hover: {
+                  enabled: true,
+                  delay: 300,
+                  above: false
+                },
 
-            // Links and navigation
-            links: true,
-            gotoLocation: {
-              multiple: 'goto'
-            },
+                // Links and navigation
+                links: true,
+                gotoLocation: {
+                  multiple: 'goto'
+                },
 
-            // Inlay hints
-            inlayHints: {
-              enabled: 'on'
-            }
-          }}
-        />
-      </div>
+                // Inlay hints
+                inlayHints: {
+                  enabled: 'on'
+                }
+              }}
+            />
+          </div>
+          {currentFile && <EditorStatusBar />}
+        </div>
+      )}
     </div>
   );
 }
