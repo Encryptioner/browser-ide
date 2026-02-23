@@ -145,49 +145,19 @@ test.describe('Editor Functionality', () => {
 
   test('should handle dark mode styles', async ({ page }) => {
     await page.goto('/');
+    await page.waitForSelector('.app', { timeout: 30000 });
 
-    // Check for dark mode styles (common for code editors)
-    // The body may be transparent, so check multiple elements
-    const styleInfo = await page.evaluate(() => {
-      const body = document.body;
-      const bodyStyle = window.getComputedStyle(body);
+    // The app container uses Tailwind dark theme classes (bg-gray-900, text-gray-100)
+    const appContainer = page.locator('.app');
+    await expect(appContainer).toBeVisible();
 
-      // Check main app container (.app)
-      const appContainer = body.querySelector('.app') || body.querySelector('[class*="ide"]') || body;
-      const appStyle = window.getComputedStyle(appContainer);
+    // Verify dark theme by checking class names on the app container
+    const appClasses = await appContainer.getAttribute('class') || '';
+    const hasDarkBgClass = appClasses.includes('bg-gray-900') || appClasses.includes('bg-gray-800');
+    const hasLightTextClass = appClasses.includes('text-gray-100') || appClasses.includes('text-white');
 
-      // Check titlebar (should have dark background)
-      const titlebar = body.querySelector('.titlebar, [class*="titlebar"]');
-      const titlebarStyle = titlebar ? window.getComputedStyle(titlebar) : null;
-
-      return {
-        bodyBg: bodyStyle.backgroundColor,
-        bodyColor: bodyStyle.color,
-        appBg: appStyle.backgroundColor,
-        appColor: appStyle.color,
-        titlebarBg: titlebarStyle?.backgroundColor || '',
-        hasDarkClass: body.className.includes('dark') ||
-                       appContainer.className.includes('dark'),
-        appClassName: appContainer.className,
-      };
-    });
-
-    // Check if any element has a dark background (ide should use dark theme)
-    const hasAnyDarkBg = styleInfo.titlebarBg.includes('rgb(17, 24, 39)') || // Tailwind gray-800
-                         styleInfo.titlebarBg.includes('rgb(31, 41, 55)') || // Tailwind gray-700
-                         styleInfo.appBg.includes('rgb(17, 24, 39)') ||
-                         styleInfo.appBg.includes('rgb(30, 30, 30)') ||
-                         styleInfo.titlebarBg !== ''; // Titlebar should have some background
-
-    // IDE typically uses dark mode - check for:
-    // 1. Dark class anywhere in the component hierarchy
-    // 2. Dark background colors (gray-700, gray-800, gray-900)
-    // 3. Non-transparent titlebar (indicates theme is applied)
-    const isDarkMode = styleInfo.hasDarkClass ||
-                      styleInfo.appClassName.includes('gray') ||
-                      hasAnyDarkBg;
-
-    expect(isDarkMode).toBe(true);
+    expect(hasDarkBgClass).toBe(true);
+    expect(hasLightTextClass).toBe(true);
   });
 
   test('should load without memory leaks', async ({ page }) => {
