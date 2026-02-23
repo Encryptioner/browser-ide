@@ -15,8 +15,11 @@ node_modules
 coverage
 docs/test-results/
 test-results/
+test-results.json
+junit-results.xml
 test-reports/
 playwright-report/
+*-snapshots/
 
 # Production
 dist
