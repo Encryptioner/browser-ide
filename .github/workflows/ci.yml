@@ -82,7 +82,7 @@ jobs:
           pnpm exec playwright test --list --project=chromium || echo "Test listing failed"
 
       - name: Run E2E tests
-        run: pnpm test:e2e -- --project=chromium
+        run: pnpm exec playwright test --project=chromium
 
       - name: Upload Playwright report
         if: failure()
