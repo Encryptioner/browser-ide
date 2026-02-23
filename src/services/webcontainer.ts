@@ -1,6 +1,7 @@
-import { WebContainer, type FileSystemTree } from '@webcontainer/api';
+import type { WebContainer, FileSystemTree } from '@webcontainer/api';
 import type { WebContainerProcess as WCProcessType } from '@webcontainer/api';
 import { logger } from '@/utils/logger';
+import { features } from '@/config/features';
 
 export interface WebContainerResult<T = unknown> {
   success: boolean;
@@ -141,6 +142,11 @@ class WebContainerService {
   private bootPromise: Promise<WebContainerResult<WebContainer>> | null = null;
 
   async boot(): Promise<WebContainerResult<WebContainer>> {
+    // Bail early if WebContainer feature is disabled
+    if (!features.webContainer) {
+      return { success: false, error: 'WebContainer feature is disabled' };
+    }
+
     // If already booted, return existing instance
     if (this.instance) {
       return { success: true, data: this.instance };
@@ -161,7 +167,9 @@ class WebContainerService {
     // Start new boot process
     this.bootPromise = (async () => {
       try {
-        this.instance = await WebContainer.boot({ coep: 'credentialless' });
+        // Dynamic import so the chunk is only loaded when the feature is enabled
+        const { WebContainer: WC } = await import('@webcontainer/api');
+        this.instance = await WC.boot({ coep: 'credentialless' });
         logger.info('✅ WebContainer booted successfully (credentialless mode)');
 
         // Listen for server events

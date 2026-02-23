@@ -13,10 +13,6 @@ function copyCoiServiceWorker() {
   return {
     name: 'copy-coi-serviceworker',
     writeBundle() {
-      // Skip copying coi-serviceworker for GitHub Pages builds since
-      // WebContainer is disabled (no COOP/COEP headers available)
-      if (isGitHubPages) return;
-
       const sourcePath = 'node_modules/coi-serviceworker/coi-serviceworker.min.js';
       const targetPath = 'dist/coi-serviceworker.min.js';
       if (existsSync(sourcePath)) {
