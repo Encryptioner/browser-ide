@@ -34,6 +34,10 @@ async function waitForAppReady(page: import('@playwright/test').Page) {
 }
 
 test.describe('Visual Regression', () => {
+  // Skip in CI since baseline snapshots are not committed to the repository.
+  // Run locally with `pnpm test:visual:update` to generate/update baselines.
+  test.skip(() => !!process.env.CI, 'Visual regression tests are skipped in CI (no baseline snapshots)');
+
   // Run visual tests only in the chromium project to avoid
   // multiplying baselines across all browser/device projects.
   // Cross-browser visual testing can be enabled by removing this filter.

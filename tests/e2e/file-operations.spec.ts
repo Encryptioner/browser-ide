@@ -86,7 +86,7 @@ test.describe('File Operations', () => {
     await newFileCommand.click();
 
     // After creating a file, the editor should show tabs with the untitled file
-    const editorTabs = page.locator('[role="tablist"]');
+    const editorTabs = page.getByRole('tablist', { name: 'Open file tabs' });
     await expect(editorTabs).toBeVisible({ timeout: 5000 });
 
     // There should be a tab for the new untitled file
@@ -178,7 +178,7 @@ test.describe('File Operations', () => {
     await expect(welcomeHeading).not.toBeVisible({ timeout: 5000 });
 
     // Editor tabs should now be visible
-    const editorTabs = page.locator('[role="tablist"]');
+    const editorTabs = page.getByRole('tablist', { name: 'Open file tabs' });
     await expect(editorTabs).toBeVisible();
   });
 });

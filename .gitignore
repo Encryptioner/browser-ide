@@ -15,6 +15,7 @@ node_modules
 coverage
 docs/test-results/
 test-results/
+test-reports/
 playwright-report/
 
 # Production

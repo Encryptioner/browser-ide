@@ -38,25 +38,22 @@ test.describe('Layout and Navigation', () => {
     const toggleButton = page.locator('button[title="Toggle Files"]');
     await expect(toggleButton).toBeVisible();
 
-    // Get initial sidebar state
-    const sidebarBefore = await page.locator('#sidebar').isVisible().catch(() => false);
+    // Sidebar panel should be visible by default on desktop
+    const sidebar = page.locator('[data-panel-id="sidebar"]');
+    await expect(sidebar).toBeVisible();
 
-    // Click toggle
-    await toggleButton.click();
-    await page.waitForTimeout(300); // Allow animation
-
-    // Get sidebar state after toggle
-    const sidebarAfter = await page.locator('#sidebar').isVisible().catch(() => false);
-
-    // State should have changed
-    expect(sidebarAfter).not.toBe(sidebarBefore);
-
-    // Toggle back
+    // Click toggle to hide
     await toggleButton.click();
     await page.waitForTimeout(300);
 
-    const sidebarRestored = await page.locator('#sidebar').isVisible().catch(() => false);
-    expect(sidebarRestored).toBe(sidebarBefore);
+    // Sidebar should be removed from DOM
+    await expect(sidebar).not.toBeVisible();
+
+    // Toggle back to show
+    await toggleButton.click();
+    await page.waitForTimeout(300);
+
+    await expect(sidebar).toBeVisible();
   });
 
   test('should toggle terminal panel when terminal button is clicked', async ({ page, isMobile }) => {
@@ -90,14 +87,17 @@ test.describe('Layout and Navigation', () => {
     expect(typeof bottomPanelAfter).toBe('boolean');
   });
 
-  test('should show Commands button in the titlebar', async ({ page }) => {
-    const commandsButton = page.locator('.titlebar-actions button[title="Commands"]');
-    await expect(commandsButton).toBeVisible();
+  test('should have action buttons in the titlebar', async ({ page }) => {
+    const titlebarActions = page.locator('.titlebar-actions');
+    await expect(titlebarActions).toBeVisible();
+
+    // Verify key buttons exist
+    await expect(page.locator('.titlebar-actions button[title="Toggle Files"]')).toBeVisible();
+    await expect(page.locator('.titlebar-actions button[title="Settings"]')).toBeVisible();
   });
 
-  test('should open command palette when Commands button is clicked', async ({ page }) => {
-    const commandsButton = page.locator('.titlebar-actions button[title="Commands"]');
-    await commandsButton.click();
+  test('should open command palette via keyboard shortcut', async ({ page }) => {
+    await page.keyboard.press('Control+Shift+P');
 
     const commandInput = page.locator('#command-palette-input');
     await expect(commandInput).toBeVisible({ timeout: 5000 });
@@ -160,15 +160,25 @@ test.describe('Responsive Layout - Mobile', () => {
   });
 
   test('should show mobile file explorer overlay when Toggle Files is tapped', async ({ page }) => {
-    // On mobile, the sidebar opens as an overlay
+    const mobileOverlay = page.locator('.md\\:hidden.fixed.inset-0');
+
+    // Sidebar defaults to open, so overlay may already be visible on mobile
+    const isAlreadyOpen = await mobileOverlay.isVisible().catch(() => false);
+    if (isAlreadyOpen) {
+      // Close it first so we can test the toggle
+      const closeButton = page.locator('button[aria-label="Close file explorer"]');
+      await closeButton.click();
+      await page.waitForTimeout(300);
+      await expect(mobileOverlay).not.toBeVisible();
+    }
+
+    // Now tap Toggle Files to open
     const toggleButton = page.locator('button[aria-label="Toggle Files"]');
     await expect(toggleButton).toBeVisible();
-
     await toggleButton.click();
     await page.waitForTimeout(300);
 
-    // Mobile overlay should appear (fixed overlay with backdrop)
-    const mobileOverlay = page.locator('.md\\:hidden.fixed.inset-0');
+    // Mobile overlay should appear
     await expect(mobileOverlay).toBeVisible({ timeout: 3000 });
 
     // The overlay should have a "Files" heading
@@ -177,12 +187,16 @@ test.describe('Responsive Layout - Mobile', () => {
   });
 
   test('should close mobile file explorer overlay when close button is tapped', async ({ page }) => {
-    // Open the file explorer overlay
-    const toggleButton = page.locator('button[aria-label="Toggle Files"]');
-    await toggleButton.click();
-    await page.waitForTimeout(300);
-
     const mobileOverlay = page.locator('.md\\:hidden.fixed.inset-0');
+
+    // Ensure overlay is open (it defaults to open on mobile)
+    const isAlreadyOpen = await mobileOverlay.isVisible().catch(() => false);
+    if (!isAlreadyOpen) {
+      const toggleButton = page.locator('button[aria-label="Toggle Files"]');
+      await toggleButton.click();
+      await page.waitForTimeout(300);
+    }
+
     await expect(mobileOverlay).toBeVisible({ timeout: 3000 });
 
     // Close with the X button

@@ -12,7 +12,8 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('Edge Cases', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5174');
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
     await page.waitForSelector('.app', { timeout: 30000 });
   });
 
@@ -118,7 +119,7 @@ test.describe('Edge Cases', () => {
 
     // Open second tab
     const page2 = await page1.context().newPage();
-    await page2.goto('http://localhost:5174');
+    await page2.goto('/');
     await page2.waitForSelector('.app', { timeout: 30000 });
 
     // Second tab should show the same files (IndexedDB is shared)
@@ -211,7 +212,7 @@ test.describe('Performance', () => {
   test('TC-058: App loads under 3 seconds', async ({ page }) => {
     const startTime = Date.now();
 
-    await page.goto('http://localhost:5174');
+    await page.goto('/');
     await page.waitForSelector('.app', { timeout: 30000 });
 
     const loadTime = Date.now() - startTime;
@@ -249,7 +250,7 @@ test.describe('Performance', () => {
   });
 
   test('TC-059: No memory leaks on repeated file open/close', async ({ page }) => {
-    await page.goto('http://localhost:5174');
+    await page.goto('/');
     await page.waitForSelector('.app', { timeout: 30000 });
 
     // Create test files
@@ -300,7 +301,7 @@ test.describe('Performance', () => {
   });
 
   test('TC-060: Terminal responsive with rapid input', async ({ page }) => {
-    await page.goto('http://localhost:5174');
+    await page.goto('/');
     await page.waitForSelector('.app', { timeout: 30000 });
 
     // Wait for WebContainer to be ready
