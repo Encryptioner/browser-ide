@@ -230,9 +230,7 @@ test.describe('Performance', () => {
     const startTime = Date.now();
 
     // Focus terminal by clicking in the bottom panel area
-    const bottomPanel = page.locator('.bottom-panel').or(
-      page.locator('[data-testid="bottom-tab-bar"]')
-    ).parent();
+    const bottomPanel = page.locator('.bottom-panel').first();
 
     try {
       await bottomPanel.click();
