@@ -25,12 +25,9 @@ function copyCoiServiceWorker() {
 }
 
 export default defineConfig(({ mode }) => {
-  // For GitHub Pages, force WebContainer off regardless of .env values.
-  // Vite automatically loads .env files from envDir, and we inject this
-  // override so import.meta.env.VITE_FEATURE_WEBCONTAINER resolves to 'false'.
-  if (isGitHubPages) {
-    process.env.VITE_FEATURE_WEBCONTAINER = 'false';
-  }
+  // WebContainer is enabled on GitHub Pages via coi-serviceworker which
+  // injects COOP/COEP headers. First visit triggers a SW registration + reload,
+  // then subsequent visits have crossOriginIsolated (or credentialless) support.
 
   return {
     define: {
