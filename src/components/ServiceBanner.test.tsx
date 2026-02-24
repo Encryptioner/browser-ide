@@ -10,6 +10,11 @@ import React from 'react';
 import { ServiceBanner } from '@/components/ServiceBanner';
 import type { ServiceReadiness } from '@/hooks/useServiceReadiness';
 
+// Mock features - default to webContainer enabled so banner tests work
+vi.mock('@/config/features', () => ({
+  features: { webContainer: true, aiProviders: true, gitRemote: true },
+}));
+
 // =============================================================================
 // TEST UTILITIES
 // =============================================================================
@@ -75,14 +80,14 @@ describe('ServiceBanner - webcontainer', () => {
     expect(screen.getByText(/WebContainer unavailable/)).toBeInTheDocument();
   });
 
-  it('should show banner when webcontainer has degraded status', () => {
+  it('should not show banner when webcontainer has degraded status (feature intentionally disabled)', () => {
     const services = createMockServices({
-      webcontainer: { status: 'degraded', retryCount: 3 },
+      webcontainer: { status: 'degraded', retryCount: 0 },
     });
 
-    render(<ServiceBanner services={services} />);
+    const { container } = render(<ServiceBanner services={services} />);
 
-    expect(screen.getByText(/WebContainer unavailable/)).toBeInTheDocument();
+    expect(container.innerHTML).toBe('');
   });
 
   it('should mention browser requirements in webcontainer banner', () => {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ServiceReadiness } from '@/hooks/useServiceReadiness';
+import { features } from '@/config/features';
 
 interface ServiceBannerProps {
   services: ServiceReadiness;
@@ -14,8 +15,11 @@ export function ServiceBanner({ services }: ServiceBannerProps) {
 
   const banners: { key: string; message: string; service: 'webcontainer' | 'git' }[] = [];
 
+  // Only show WebContainer banner if the feature is enabled but failed to boot.
+  // When the feature is intentionally disabled (e.g. GitHub Pages), don't nag the user.
   if (
-    (services.webcontainer.status === 'error' || services.webcontainer.status === 'degraded') &&
+    features.webContainer &&
+    services.webcontainer.status === 'error' &&
     !dismissed.has('webcontainer')
   ) {
     banners.push({
