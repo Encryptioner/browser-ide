@@ -114,28 +114,10 @@ export class ClaudeCLIService {
         ...this.getProviderEnvironment()
       };
 
-      // Write initial workspace files through the secure singleton
-      try {
-        await webContainer.writeFile('/workspace/.gitignore', `node_modules/
-dist/
-.env
-*.log`);
-      } catch (writeError) {
-        // Directory might not exist yet, will be created when needed
-        logger.info('Could not write .gitignore during init, will create when needed');
-      }
-
-      // Initialize git repository through the secure spawn
-      try {
-        await this.runAndWait('git', ['init', '-q']);
-        await this.runAndWait('git', ['config', 'user.name', 'Browser IDE User']);
-        await this.runAndWait('git', ['config', 'user.email', 'user@browser-ide.local']);
-        await this.runAndWait('git', ['add', '.']);
-        await this.runAndWait('git', ['commit', '-m', 'Initial commit', '--quiet']);
-      } catch {
-        // Git initialization might fail if git is not available
-        logger.info('Git initialization failed, continuing without git');
-      }
+      // Skip writing files and git initialization - these will be done
+      // when the user actually works with files. The WebContainer filesystem
+      // is empty until files are mounted or created.
+      logger.info('CLI environment initialized (files and git will be initialized when needed)');
 
       // Initialize Claude agent
       await this.initializeAgent();
