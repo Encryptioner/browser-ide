@@ -54,6 +54,8 @@ export interface StreamCallbacks {
   onProgress?: (message: string) => void;
   /** Called when an error occurs */
   onError?: (error: string) => void;
+  /** Called when asking user whether to continue after error */
+  onContinueAfterError?: (error: string) => Promise<boolean>;
 }
 
 interface FileTreeNode {
@@ -531,7 +533,27 @@ export class ClaudeCodeAgent {
           for (const block of toolUseBlocks) {
             callbacks?.onToolUse?.(block.name, block.input as Record<string, unknown>);
 
-            const result = await this.executeTool(block.name, block.input as Record<string, string>);
+            let result = await this.executeTool(block.name, block.input as Record<string, string>);
+
+            // Check if tool execution failed
+            const toolFailed = result.startsWith('Error') || result.includes('failed');
+            if (toolFailed && callbacks?.onContinueAfterError) {
+              const shouldContinue = await callbacks.onContinueAfterError(
+                `${block.name} failed: ${result.slice(0, 200)}${result.length > 200 ? '...' : ''}`
+              );
+
+              if (!shouldContinue) {
+                // User chose to abort
+                return {
+                  success: false,
+                  error: `Execution aborted by user after ${block.name} error`,
+                  artifacts,
+                };
+              }
+
+              // Add a message to conversation about continuing
+              result = `${result}\n\n[Continuing despite error...]`;
+            }
 
             callbacks?.onToolResult?.(block.name, result);
 

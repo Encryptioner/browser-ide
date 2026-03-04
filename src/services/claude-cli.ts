@@ -19,7 +19,42 @@ export interface CLIOptions {
   baseUrl?: string;
   model?: string;
   workingDirectory?: string;
+  /** Callback for confirming dangerous operations */
+  onConfirmDangerous?: (operation: string, details: string) => Promise<boolean>;
+  /** Callback for continuing after errors */
+  onContinueAfterError?: (error: string) => Promise<boolean>;
 }
+
+/**
+ * Dangerous operations that require confirmation
+ */
+const DANGEROUS_OPERATIONS = {
+  // File operations
+  'rm': 'Delete files or directories',
+  'rm -rf': 'Force delete directories and all contents',
+  'rmdir': 'Remove empty directory',
+
+  // Git operations
+  'git push --force': 'Force push to remote (may overwrite history)',
+  'git push -f': 'Force push to remote (may overwrite history)',
+  'git reset --hard': 'Reset working directory (discard all changes)',
+  'git clean -fd': 'Delete all untracked files and directories',
+  'git branch -D': 'Force delete branch',
+  'git rebase': 'Rebase commits (may rewrite history)',
+
+  // NPM operations
+  'npm uninstall': 'Uninstall packages',
+  'npm cache clean': 'Clean npm cache',
+
+  // System operations
+  'kill': 'Terminate processes',
+  'pkill': 'Terminate processes by name',
+  'killall': 'Terminate all processes with given name',
+
+  // Build/Dist operations
+  'rm -rf node_modules': 'Delete node_modules directory',
+  'rm -rf dist': 'Delete dist directory',
+};
 
 export interface CLICommand {
   command: string;
@@ -160,11 +195,62 @@ export class ClaudeCLIService {
   }
 
   /**
+   * Check if a command is dangerous and requires confirmation
+   */
+  private isDangerousOperation(command: string, args: string[]): { dangerous: boolean; description?: string } {
+    const fullCommand = `${command} ${args.slice(0, 2).join(' ')}`.trim();
+
+    // Check exact matches first
+    if (DANGEROUS_OPERATIONS[fullCommand as keyof typeof DANGEROUS_OPERATIONS]) {
+      return {
+        dangerous: true,
+        description: DANGEROUS_OPERATIONS[fullCommand as keyof typeof DANGEROUS_OPERATIONS]
+      };
+    }
+
+    // Check if command starts with a dangerous pattern
+    for (const [pattern, description] of Object.entries(DANGEROUS_OPERATIONS)) {
+      if (fullCommand.startsWith(pattern) || pattern.startsWith(fullCommand)) {
+        return { dangerous: true, description };
+      }
+    }
+
+    // Special checks for rm with specific targets
+    if (command === 'rm' && args.some(arg => arg.startsWith('-') && arg.includes('f'))) {
+      return { dangerous: true, description: 'Force delete files (cannot be undone)' };
+    }
+
+    // Special checks for git reset/rebase
+    if (command === 'git' && args.includes('reset') && args.includes('--hard')) {
+      return { dangerous: true, description: 'Reset working directory (discard all changes)' };
+    }
+    if (command === 'git' && args.includes('clean') && args.includes('-fd')) {
+      return { dangerous: true, description: 'Delete all untracked files' };
+    }
+
+    return { dangerous: false };
+  }
+
+  /**
    * Execute a command in the WebContainer through the security layer
    */
   async executeCommand(command: string, args: string[] = []): Promise<CLIResult> {
     if (!this.isInitialized) {
       await this.initialize();
+    }
+
+    // Check for dangerous operations
+    const { dangerous, description } = this.isDangerousOperation(command, args);
+    if (dangerous && this.options.onConfirmDangerous) {
+      const fullCommand = `${command} ${args.join(' ')}`;
+      const confirmed = await this.options.onConfirmDangerous(fullCommand, description || 'Dangerous operation');
+      if (!confirmed) {
+        return {
+          success: false,
+          error: 'Operation cancelled by user',
+          exitCode: 130 // Standard exit code for Ctrl+C
+        };
+      }
     }
 
     this.history.push(`${command} ${args.join(' ')}`);

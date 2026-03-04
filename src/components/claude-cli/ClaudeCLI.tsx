@@ -32,6 +32,15 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [workspaceStatus, setWorkspaceStatus] = useState<WorkspaceStatus | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<{
+    operation: string;
+    description: string;
+    resolve: (confirmed: boolean) => void;
+  } | null>(null);
+  const [pendingContinue, setPendingContinue] = useState<{
+    error: string;
+    resolve: (shouldContinue: boolean) => void;
+  } | null>(null);
 
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputBuffer = useRef('');
@@ -48,7 +57,17 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
       provider: options?.provider || 'anthropic',
       apiKey: options?.apiKey,
       baseUrl: options?.baseUrl,
-      workingDirectory
+      workingDirectory,
+      onConfirmDangerous: async (operation: string, description: string) => {
+        return new Promise<boolean>((resolve) => {
+          setPendingConfirmation({ operation, description, resolve });
+        });
+      },
+      onContinueAfterError: async (error: string) => {
+        return new Promise<boolean>((resolve) => {
+          setPendingContinue({ error, resolve });
+        });
+      }
     });
 
     service.initialize()
@@ -916,6 +935,98 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      {pendingConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <span className="text-yellow-500 text-xl">⚠️</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold text-lg mb-1">Confirm Dangerous Operation</h3>
+                  <p className="text-gray-300 text-sm mb-3">{pendingConfirmation.description}</p>
+                  <code className="block bg-gray-900 px-3 py-2 rounded text-xs text-yellow-400 mb-4 overflow-x-auto">
+                    {pendingConfirmation.operation}
+                  </code>
+                  <div className="text-gray-400 text-xs mb-4">
+                    This action cannot be undone. Are you sure you want to proceed?
+                  </div>
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => {
+                        setPendingConfirmation(null);
+                        pendingConfirmation.resolve(false);
+                      }}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPendingConfirmation(null);
+                        pendingConfirmation.resolve(true);
+                      }}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                    >
+                      Proceed
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Continue After Error Dialog */}
+      {pendingContinue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <span className="text-red-500 text-xl">❌</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold text-lg mb-1">Tool Execution Failed</h3>
+                  <p className="text-gray-300 text-sm mb-3">
+                    A tool encountered an error during execution:
+                  </p>
+                  <code className="block bg-gray-900 px-3 py-2 rounded text-xs text-red-400 mb-4 overflow-x-auto max-h-24 overflow-y-auto">
+                    {pendingContinue.error}
+                  </code>
+                  <div className="text-gray-400 text-xs mb-4">
+                    Do you want to continue anyway, or abort the task?
+                  </div>
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => {
+                        setPendingContinue(null);
+                        pendingContinue.resolve(false);
+                      }}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                    >
+                      Abort
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPendingContinue(null);
+                        pendingContinue.resolve(true);
+                      }}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
