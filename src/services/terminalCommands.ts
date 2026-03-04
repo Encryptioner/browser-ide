@@ -658,8 +658,19 @@ async function handleClaudeCommand(args: string[], w: TerminalWriter): Promise<v
 
     agent.setWorkingDirectory(fileSystem.getCurrentWorkingDirectory());
 
-    const result = await agent.executeTask(task, (progress) => {
-      w.writeln(`\u{1F4CB} ${progress}`);
+    const result = await agent.executeTask(task, {
+      onText: (text: string) => {
+        w.write(text);
+      },
+      onToolUse: (toolName: string, toolInput: Record<string, unknown>) => {
+        w.writeln(`\r\n\u{1F527} ${toolName}: ${JSON.stringify(toolInput).slice(0, 80)}...`);
+      },
+      onToolResult: (toolName: string, result: string) => {
+        w.writeln(`\u2705 ${toolName}`);
+      },
+      onProgress: (message: string) => {
+        w.writeln(`\u{1F4CB} ${message}`);
+      }
     });
 
     if (result.success) {

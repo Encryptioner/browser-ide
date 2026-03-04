@@ -36,6 +36,7 @@ export interface CLIResult {
     filesCreated?: string[];
     filesModified?: string[];
     filesDeleted?: string[];
+    commandsExecuted?: string[];
   };
 }
 
@@ -208,12 +209,14 @@ dist/
   }
 
   /**
-   * Execute a task using Claude agent
+   * Execute a task using Claude agent with streaming support
    */
   async executeTask(task: string, options: {
-    // eslint-disable-next-line no-unused-vars
+    onText?: (text: string) => void;
+    onToolUse?: (toolName: string, toolInput: Record<string, unknown>) => void;
+    onToolResult?: (toolName: string, result: string) => void;
     onProgress?: (message: string) => void;
-    // eslint-disable-next-line no-unused-vars
+    onError?: (error: string) => void;
     onOutput?: (output: string) => void;
   } = {}): Promise<CLIResult> {
     if (!this.isInitialized) {
@@ -230,9 +233,27 @@ dist/
     }
 
     try {
-      const result = await this.agent.executeTask(task, (message) => {
-        options.onProgress?.(message);
-        logger.info(`Task progress: ${message}`);
+      const result = await this.agent.executeTask(task, {
+        onText: (text: string) => {
+          options.onText?.(text);
+          options.onOutput?.(text);
+        },
+        onToolUse: (toolName: string, toolInput: Record<string, unknown>) => {
+          options.onToolUse?.(toolName, toolInput);
+          options.onProgress?.(`Using ${toolName}`);
+        },
+        onToolResult: (toolName: string, result: string) => {
+          options.onToolResult?.(toolName, result);
+          options.onProgress?.(`${toolName} completed`);
+        },
+        onProgress: (message: string) => {
+          options.onProgress?.(message);
+          logger.info(`Task progress: ${message}`);
+        },
+        onError: (error: string) => {
+          options.onError?.(error);
+          logger.warn(`Task error: ${error}`);
+        }
       });
 
       // Sync file changes through the secure webContainer singleton
