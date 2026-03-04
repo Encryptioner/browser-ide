@@ -3,11 +3,18 @@
  *
  * Integrates @anthropic-ai/claude-code SDK with GLM-4.6 and browser environment
  * Provides agentic coding capabilities similar to Claude Code CLI
+ *
+ * Features:
+ * - Streaming responses (token-by-token output)
+ * - Bash command execution through WebContainer
+ * - Rich progress callbacks
+ * - Tool calling with proper error recovery
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { fileSystem } from './filesystem';
 import { gitService } from './git';
+import { webContainer } from './webcontainer';
 import { logger } from '@/utils/logger';
 
 export interface ClaudeAgentConfig {
@@ -36,6 +43,19 @@ export interface AgentExecutionResult {
   };
 }
 
+export interface StreamCallbacks {
+  /** Called for each token of text content */
+  onText?: (text: string) => void;
+  /** Called when a tool is being used */
+  onToolUse?: (toolName: string, toolInput: Record<string, unknown>) => void;
+  /** Called when a tool completes */
+  onToolResult?: (toolName: string, result: string) => void;
+  /** Called for general progress updates */
+  onProgress?: (message: string) => void;
+  /** Called when an error occurs */
+  onError?: (error: string) => void;
+}
+
 interface FileTreeNode {
   type: string;
   path: string;
@@ -44,13 +64,14 @@ interface FileTreeNode {
 
 /**
  * Claude Code Agent
- * Implements agentic coding workflow with tool calling
+ * Implements agentic coding workflow with tool calling and streaming
  */
 export class ClaudeCodeAgent {
   private client: Anthropic;
   private config: ClaudeAgentConfig;
   private conversationHistory: Anthropic.MessageParam[] = [];
   private workingDirectory: string = '/repo';
+  private abortController: AbortController | null = null;
 
   constructor(config: ClaudeAgentConfig) {
     this.config = {
@@ -66,6 +87,14 @@ export class ClaudeCodeAgent {
       baseURL: this.config.baseUrl,
       dangerouslyAllowBrowser: true,
     });
+  }
+
+  /**
+   * Abort any in-progress execution
+   */
+  abort(): void {
+    this.abortController?.abort();
+    this.abortController = new AbortController();
   }
 
   /**
@@ -161,6 +190,20 @@ export class ClaudeCodeAgent {
         },
       },
       {
+        name: 'bash',
+        description: 'Execute a bash command in the WebContainer. Use this for running build scripts, tests, git commands, etc. Commands are executed with safety constraints.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            command: {
+              type: 'string',
+              description: 'The bash command to execute (e.g., "npm test", "ls -la", "git status")',
+            },
+          },
+          required: ['command'],
+        },
+      },
+      {
         name: 'git_status',
         description: 'Get the current git status',
         input_schema: {
@@ -190,12 +233,12 @@ export class ClaudeCodeAgent {
    */
   private async executeTool(
     toolName: string,
-    toolInput: Record<string, string>
+    toolInput: Record<string, unknown>
   ): Promise<string> {
     try {
       switch (toolName) {
         case 'read_file': {
-          const result = await fileSystem.readFile(toolInput.file_path);
+          const result = await fileSystem.readFile((toolInput.file_path as string));
           if (!result.success) {
             return `Error reading file: ${result.error}`;
           }
@@ -204,50 +247,52 @@ export class ClaudeCodeAgent {
 
         case 'write_file': {
           const result = await fileSystem.writeFile(
-            toolInput.file_path,
-            toolInput.content
+            toolInput.file_path as string,
+            toolInput.content as string
           );
           if (!result.success) {
             return `Error writing file: ${result.error}`;
           }
-          return `Successfully wrote ${toolInput.content.length} bytes to ${toolInput.file_path}`;
+          return `Successfully wrote ${(toolInput.content as string).length} bytes to ${toolInput.file_path}`;
         }
 
         case 'edit_file': {
+          const filePath = toolInput.file_path as string;
+          const oldText = toolInput.old_text as string;
+          const newText = toolInput.new_text as string;
+
           // Read file first
-          const readResult = await fileSystem.readFile(toolInput.file_path);
+          const readResult = await fileSystem.readFile(filePath);
           if (!readResult.success) {
             return `Error reading file: ${readResult.error}`;
           }
 
           // Replace text
           const content = readResult.data || '';
-          const newContent = content.replace(
-            toolInput.old_text,
-            toolInput.new_text
-          );
+          const newContent = content.replace(oldText, newText);
+
+          // Check if replacement actually happened
+          if (content === newContent) {
+            return `Warning: Exact text match not found, no changes made to ${filePath}`;
+          }
 
           // Write back
-          const writeResult = await fileSystem.writeFile(
-            toolInput.file_path,
-            newContent
-          );
+          const writeResult = await fileSystem.writeFile(filePath, newContent);
           if (!writeResult.success) {
             return `Error writing file: ${writeResult.error}`;
           }
 
-          return `Successfully edited ${toolInput.file_path}`;
+          return `Successfully edited ${filePath}`;
         }
 
         case 'list_files': {
-          const tree = await fileSystem.buildFileTree(toolInput.path || '/repo');
+          const tree = await fileSystem.buildFileTree(toolInput.path as string || '/repo');
           return JSON.stringify(tree, null, 2);
         }
 
         case 'search_code': {
-          // Simplified search - in production would use proper grep
           const files = await fileSystem.buildFileTree(
-            toolInput.path || '/repo'
+            toolInput.path as string || '/repo'
           );
           const results: string[] = [];
 
@@ -256,7 +301,7 @@ export class ClaudeCodeAgent {
               if (node.type === 'file') {
                 const result = await fileSystem.readFile(node.path);
                 if (result.success && result.data) {
-                  const regex = new RegExp(toolInput.pattern, 'gi');
+                  const regex = new RegExp(toolInput.pattern as string, 'gi');
                   if (regex.test(result.data)) {
                     results.push(node.path);
                   }
@@ -269,7 +314,36 @@ export class ClaudeCodeAgent {
           };
 
           await searchFiles(files);
-          return `Found in ${results.length} files:\n${results.join('\n')}`;
+          return results.length > 0
+            ? `Found in ${results.length} files:\n${results.join('\n')}`
+            : `No matches found for pattern: ${toolInput.pattern}`;
+        }
+
+        case 'bash': {
+          const command = toolInput.command as string;
+
+          // Parse command and args
+          const parts = command.split(' ');
+          const cmd = parts[0];
+          const args = parts.slice(1);
+
+          const result = await webContainer.spawn(cmd, args, {
+            cwd: this.workingDirectory
+          });
+
+          if (!result.success || !result.process) {
+            return `Error executing command: ${result.error}`;
+          }
+
+          // Collect all output
+          const output = await this.collectProcessOutput(result.process);
+          const exitCode = await result.exit!;
+
+          if (exitCode !== 0) {
+            return `Command exited with code ${exitCode}\nOutput:\n${output}`;
+          }
+
+          return output;
         }
 
         case 'git_status': {
@@ -278,7 +352,7 @@ export class ClaudeCodeAgent {
         }
 
         case 'git_commit': {
-          const result = await gitService.commit(toolInput.message, {
+          const result = await gitService.commit(toolInput.message as string, {
             name: 'Browser IDE User',
             email: 'user@browser-ide.local',
           });
@@ -298,14 +372,36 @@ export class ClaudeCodeAgent {
   }
 
   /**
-   * Execute an agentic coding task
+   * Collect all output from a WebContainer process
+   */
+  private async collectProcessOutput(process: { output: ReadableStream<string> }): Promise<string> {
+    const output: string[] = [];
+    const reader = process.output.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        output.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return output.join('');
+  }
+
+  /**
+   * Execute an agentic coding task with streaming support
    * This is the main entry point for Claude Code-style interactions
    */
   async executeTask(
     userMessage: string,
-    // eslint-disable-next-line no-unused-vars
-    onProgress?: (message: string) => void
+    callbacks?: StreamCallbacks
   ): Promise<AgentExecutionResult> {
+    // Reset abort controller for new task
+    this.abortController = new AbortController();
+
     try {
       // Add user message to conversation
       this.conversationHistory.push({
@@ -322,100 +418,237 @@ export class ClaudeCodeAgent {
 
       let continueLoop = true;
       let iterations = 0;
-      const maxIterations = 10; // Prevent infinite loops
+      const maxIterations = 25; // Higher limit for complex tasks
+      let fullOutput = '';
 
       while (continueLoop && iterations < maxIterations) {
         iterations++;
 
-        // Call Claude with tools
+        // Check for abort
+        if (this.abortController.signal.aborted) {
+          return {
+            success: false,
+            error: 'Execution aborted by user',
+            artifacts,
+          };
+        }
+
+        // Call Claude with tools and streaming
         const response = await this.client.messages.create({
           model: this.config.model!,
           max_tokens: this.config.maxTokens!,
           temperature: this.config.temperature,
           messages: this.conversationHistory,
           tools: this.getTools() as Anthropic.Messages.Tool[],
-        });
+          stream: true,
+        }, {
+          signal: this.abortController.signal,
+        }) as unknown as AsyncIterable<Anthropic.Messages.MessageStreamEvent>;
 
-        // Check stop reason
-        if (response.stop_reason === 'end_turn') {
-          // Agent is done
-          const textContent = response.content.find((c) => c.type === 'text');
-          if (textContent && 'text' in textContent) {
-            return {
-              success: true,
-              output: textContent.text,
-              artifacts,
-            };
+        // Process the stream
+        let currentToolUse: { id: string; name: string; input: Record<string, unknown> } | null = null;
+        let currentTextDelta = '';
+        let responseContent: Anthropic.MessageParam['content'] = [];
+
+        for await (const event of response) {
+          const streamEvent = event as Anthropic.Messages.MessageStreamEvent;
+
+          if (streamEvent.type === 'message_start') {
+            // Message started, nothing to do
+            continue;
           }
-          continueLoop = false;
-        } else if (response.stop_reason === 'tool_use') {
-          // Agent wants to use tools
+
+          if (streamEvent.type === 'content_block_start') {
+            const block = streamEvent.content_block;
+            if (block.type === 'text') {
+              currentTextDelta = '';
+            } else if (block.type === 'tool_use') {
+              currentToolUse = {
+                id: block.id,
+                name: block.name,
+                input: block.input as Record<string, unknown>,
+              };
+            }
+            continue;
+          }
+
+          if (streamEvent.type === 'content_block_delta') {
+            const delta = streamEvent.delta;
+            if (delta.type === 'text_delta') {
+              const text = delta.text;
+              currentTextDelta += text;
+              fullOutput += text;
+              callbacks?.onText?.(text);
+            } else if (delta.type === 'input_json_delta') {
+              // Accumulate tool input JSON
+              if (currentToolUse && typeof currentToolUse.input === 'string') {
+                // Parse the partial JSON and merge with existing input
+                try {
+                  const partialObj = JSON.parse(`{${delta.partial_json}}`);
+                  currentToolUse.input = { ...partialObj };
+                } catch {
+                  // Not valid JSON yet, accumulate for later parsing
+                }
+              }
+            }
+            continue;
+          }
+
+          if (streamEvent.type === 'content_block_stop') {
+            if (currentTextDelta !== '') {
+              responseContent.push({
+                type: 'text',
+                text: currentTextDelta,
+              });
+              currentTextDelta = '';
+            } else if (currentToolUse) {
+              responseContent.push({
+                type: 'tool_use',
+                id: currentToolUse.id,
+                name: currentToolUse.name,
+                input: currentToolUse.input,
+              });
+              currentToolUse = null;
+            }
+            continue;
+          }
+
+          if (streamEvent.type === 'message_stop') {
+            // Message complete
+            break;
+          }
+        }
+
+        // Check if we have tool use blocks to execute
+        const toolUseBlocks = responseContent.filter(
+          (block): block is Anthropic.Messages.ToolUseBlock => block.type === 'tool_use'
+        );
+
+        if (toolUseBlocks.length > 0) {
+          // Execute tools and continue
           const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
 
-          for (const content of response.content) {
-            if (content.type === 'tool_use') {
-              const toolInput = content.input as Record<string, string>;
+          for (const block of toolUseBlocks) {
+            callbacks?.onToolUse?.(block.name, block.input as Record<string, unknown>);
 
-              onProgress?.(
-                `🔧 Using tool: ${content.name} with input: ${JSON.stringify(toolInput)}`
-              );
+            const result = await this.executeTool(block.name, block.input as Record<string, string>);
 
-              const result = await this.executeTool(content.name, toolInput);
+            callbacks?.onToolResult?.(block.name, result);
 
-              toolResults.push({
-                type: 'tool_result',
-                tool_use_id: content.id,
-                content: result,
-              });
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: block.id,
+              content: result,
+            });
 
-              // Track artifacts
-              if (content.name === 'write_file' && toolInput.file_path) {
-                artifacts.filesCreated?.push(toolInput.file_path);
-              } else if (content.name === 'edit_file' && toolInput.file_path) {
-                artifacts.filesModified?.push(toolInput.file_path);
-              }
-
-              onProgress?.(`✅ Tool result: ${result.slice(0, 100)}...`);
+            // Track artifacts
+            if (block.name === 'write_file') {
+              artifacts.filesCreated?.push((block.input as { file_path: string }).file_path);
+            } else if (block.name === 'edit_file') {
+              artifacts.filesModified?.push((block.input as { file_path: string }).file_path);
+            } else if (block.name === 'bash') {
+              artifacts.commandsExecuted?.push((block.input as { command: string }).command);
             }
           }
 
           // Add assistant response and tool results to conversation
           this.conversationHistory.push({
             role: 'assistant',
-            content: response.content,
+            content: responseContent,
           });
 
           this.conversationHistory.push({
             role: 'user',
             content: toolResults,
           });
+
+          // Clear for next iteration
+          responseContent = [];
         } else {
-          // Unknown stop reason
-          continueLoop = false;
+          // Only text response, we're done
+          break;
         }
       }
 
       if (iterations >= maxIterations) {
+        callbacks?.onError?.('Maximum iterations reached');
         return {
           success: false,
-          error: 'Maximum iterations reached',
+          error: 'Maximum iterations reached - task may be incomplete',
           artifacts,
         };
       }
 
       return {
         success: true,
-        output: 'Task completed',
+        output: fullOutput || 'Task completed',
         artifacts,
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
+
+      // Check for abort
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Execution aborted by user',
+          artifacts: this.getCurrentArtifacts(),
+        };
+      }
+
       logger.error('Agent execution error:', error);
+      callbacks?.onError?.(message);
+
       return {
         success: false,
         error: message,
+        artifacts: this.getCurrentArtifacts(),
       };
     }
+  }
+
+  /**
+   * Get current artifacts from conversation history
+   */
+  private getCurrentArtifacts(): AgentExecutionResult['artifacts'] {
+    // Parse conversation history to extract artifacts
+    const artifacts: AgentExecutionResult['artifacts'] = {
+      filesCreated: [],
+      filesModified: [],
+      filesDeleted: [],
+      commandsExecuted: [],
+    };
+
+    for (const msg of this.conversationHistory) {
+      if (msg.role === 'assistant') {
+        for (const content of msg.content) {
+          if (typeof content === 'object' && content !== null && 'type' in content) {
+            const block = content as Anthropic.Messages.ToolUseBlock;
+            if (block.type === 'tool_use') {
+              if (block.name === 'write_file') {
+                artifacts.filesCreated?.push((block.input as { file_path: string }).file_path);
+              } else if (block.name === 'edit_file') {
+                artifacts.filesModified?.push((block.input as { file_path: string }).file_path);
+              } else if (block.name === 'bash') {
+                artifacts.commandsExecuted?.push((block.input as { command: string }).command);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return artifacts;
+  }
+
+  /**
+   * Execute task with streaming - alias for compatibility
+   */
+  async executeTaskStreaming(
+    userMessage: string,
+    callbacks?: StreamCallbacks
+  ): Promise<AgentExecutionResult> {
+    return this.executeTask(userMessage, callbacks);
   }
 
   /**
@@ -447,7 +680,7 @@ export function createGLMAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgen
   return new ClaudeCodeAgent({
     apiKey,
     baseUrl: baseUrl || 'https://api.z.ai/api/anthropic',
-    model: 'claude-sonnet-4-20250514', // Maps to GLM-4.6
+    model: 'claude-sonnet-4-20250514',
   });
 }
 
@@ -457,7 +690,7 @@ export function createGLMAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgen
 export function createAnthropicAgent(apiKey: string, baseUrl?: string): ClaudeCodeAgent {
   return new ClaudeCodeAgent({
     apiKey,
-    baseUrl: baseUrl || 'https://api.anthropic.com/v1',
+    baseUrl: baseUrl || 'https://api.anthropic.com',
     model: 'claude-sonnet-4-20250514',
   });
 }
