@@ -186,7 +186,7 @@ function App() {
           {/* Mobile: Essential actions first */}
           <button
             onClick={toggleSidebar}
-            className="p-2 sm:px-2 sm:py-1 hover:bg-gray-700 rounded text-xs sm:text-sm touch-manipulation"
+            className="p-2 sm:px-2 sm:py-1 hover:bg-gray-700 rounded text-xs sm:text-sm touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
             title="Toggle Files"
             aria-label="Toggle Files"
           >
@@ -196,7 +196,7 @@ function App() {
           {/* Mobile: Terminal button */}
           <button
             onClick={toggleTerminal}
-            className="md:hidden p-2 hover:bg-gray-700 rounded text-xs touch-manipulation"
+            className="md:hidden p-2 hover:bg-gray-700 rounded text-xs touch-manipulation min-w-[44px] min-h-[44px]"
             title="Toggle Terminal"
             aria-label="Toggle Terminal"
           >

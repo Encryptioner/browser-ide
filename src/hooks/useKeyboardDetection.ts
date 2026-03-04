@@ -83,7 +83,6 @@ export function useKeyboardDetection(): KeyboardState {
 
       if (navigator.virtualKeyboard?.show) {
         navigator.virtualKeyboard.show();
-        logger.info('📱 Virtual Keyboard shown programmatically');
         return true;
       }
 
@@ -104,7 +103,6 @@ export function useKeyboardDetection(): KeyboardState {
     try {
       if (navigator.virtualKeyboard?.hide) {
         navigator.virtualKeyboard.hide();
-        logger.info('📱 Virtual Keyboard hidden programmatically');
         return true;
       }
 
@@ -374,7 +372,6 @@ export function useVirtualKeyboardControls() {
         element.focus();
       }
       navigator.virtualKeyboard?.show();
-      logger.info('📱 Virtual Keyboard shown');
       return true;
     } catch (error) {
       logger.error('📱 Failed to show Virtual Keyboard:', error);
@@ -389,7 +386,6 @@ export function useVirtualKeyboardControls() {
 
     try {
       navigator.virtualKeyboard?.hide();
-      logger.info('📱 Virtual Keyboard hidden');
       return true;
     } catch (error) {
       logger.error('📱 Failed to hide Virtual Keyboard:', error);
