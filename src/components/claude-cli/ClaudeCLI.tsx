@@ -641,25 +641,52 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
     }
 
     try {
-      term.writeln(`🎯 Executing task: ${task}`);
+      term.writeln(`🎯 Executing: ${task}`);
+      term.writeln(''); // Empty line for readability
+
+      // Use streaming execution for real-time feedback
       const result = await cliService.executeTask(task, {
-        onProgress: (message: string) => {
-          term.writeln(`🔧 ${message}`);
+        onText: (text: string) => {
+          // Stream text directly to terminal (character by character)
+          term.write(text.replace(/\n/g, '\r\n'));
         },
-        onOutput: (output: string) => {
-          term.writeln(output);
+        onToolUse: (toolName: string, toolInput: Record<string, unknown>) => {
+          term.writeln(`\r\n🔧 ${toolName}: ${JSON.stringify(toolInput).slice(0, 100)}...`);
+        },
+        onToolResult: (toolName: string, result: string) => {
+          const preview = result.slice(0, 200);
+          term.writeln(`✅ ${toolName} → ${preview}${result.length > 200 ? '...' : ''}`);
+        },
+        onProgress: (message: string) => {
+          // Optional: show progress indicators
+        },
+        onError: (error: string) => {
+          term.writeln(`\r\n❌ Error: ${error}`);
         }
       });
 
-      if (result.success) {
-        term.writeln('✅ Task completed successfully');
+      term.writeln(''); // Empty line before summary
 
+      if (result.success) {
         if (result.artifacts?.filesCreated?.length) {
           term.writeln('📝 Files created:');
           result.artifacts.filesCreated.forEach((file: string) => {
             term.writeln(`   + ${file}`);
           });
         }
+        if (result.artifacts?.filesModified?.length) {
+          term.writeln('📝 Files modified:');
+          result.artifacts.filesModified.forEach((file: string) => {
+            term.writeln(`   ~ ${file}`);
+          });
+        }
+        if (result.artifacts?.commandsExecuted?.length) {
+          term.writeln('⚡ Commands executed:');
+          result.artifacts.commandsExecuted.forEach((cmd: string) => {
+            term.writeln(`   $ ${cmd}`);
+          });
+        }
+        term.writeln('✅ Task completed');
       } else {
         term.writeln(`❌ Task failed: ${result.error}`);
       }

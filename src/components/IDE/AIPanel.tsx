@@ -276,39 +276,50 @@ export function AIPanel() {
           baseUrl: provider === 'glm' ? 'https://api.z.ai/api/anthropic' : undefined,
         });
 
-        const result: AgentExecutionResult = await agent.executeTask(text, (progress: string) => {
-          // Log tool activity to Claude terminal
-          addClaudeTerminalEntry({
-            timestamp: Date.now(),
-            type: 'info',
-            title: progress,
-            status: 'running',
-          });
-
-          // Create tool call cards for known patterns
-          if (progress.includes('Reading file:')) {
-            const tc: ToolCallState = {
-              id: generateId(),
-              name: 'read_file',
-              input: { file_path: progress.replace('Reading file: ', '') },
-              status: 'running',
+        const result: AgentExecutionResult = await agent.executeTask(text, {
+          onText: (textChunk: string) => {
+            // Stream text output to terminal
+            addClaudeTerminalEntry({
               timestamp: Date.now(),
-            };
-            addToolCall(tc);
-            // Mark as success after a beat
-            setTimeout(() => updateToolCall(tc.id, { status: 'success' }), 500);
-          } else if (progress.includes('Writing file:')) {
-            const tc: ToolCallState = {
-              id: generateId(),
-              name: 'write_file',
-              input: { file_path: progress.replace('Writing file: ', '') },
+              type: 'info',
+              title: textChunk,
               status: 'running',
+            });
+          },
+          onToolUse: (toolName: string, toolInput: Record<string, unknown>) => {
+            addClaudeTerminalEntry({
               timestamp: Date.now(),
-            };
-            addToolCall(tc);
-            setTimeout(() => updateToolCall(tc.id, { status: 'success' }), 500);
+              type: 'info',
+              title: `🔧 ${toolName}: ${JSON.stringify(toolInput).slice(0, 100)}...`,
+              status: 'running',
+            });
+          },
+          onToolResult: (toolName: string, result: string) => {
+            addClaudeTerminalEntry({
+              timestamp: Date.now(),
+              type: 'command',
+              title: `✅ ${toolName} completed`,
+              status: 'running',
+            });
+          },
+          onProgress: (progress: string) => {
+            addClaudeTerminalEntry({
+              timestamp: Date.now(),
+              type: 'info',
+              title: progress,
+              status: 'running',
+            });
+          },
+          onError: (error: string) => {
+            addClaudeTerminalEntry({
+              timestamp: Date.now(),
+              type: 'error',
+              title: `❌ ${error}`,
+              status: 'error',
+            });
           }
         });
+
 
         // Add result as assistant message
         const assistantMsg: AIMessage = {
