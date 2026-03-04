@@ -44,3 +44,6 @@ public/workbox-*.js
 # Dist
 dev-dist
 dist
+
+# Claude
+.claude/worktrees/*
