@@ -32,7 +32,7 @@ class GitService {
         dir,
       }) || null;
     } catch (error) {
-      logger.error('Get current branch error:', error);
+      logger.debug('Get current branch error (no git repo?):', error);
       return null;
     }
   }
@@ -141,7 +141,7 @@ class GitService {
       });
       return branch || null;
     } catch (error) {
-      logger.error('Get current branch error:', error);
+      logger.debug('Get current branch error (no git repo?):', error);
       return null;
     }
   }

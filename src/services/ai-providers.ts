@@ -33,12 +33,14 @@ export class AnthropicProvider implements LLMProvider {
     onChunk?: (_chunk: StreamChunk) => void
   ): Promise<APIResponse<AIMessage>> {
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const baseUrl = config.baseUrl || 'https://api.anthropic.com';
+      const response = await fetch(`${baseUrl}/v1/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': config.apiKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: config.model,
@@ -175,12 +177,14 @@ export class AnthropicProvider implements LLMProvider {
 
   async validateConfig(config: AIProviderConfig): Promise<boolean> {
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const baseUrl = config.baseUrl || 'https://api.anthropic.com';
+      const response = await fetch(`${baseUrl}/v1/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': config.apiKey,
           'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model: config.model,

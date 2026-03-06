@@ -876,8 +876,8 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
   }
 
   return (
-    <div className={`claude-cli ${className || ''}`}>
-      <div className="terminal-container bg-gray-900 rounded-lg overflow-hidden">
+    <div className={`claude-cli h-full flex flex-col ${className || ''}`}>
+      <div className="terminal-container bg-gray-900 rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
         <div className="terminal-header bg-gray-800 px-4 py-2 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -917,8 +917,7 @@ export function ClaudeCLI({ className, options, onCommand }: ClaudeCLIProps) {
 
         <div
           ref={terminalRef}
-          className="terminal-output"
-          style={{ height: '400px' }}
+          className="terminal-output flex-1 min-h-0"
         />
 
         {workspaceStatus && (

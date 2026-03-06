@@ -51,7 +51,7 @@ export function SourceControlPanel() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     const result = await sourceControlService.refreshRepository();
-    if (!result.success) {
+    if (!result.success && result.error && !result.error.includes('Could not determine current branch')) {
       toast.error('Failed to refresh: ' + result.error);
     }
     setIsRefreshing(false);

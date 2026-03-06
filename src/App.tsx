@@ -23,6 +23,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 const CloneDialog = lazy(() => import('@/components/IDE/CloneDialog').then(m => ({ default: m.CloneDialog })));
 const SettingsDialog = lazy(() => import('@/components/IDE/SettingsDialog').then(m => ({ default: m.SettingsDialog })));
 const AIAssistant = lazy(() => import('@/components/IDE/AIAssistant').then(m => ({ default: m.AIAssistant })));
+const AIPanel = lazy(() => import('@/components/IDE/AIPanel').then(m => ({ default: m.AIPanel })));
 const ClaudeCodePanel = lazy(() => import('@/components/IDE/ClaudeCodePanel').then(m => ({ default: m.ClaudeCodePanel })));
 const ExtensionsPanel = lazy(() => import('@/components/IDE/ExtensionsPanel').then(m => ({ default: m.ExtensionsPanel })));
 const CommandPalette = lazy(() => import('@/components/IDE/CommandPalette').then(m => ({ default: m.CommandPalette })));
@@ -77,6 +78,7 @@ function App() {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [showClaudeCode, setShowClaudeCode] = useState(false);
   const [showExtensions, setShowExtensions] = useState(false);
   const [showGit, setShowGit] = useState(false);
@@ -160,7 +162,7 @@ function App() {
     }
   };
 
-  const bottomPanelVisible = terminalOpen || previewOpen || showClaudeCode || showExtensions || showGit;
+  const bottomPanelVisible = terminalOpen || previewOpen || showAI || showClaudeCode || showExtensions || showGit;
 
   // Block render until critical services (filesystem + DB) are ready
   if (!services.criticalReady) {
@@ -317,9 +319,12 @@ function App() {
 
           {/* Mobile: More menu button */}
           <button
-            onClick={() => setShowAIAssistant(true)}
+            onClick={() => {
+              setShowAI(!showAI);
+              if (!showAI) setActiveBottomPanel('ai');
+            }}
             title="AI Assistant"
-            className="p-2 sm:px-3 sm:py-1 bg-purple-600 hover:bg-purple-700 rounded text-xs sm:text-sm font-medium whitespace-nowrap touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
+            className={`p-2 sm:px-3 sm:py-1 ${showAI ? 'bg-purple-700' : 'bg-purple-600'} hover:bg-purple-700 rounded text-xs sm:text-sm font-medium whitespace-nowrap touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0`}
           >
             <span className="text-base sm:text-sm">🤖</span>
           </button>
@@ -409,7 +414,8 @@ function App() {
                         tabs={[
                           ...(terminalOpen ? [{ id: 'terminal-tabs', label: 'Terminal', shortLabel: 'Term', icon: '💻' } satisfies TabItem] : []),
                           ...(previewOpen ? [{ id: 'preview', label: 'Preview', shortLabel: 'View', icon: '👁️' } satisfies TabItem] : []),
-                          ...(showClaudeCode ? [{ id: 'claude-code', label: 'Claude', shortLabel: 'AI', icon: '🧠' } satisfies TabItem] : []),
+                          ...(showAI ? [{ id: 'ai', label: 'AI Assistant', shortLabel: 'AI', icon: '🤖' } satisfies TabItem] : []),
+                          ...(showClaudeCode ? [{ id: 'claude-code', label: 'Claude CLI', shortLabel: 'CLI', icon: '🧠' } satisfies TabItem] : []),
                           ...(showExtensions ? [{ id: 'extensions', label: 'Extensions', shortLabel: 'Ext', icon: '🧩' } satisfies TabItem] : []),
                           ...(showGit ? [{ id: 'git', label: 'Git', shortLabel: 'Git', icon: '🔀' } satisfies TabItem] : []),
                           { id: 'help', label: 'Help', shortLabel: 'Help', icon: '📚' },
@@ -422,6 +428,7 @@ function App() {
                           {activeBottomPanel === 'terminal-tabs' && terminalOpen && <Terminal />}
                           {activeBottomPanel === 'terminal' && terminalOpen && <Terminal />}
                           {activeBottomPanel === 'preview' && previewOpen && <Preview />}
+                          {activeBottomPanel === 'ai' && showAI && <AIPanel />}
                           {activeBottomPanel === 'claude-code' && showClaudeCode && <ClaudeCodePanel />}
                           {activeBottomPanel === 'extensions' && showExtensions && <ExtensionsPanel />}
                           {activeBottomPanel === 'git' && showGit && <SourceControlPanel />}
@@ -444,7 +451,6 @@ function App() {
       <Suspense fallback={null}>
         {showCloneDialog && <CloneDialog onClose={() => setShowCloneDialog(false)} />}
         {showSettingsDialog && <SettingsDialog onClose={() => setShowSettingsDialog(false)} />}
-        {showAIAssistant && <AIAssistant onClose={() => setShowAIAssistant(false)} />}
         <CommandPalette /> {/* Always rendered to handle keyboard shortcut */}
       </Suspense>
 

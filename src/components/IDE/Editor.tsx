@@ -151,16 +151,17 @@ export function Editor() {
       if (editorRef.current) {
         clearTimeout(lintTimeout.current);
         lintTimeout.current = window.setTimeout(async () => {
-          await updateLinting(currentFile, newValue, editorRef.current);
+          await updateLinting(currentFile, newValue);
         }, 500) as unknown as number; // 500ms debounce
       }
     }
   }
 
-  async function updateLinting(filename: string, fileContent: string, editor: unknown) {
+  async function updateLinting(filename: string, fileContent: string) {
     try {
+      if (!monacoRef.current) return;
       const lang = fileSystem.getLanguageFromPath(filename);
-      await linterService.updateMarkers(filename, fileContent, lang, editor as typeof import('monaco-editor'));
+      await linterService.updateMarkers(filename, fileContent, lang, monacoRef.current);
     } catch (error) {
       logger.error('Failed to update linting:', error);
     }
@@ -172,9 +173,7 @@ export function Editor() {
       markFileSaved(currentFile);
 
       // Update linting after save
-      if (editorRef.current) {
-        await updateLinting(currentFile, content, editorRef.current);
-      }
+      await updateLinting(currentFile, content);
     }
   }
 

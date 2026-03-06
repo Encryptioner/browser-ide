@@ -12,6 +12,7 @@ export interface UISlice {
   activeBottomPanel:
     | 'terminal'
     | 'preview'
+    | 'ai'
     | 'claude-code'
     | 'extensions'
     | 'git'
@@ -40,6 +41,7 @@ export interface UISlice {
     _panel:
       | 'terminal'
       | 'preview'
+      | 'ai'
       | 'claude-code'
       | 'extensions'
       | 'git'

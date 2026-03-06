@@ -418,12 +418,11 @@ export class ClaudeCodeAgent {
         commandsExecuted: [],
       };
 
-      let continueLoop = true;
       let iterations = 0;
       const maxIterations = 25; // Higher limit for complex tasks
       let fullOutput = '';
 
-      while (continueLoop && iterations < maxIterations) {
+      while (iterations < maxIterations) {
         iterations++;
 
         // Check for abort
@@ -440,6 +439,7 @@ export class ClaudeCodeAgent {
           model: this.config.model!,
           max_tokens: this.config.maxTokens!,
           temperature: this.config.temperature,
+          system: `You are an expert coding assistant running inside a browser-based IDE. You have access to tools for reading, writing, editing, and searching files in the workspace, running bash commands via WebContainers, and performing git operations. Use these tools to accomplish the user's coding tasks. Be concise and efficient. When modifying code, prefer edit_file over write_file for targeted changes. Always explain what you're doing before using tools.`,
           messages: this.conversationHistory,
           tools: this.getTools() as Anthropic.Messages.Tool[],
           stream: true,
@@ -448,7 +448,7 @@ export class ClaudeCodeAgent {
         }) as unknown as AsyncIterable<Anthropic.Messages.MessageStreamEvent>;
 
         // Process the stream
-        let currentToolUse: { id: string; name: string; input: Record<string, unknown> } | null = null;
+        let currentToolUse: { id: string; name: string; inputJson: string } | null = null;
         let currentTextDelta = '';
         let responseContent: Anthropic.MessageParam['content'] = [];
 
@@ -456,7 +456,6 @@ export class ClaudeCodeAgent {
           const streamEvent = event as Anthropic.Messages.MessageStreamEvent;
 
           if (streamEvent.type === 'message_start') {
-            // Message started, nothing to do
             continue;
           }
 
@@ -468,7 +467,7 @@ export class ClaudeCodeAgent {
               currentToolUse = {
                 id: block.id,
                 name: block.name,
-                input: block.input as Record<string, unknown>,
+                inputJson: '',
               };
             }
             continue;
@@ -482,15 +481,9 @@ export class ClaudeCodeAgent {
               fullOutput += text;
               callbacks?.onText?.(text);
             } else if (delta.type === 'input_json_delta') {
-              // Accumulate tool input JSON
-              if (currentToolUse && typeof currentToolUse.input === 'string') {
-                // Parse the partial JSON and merge with existing input
-                try {
-                  const partialObj = JSON.parse(`{${delta.partial_json}}`);
-                  currentToolUse.input = { ...partialObj };
-                } catch {
-                  // Not valid JSON yet, accumulate for later parsing
-                }
+              // Accumulate raw JSON string — parse at content_block_stop
+              if (currentToolUse) {
+                currentToolUse.inputJson += delta.partial_json;
               }
             }
             continue;
@@ -504,11 +497,18 @@ export class ClaudeCodeAgent {
               });
               currentTextDelta = '';
             } else if (currentToolUse) {
+              // Parse accumulated JSON now that we have the full string
+              let parsedInput: Record<string, unknown> = {};
+              try {
+                parsedInput = JSON.parse(currentToolUse.inputJson || '{}');
+              } catch (e) {
+                logger.error('Failed to parse tool input JSON:', e);
+              }
               responseContent.push({
                 type: 'tool_use',
                 id: currentToolUse.id,
                 name: currentToolUse.name,
-                input: currentToolUse.input,
+                input: parsedInput,
               });
               currentToolUse = null;
             }
@@ -516,7 +516,6 @@ export class ClaudeCodeAgent {
           }
 
           if (streamEvent.type === 'message_stop') {
-            // Message complete
             break;
           }
         }
