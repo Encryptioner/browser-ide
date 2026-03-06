@@ -28,6 +28,16 @@ function getApiKey(
   return settings.ai.openaiKey;
 }
 
+function getBaseUrl(
+  provider: string,
+  settings: { ai: { anthropicBaseUrl: string } }
+): string | undefined {
+  if (provider === 'anthropic') {
+    return settings.ai.anthropicBaseUrl || 'https://api.anthropic.com';
+  }
+  return undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Message Bubble
 // ---------------------------------------------------------------------------
@@ -199,11 +209,13 @@ export function AIPanel() {
       let fullContent = '';
 
       try {
+        const baseUrl = getBaseUrl(provider, settings);
         const config: AIProviderConfig = {
           id: provider,
           name: provider,
           provider: provider as 'anthropic' | 'glm' | 'openai',
           apiKey,
+          baseUrl,
           model: provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'glm-4-plus',
           enabled: true,
         };
@@ -270,15 +282,43 @@ export function AIPanel() {
       });
 
       try {
+        // Determine baseUrl: for GLM use z.ai anthropic proxy; for anthropic use settings
+        let agentBaseUrl: string | undefined;
+        if (provider === 'glm') {
+          agentBaseUrl = 'https://api.z.ai/api/anthropic';
+        } else if (provider === 'anthropic') {
+          agentBaseUrl = settings.ai.anthropicBaseUrl || 'https://api.anthropic.com';
+        }
+
         const agent = new ClaudeCodeAgent({
           apiKey,
           model: provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'glm-4-plus',
-          baseUrl: provider === 'glm' ? 'https://api.z.ai/api/anthropic' : undefined,
+          baseUrl: agentBaseUrl,
         });
+
+        // Connect abort controller so Cancel button works
+        abortRef.current = new AbortController();
+        const currentAbort = abortRef.current;
+        currentAbort.signal.addEventListener('abort', () => agent.abort());
+
+        // Create a streaming assistant message so user sees text in real-time
+        const streamingMsgId = generateId();
+        const streamingMsg: AIMessage = {
+          id: streamingMsgId,
+          role: 'assistant',
+          content: '',
+          timestamp: Date.now(),
+          model: provider,
+        };
+        addAIMessage(sessionId, streamingMsg);
+        let streamedText = '';
 
         const result: AgentExecutionResult = await agent.executeTask(text, {
           onText: (textChunk: string) => {
-            // Stream text output to terminal
+            // Stream text into the assistant message bubble
+            streamedText += textChunk;
+            updateAIMessage(sessionId, streamingMsgId, streamedText);
+            // Also log to terminal
             addClaudeTerminalEntry({
               timestamp: Date.now(),
               type: 'info',
@@ -287,6 +327,14 @@ export function AIPanel() {
             });
           },
           onToolUse: (toolName: string, toolInput: Record<string, unknown>) => {
+            const tcId = `tc-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`;
+            addToolCall({
+              id: tcId,
+              name: toolName,
+              input: toolInput,
+              status: 'running',
+              timestamp: Date.now(),
+            });
             addClaudeTerminalEntry({
               timestamp: Date.now(),
               type: 'info',
@@ -294,7 +342,7 @@ export function AIPanel() {
               status: 'running',
             });
           },
-          onToolResult: (toolName: string, result: string) => {
+          onToolResult: (toolName: string, _result: string) => {
             addClaudeTerminalEntry({
               timestamp: Date.now(),
               type: 'command',
@@ -321,16 +369,11 @@ export function AIPanel() {
         });
 
 
-        // Add result as assistant message
-        const assistantMsg: AIMessage = {
-          id: generateId(),
-          role: 'assistant',
-          content: result.success
-            ? result.output || 'Task completed successfully.'
-            : `Error: ${result.error || 'Task failed.'}`,
-          timestamp: Date.now(),
-        };
-        addAIMessage(sessionId, assistantMsg);
+        // Update the streaming message with the final result
+        const finalContent = streamedText || (result.success
+          ? result.output || 'Task completed successfully.'
+          : `Error: ${result.error || 'Task failed.'}`);
+        updateAIMessage(sessionId, streamingMsgId, finalContent);
 
         addClaudeTerminalEntry({
           timestamp: Date.now(),
@@ -475,7 +518,7 @@ export function AIPanel() {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-gray-700 p-3">
+      <div className="border-t border-gray-700 p-2 sm:p-3">
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
@@ -486,35 +529,40 @@ export function AIPanel() {
                 e.preventDefault();
                 handleSubmit();
               }
+              // On mobile, Enter without modifier also sends
+              if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey && 'ontouchstart' in window) {
+                e.preventDefault();
+                handleSubmit();
+              }
             }}
             placeholder={
               agentMode === 'chat'
-                ? 'Ask a question... (Cmd+Enter to send)'
-                : 'Describe a task... (Cmd+Enter to send)'
+                ? 'Ask a question...'
+                : 'Describe a task...'
             }
-            className="flex-1 resize-none rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+            className="flex-1 resize-none rounded border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none min-h-[40px]"
             rows={2}
             disabled={isStreaming}
             aria-label="AI message input"
             data-testid="ai-input"
           />
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 justify-end">
             {isStreaming ? (
               <button
                 type="button"
                 onClick={handleCancel}
-                className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                className="rounded bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 min-w-[60px] min-h-[40px] touch-manipulation"
                 aria-label="Cancel"
                 data-testid="ai-cancel"
               >
-                Cancel
+                Stop
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!input.trim()}
-                className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500"
+                className="rounded bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 min-w-[60px] min-h-[40px] touch-manipulation"
                 aria-label="Send message"
                 data-testid="ai-send"
               >

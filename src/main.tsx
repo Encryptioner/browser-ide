@@ -9,7 +9,46 @@ import { reportWebVitals } from '@/utils/web-vitals';
 import { registerSW } from 'virtual:pwa-register';
 import { Buffer } from 'buffer';
 import { toast } from 'sonner';
+import { loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import './index.css';
+
+// Configure Monaco to use local package instead of CDN (avoids CSP issues)
+loader.config({ monaco });
+
+// Configure Monaco web workers for language features
+self.MonacoEnvironment = {
+  getWorker(_: unknown, label: string) {
+    if (label === 'json') {
+      return new Worker(
+        new URL('monaco-editor/esm/vs/language/json/json.worker.js', import.meta.url),
+        { type: 'module' }
+      );
+    }
+    if (label === 'css' || label === 'scss' || label === 'less') {
+      return new Worker(
+        new URL('monaco-editor/esm/vs/language/css/css.worker.js', import.meta.url),
+        { type: 'module' }
+      );
+    }
+    if (label === 'html' || label === 'handlebars' || label === 'razor') {
+      return new Worker(
+        new URL('monaco-editor/esm/vs/language/html/html.worker.js', import.meta.url),
+        { type: 'module' }
+      );
+    }
+    if (label === 'typescript' || label === 'javascript') {
+      return new Worker(
+        new URL('monaco-editor/esm/vs/language/typescript/ts.worker.js', import.meta.url),
+        { type: 'module' }
+      );
+    }
+    return new Worker(
+      new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url),
+      { type: 'module' }
+    );
+  },
+};
 
 // Polyfill Buffer for isomorphic-git
 window.Buffer = Buffer;
