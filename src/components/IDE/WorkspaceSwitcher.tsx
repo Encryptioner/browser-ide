@@ -7,6 +7,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { trackEvent } from '@/services/analytics';
 
 export function WorkspaceSwitcher() {
   const {
@@ -39,6 +40,7 @@ export function WorkspaceSwitcher() {
 
   const handleClose = (e: React.MouseEvent, workspaceId: string) => {
     e.stopPropagation();
+    trackEvent({ name: 'project_deleted' });
     closeWorkspace(workspaceId);
   };
 
@@ -95,6 +97,9 @@ export function WorkspaceSwitcher() {
                 <div
                   key={workspace.id}
                   onClick={() => {
+                    if (workspace.id !== activeWorkspaceId) {
+                      trackEvent({ name: 'project_switched' });
+                    }
                     switchWorkspace(workspace.id);
                     setShowMenu(false);
                   }}

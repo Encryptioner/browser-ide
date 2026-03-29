@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useIDEStore } from '@/store/useIDEStore';
 import { toast } from 'sonner';
+import { trackEvent } from '@/services/analytics';
 
 interface SettingsDialogProps {
   onClose: () => void;
@@ -13,7 +14,15 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const [localSettings, setLocalSettings] = useState(settings);
 
   function handleSave() {
+    // Detect provider switch before applying the update
+    if (localSettings.ai.defaultProvider !== settings.ai.defaultProvider) {
+      trackEvent({
+        name: 'ai_provider_switched',
+        params: { from_provider: settings.ai.defaultProvider, to_provider: localSettings.ai.defaultProvider },
+      });
+    }
     updateSettings(localSettings);
+    trackEvent({ name: 'settings_changed', params: { setting_category: 'general' } });
     toast.success('Settings saved!');
     onClose();
   }

@@ -6,6 +6,7 @@ import { DebugBreakpoint, DebugThread, DebugConfiguration, DebugConsoleMessage, 
 import { clsx } from 'clsx';
 import { nanoid } from 'nanoid';
 import { logger } from '@/utils/logger';
+import { trackEvent } from '@/services/analytics';
 
 interface DebuggerProps {
   className?: string;
@@ -85,6 +86,7 @@ export function Debugger({ className }: DebuggerProps) {
     try {
       setActiveDebugSession?.(activeProjectId, newSession.id);
       setActiveSession(newSession);
+      trackEvent({ name: 'debug_session_started' });
 
       // Simulate debug session initialization
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -129,6 +131,7 @@ export function Debugger({ className }: DebuggerProps) {
 
     try {
       activeSession.running = false;
+      trackEvent({ name: 'debug_action', params: { action: 'stop' } });
 
       const message: DebugConsoleMessage = {
         id: nanoid(),
@@ -166,6 +169,7 @@ export function Debugger({ className }: DebuggerProps) {
     };
 
     addBreakpoint?.(breakpoint);
+    trackEvent({ name: 'breakpoint_set' });
 
     if (activeSession) {
       activeSession.breakpoints.push(breakpoint);
@@ -215,6 +219,7 @@ export function Debugger({ className }: DebuggerProps) {
   const continueDebug = useCallback(async () => {
     if (!selectedThread || !activeSession) return;
 
+    trackEvent({ name: 'debug_action', params: { action: 'continue' } });
     // Mock continue action
     selectedThread.state = 'running';
 
@@ -237,6 +242,7 @@ export function Debugger({ className }: DebuggerProps) {
   const stepOverAction = useCallback(async () => {
     if (!selectedThread) return;
 
+    trackEvent({ name: 'debug_action', params: { action: 'step_over' } });
     // Mock step over
     const message: DebugConsoleMessage = {
       id: nanoid(),
@@ -251,6 +257,7 @@ export function Debugger({ className }: DebuggerProps) {
   const stepIntoAction = useCallback(async () => {
     if (!selectedThread) return;
 
+    trackEvent({ name: 'debug_action', params: { action: 'step_into' } });
     // Mock step into
     const message: DebugConsoleMessage = {
       id: nanoid(),
@@ -265,6 +272,7 @@ export function Debugger({ className }: DebuggerProps) {
   const stepOutAction = useCallback(async () => {
     if (!selectedThread) return;
 
+    trackEvent({ name: 'debug_action', params: { action: 'step_out' } });
     // Mock step out
     const message: DebugConsoleMessage = {
       id: nanoid(),

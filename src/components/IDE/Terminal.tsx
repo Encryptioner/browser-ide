@@ -16,6 +16,7 @@ import {
 } from '@/services/terminalCommands';
 import '@xterm/xterm/css/xterm.css';
 import { logger } from '@/utils/logger';
+import { trackEvent, categorizeCommand } from '@/services/analytics';
 
 export function Terminal() {
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -84,6 +85,7 @@ export function Terminal() {
         if (result.success) {
           logger.info('WebContainer boot complete, setting ready state');
           setBootStatus('ready');
+          trackEvent({ name: 'terminal_opened', params: { profile: 'bash' } });
         } else {
           setBootStatus('error');
           logger.error('WebContainer failed to boot:', result.error);
@@ -171,6 +173,10 @@ export function Terminal() {
 
     // Run a command through the service
     function runCommand(command: string) {
+      const trimmed = command.trim();
+      if (trimmed) {
+        trackEvent({ name: 'terminal_command_run', params: { command_category: categorizeCommand(trimmed) } });
+      }
       const opts: ExecuteCommandOptions = {
         writer,
         callbacks: { openNano },
@@ -293,6 +299,7 @@ export function Terminal() {
       xterm.dispose();
       xtermRef.current = null;
       fitAddonRef.current = null;
+      trackEvent({ name: 'terminal_closed' });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import type { FileNode } from '@/types';
 import { logger } from '@/utils/logger';
+import { trackEvent, getFileExtension, sanitizeError } from '@/services/analytics';
 
 
 interface ContextMenuProps {
@@ -188,6 +189,7 @@ export function FileExplorer() {
     if (file.type === 'file') {
       setCurrentFile(file.path);
       addOpenFile(file.path);
+      trackEvent({ name: 'file_opened', params: { file_extension: getFileExtension(file.name) } });
     }
   }
 
@@ -250,10 +252,12 @@ export function FileExplorer() {
     const result = await fileSystem.deletePath(node.path);
     if (result.success) {
       toast.success(`Deleted ${node.name}`);
+      trackEvent({ name: 'file_deleted' });
       await loadFileTree();
       await loadGitStatus();
     } else {
       toast.error(`Failed to delete: ${result.error}`);
+      trackEvent({ name: 'error_occurred', params: { category: 'file', action: 'delete', error: sanitizeError(result.error ?? 'Unknown error') } });
     }
     setConfirmDialog(null);
   }
@@ -290,6 +294,7 @@ export function FileExplorer() {
       const result = await fileSystem.writeFile(newPath, '');
       if (result.success) {
         toast.success(`Created ${name}`);
+        trackEvent({ name: 'file_created', params: { file_extension: getFileExtension(name) } });
         setNewItemParent(null);
         await loadFileTree();
         await loadGitStatus();

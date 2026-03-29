@@ -7,6 +7,7 @@ import { sourceControlService } from '@/services/sourceControlService';
 import type { BranchInfo } from '@/services/sourceControlService';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { trackEvent } from '@/services/analytics';
 
 interface BranchesViewProps {
   currentBranch: string;
@@ -56,6 +57,7 @@ export function BranchesView({ currentBranch, onRefresh }: BranchesViewProps) {
     setIsCreating(true);
     const result = await sourceControlService.createBranch(newBranchName);
     if (result.success) {
+      trackEvent({ name: 'git_branch_created' });
       setNewBranchName('');
       setShowCreateBranch(false);
       await loadBranchList();

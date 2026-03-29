@@ -4,6 +4,7 @@ import { useIDEStore } from '@/store/useIDEStore';
 import { fileSystem } from '@/services/filesystem';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { trackEvent, sanitizeError } from '@/services/analytics';
 
 interface CloneDialogProps {
   onClose: () => void;
@@ -36,6 +37,8 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
     );
 
     if (result.success) {
+      trackEvent({ name: 'git_clone' });
+      trackEvent({ name: 'project_opened' });
       const repoName = repoUrl.split('/').pop()?.replace('.git', '') || 'repo';
       const clonedPath = result.data || '/repo'; // Use fallback if data is undefined
 
@@ -66,6 +69,7 @@ export function CloneDialog({ onClose }: CloneDialogProps) {
       }
     } else {
       toast.error('Failed to clone: ' + result.error);
+      trackEvent({ name: 'error_occurred', params: { category: 'git', action: 'clone', error: sanitizeError(result.error ?? 'Clone failed') } });
       setProgress('');
     }
     setIsCloning(false);

@@ -4,6 +4,7 @@ import { importExportService } from '@/services/importExport';
 import { fileSystem } from '@/services/filesystem';
 import { gitService } from '@/services/git';
 import { toast } from 'sonner';
+import { trackEvent } from '@/services/analytics';
 // Monaco is dynamically imported to avoid pulling the entire bundle eagerly
 
 interface Command {
@@ -360,6 +361,14 @@ export function CommandPalette() {
     return groups;
   }, {} as Record<string, Command[]>);
 
+  const executeCommand = useCallback((cmd: Command) => {
+    trackEvent({ name: 'command_palette_used', params: { command: cmd.id } });
+    cmd.action();
+    setIsOpen(false);
+    setSearchTerm('');
+    setSelectedIndex(0);
+  }, []);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -388,10 +397,7 @@ export function CommandPalette() {
         } else if (e.key === 'Enter') {
           e.preventDefault();
           if (filteredCommands[selectedIndex]) {
-            filteredCommands[selectedIndex].action();
-            setIsOpen(false);
-            setSearchTerm('');
-            setSelectedIndex(0);
+            executeCommand(filteredCommands[selectedIndex]);
           }
         }
       }
@@ -399,7 +405,7 @@ export function CommandPalette() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, selectedIndex, filteredCommands]);
+  }, [isOpen, selectedIndex, filteredCommands, executeCommand]);
 
   // Focus input when opened
   useEffect(() => {
@@ -410,13 +416,6 @@ export function CommandPalette() {
       }
     }
   }, [isOpen]);
-
-  const executeCommand = useCallback((command: Command) => {
-    command.action();
-    setIsOpen(false);
-    setSearchTerm('');
-    setSelectedIndex(0);
-  }, []);
 
   if (!isOpen) return null;
 

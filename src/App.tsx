@@ -37,6 +37,7 @@ import { config } from '@/config/environment';
 import { useKeyboardDetection } from '@/hooks/useKeyboardDetection';
 import { Toaster } from 'sonner';
 import { initSentry } from '@/services/sentry';
+import { trackEvent } from '@/services/analytics';
 
 function App() {
   useKeyboardDetection();
@@ -86,6 +87,41 @@ function App() {
   const [showSplitEditor, setShowSplitEditor] = useState(false);
   const [showTerminalTabs, setShowTerminalTabs] = useState(false);
   const [showProblemsPanel, setShowProblemsPanel] = useState(false);
+
+  // Panel toggle handlers with analytics tracking
+  const handleToggleSidebar = () => {
+    toggleSidebar();
+    trackEvent({ name: 'panel_toggled', params: { panel: 'explorer' } });
+  };
+
+  const handleToggleTerminal = () => {
+    toggleTerminal();
+    trackEvent({ name: 'panel_toggled', params: { panel: 'terminal' } });
+  };
+
+  const handleToggleGit = () => {
+    setShowGit(!showGit);
+    if (!showGit) setActiveBottomPanel('git');
+    trackEvent({ name: 'panel_toggled', params: { panel: 'git' } });
+  };
+
+  const handleToggleDebugger = () => {
+    setShowDebugger(!showDebugger);
+    if (!showDebugger) setActiveBottomPanel('debugger');
+    trackEvent({ name: 'panel_toggled', params: { panel: 'debug' } });
+  };
+
+  const handleToggleAI = () => {
+    setShowAI(!showAI);
+    if (!showAI) setActiveBottomPanel('ai');
+    trackEvent({ name: 'panel_toggled', params: { panel: 'ai' } });
+  };
+
+  const handleToggleProblems = () => {
+    setShowProblemsPanel(!showProblemsPanel);
+    if (!showProblemsPanel) setActiveBottomPanel('problems');
+    trackEvent({ name: 'panel_toggled', params: { panel: 'problems' } });
+  };
 
   useEffect(() => {
     logger.info(`Browser IDE v${config.APP_VERSION} - Starting...`);
@@ -187,7 +223,7 @@ function App() {
         <div className="titlebar-actions flex items-center gap-1 sm:gap-2 flex-shrink-0">
           {/* Mobile: Essential actions first */}
           <button
-            onClick={toggleSidebar}
+            onClick={handleToggleSidebar}
             className="p-2 sm:px-2 sm:py-1 hover:bg-gray-700 rounded text-xs sm:text-sm touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0"
             title="Toggle Files"
             aria-label="Toggle Files"
@@ -197,7 +233,7 @@ function App() {
 
           {/* Mobile: Terminal button */}
           <button
-            onClick={toggleTerminal}
+            onClick={handleToggleTerminal}
             className="md:hidden p-2 hover:bg-gray-700 rounded text-xs touch-manipulation min-w-[44px] min-h-[44px]"
             title="Toggle Terminal"
             aria-label="Toggle Terminal"
@@ -208,7 +244,7 @@ function App() {
           {/* Mobile: Compact menu for more actions */}
           <div className="hidden sm:flex gap-1 sm:gap-2">
             <button
-              onClick={toggleTerminal}
+              onClick={handleToggleTerminal}
               className="text-xs px-2 py-1 hover:bg-gray-700 rounded"
               title="Toggle Terminal"
             >
@@ -233,10 +269,7 @@ function App() {
             </button>
 
             <button
-              onClick={() => {
-                setShowDebugger(!showDebugger);
-                if (!showDebugger) setActiveBottomPanel('debugger');
-              }}
+              onClick={handleToggleDebugger}
               className={`text-xs px-2 py-1 hover:bg-gray-700 rounded ${showDebugger ? 'bg-gray-700' : ''}`}
               title="Toggle Debugger"
             >
@@ -266,10 +299,7 @@ function App() {
             </button>
 
             <button
-              onClick={() => {
-                setShowProblemsPanel(!showProblemsPanel);
-                if (!showProblemsPanel) setActiveBottomPanel('problems');
-              }}
+              onClick={handleToggleProblems}
               className={`text-xs px-2 py-1 hover:bg-gray-700 rounded ${showProblemsPanel ? 'bg-gray-700' : ''}`}
               title="Toggle Problems Panel"
             >
@@ -286,10 +316,7 @@ function App() {
               🧩
             </button>
             <button
-              onClick={() => {
-                setShowGit(!showGit);
-                if (!showGit) setActiveBottomPanel('git');
-              }}
+              onClick={handleToggleGit}
               className={`text-xs px-2 py-1 hover:bg-gray-700 rounded ${showGit ? 'bg-gray-700' : ''}`}
               title="Toggle Source Control"
             >
@@ -319,10 +346,7 @@ function App() {
 
           {/* Mobile: More menu button */}
           <button
-            onClick={() => {
-              setShowAI(!showAI);
-              if (!showAI) setActiveBottomPanel('ai');
-            }}
+            onClick={handleToggleAI}
             title="AI Assistant"
             className={`p-2 sm:px-3 sm:py-1 ${showAI ? 'bg-purple-700' : 'bg-purple-600'} hover:bg-purple-700 rounded text-xs sm:text-sm font-medium whitespace-nowrap touch-manipulation min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0`}
           >

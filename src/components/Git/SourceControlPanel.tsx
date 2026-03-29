@@ -20,6 +20,7 @@ import { BranchesView } from './BranchesView';
 import { StashView } from './StashView';
 import { toast } from 'sonner';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { trackEvent, sanitizeError } from '@/services/analytics';
 
 type Tab = 'changes' | 'history' | 'branches' | 'stash';
 
@@ -89,10 +90,12 @@ export function SourceControlPanel() {
     const result = await sourceControlService.commitChanges(commitMessage, stagedFiles.length);
     if (!result.success) {
       toast.error(result.error ?? 'Commit failed');
+      trackEvent({ name: 'error_occurred', params: { category: 'git', action: 'commit', error: sanitizeError(result.error ?? 'Commit failed') } });
       return;
     }
     setCommitMessage('');
     setIsCommitting(true);
+    trackEvent({ name: 'git_commit', params: { file_count: stagedFiles.length } });
     await handleRefresh();
     toast.success('Committed successfully!');
     setIsCommitting(false);
@@ -102,10 +105,12 @@ export function SourceControlPanel() {
     setIsPushing(true);
     const result = await sourceControlService.pushToRemote();
     if (result.success) {
+      trackEvent({ name: 'git_push' });
       await handleRefresh();
       toast.success('Pushed successfully!');
     } else {
       toast.error('Push failed: ' + result.error);
+      trackEvent({ name: 'error_occurred', params: { category: 'git', action: 'push', error: sanitizeError(result.error ?? 'Push failed') } });
     }
     setIsPushing(false);
   };

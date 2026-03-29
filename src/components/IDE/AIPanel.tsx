@@ -9,6 +9,7 @@ import type { AgentMode, ToolCallState } from '@/store/slices/aiSlice';
 import { FileEditCard, CommandCard, SearchCard } from './ToolCards';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { trackEvent, sanitizeError } from '@/services/analytics';
 import clsx from 'clsx';
 
 // ---------------------------------------------------------------------------
@@ -161,6 +162,11 @@ export function AIPanel() {
     return session?.messages ?? [];
   }, [aiSessionList, activeAISessionId]);
 
+  // Track AI chat panel opened on mount
+  useEffect(() => {
+    trackEvent({ name: 'ai_chat_opened' });
+  }, []);
+
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -193,6 +199,8 @@ export function AIPanel() {
         timestamp: Date.now(),
       };
       addAIMessage(sessionId, userMsg);
+      const model = provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'glm-4-plus';
+      trackEvent({ name: 'ai_message_sent', params: { provider, model } });
 
       // Create placeholder assistant message for streaming
       const assistantId = generateId();
@@ -216,7 +224,7 @@ export function AIPanel() {
           provider: provider as 'anthropic' | 'glm' | 'openai',
           apiKey,
           baseUrl,
-          model: provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'glm-4-plus',
+          model,
           enabled: true,
         };
 
@@ -236,11 +244,13 @@ export function AIPanel() {
         // Final update with complete content
         if (fullContent) {
           updateAIMessage(sessionId, assistantId, fullContent);
+          trackEvent({ name: 'ai_response_received', params: { provider, response_length: fullContent.length } });
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         updateAIMessage(sessionId, assistantId, `Error: ${errorMsg}`);
         logger.error('Chat message failed', err, 'AIPanel');
+        trackEvent({ name: 'error_occurred', params: { category: 'ai', action: 'chat', error: sanitizeError(errorMsg) } });
       } finally {
         setStreaming(false);
       }
@@ -269,6 +279,8 @@ export function AIPanel() {
         timestamp: Date.now(),
       };
       addAIMessage(sessionId, userMsg);
+      const agentModel = provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'glm-4-plus';
+      trackEvent({ name: 'ai_message_sent', params: { provider, model: agentModel } });
 
       setStreaming(true);
       setAgentRunning(true);
@@ -375,6 +387,10 @@ export function AIPanel() {
           : `Error: ${result.error || 'Task failed.'}`);
         updateAIMessage(sessionId, streamingMsgId, finalContent);
 
+        if (result.success) {
+          trackEvent({ name: 'ai_response_received', params: { provider, response_length: finalContent.length } });
+        }
+
         addClaudeTerminalEntry({
           timestamp: Date.now(),
           type: result.success ? 'info' : 'error',
@@ -404,6 +420,7 @@ export function AIPanel() {
         };
         addAIMessage(sessionId, assistantMsg);
         logger.error('Agent task failed', err, 'AIPanel');
+        trackEvent({ name: 'error_occurred', params: { category: 'ai', action: 'agent', error: sanitizeError(errorMsg) } });
       } finally {
         setStreaming(false);
         setAgentRunning(false);

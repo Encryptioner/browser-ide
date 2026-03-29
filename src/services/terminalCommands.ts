@@ -18,6 +18,7 @@ import { gitService } from '@/services/git';
 import { webContainer } from '@/services/webcontainer';
 import { useIDEStore } from '@/store/useIDEStore';
 import { createGLMAgent, createAnthropicAgent } from '@/services/claude-agent';
+import { trackEvent } from '@/services/analytics';
 import type { ClaudeCodeAgent } from '@/services/claude-agent';
 import type { Settings } from '@/store/useIDEStore';
 import { terminalSessionService } from '@/services/terminalSession';
@@ -602,6 +603,18 @@ async function handleGitCommand(args: string[], w: TerminalWriter): Promise<void
               w.writeln(`error: ${result.error}`);
             }
           }
+        }
+        break;
+      }
+
+      case 'init': {
+        // Track git init intent before delegating to isomorphic-git via gitService
+        trackEvent({ name: 'git_init' });
+        const initResult = await gitService.initializeRepository(cwd);
+        if (initResult.success) {
+          w.writeln(`Initialized empty Git repository in ${cwd}/.git/`);
+        } else {
+          w.writeln(`error: ${initResult.error ?? 'Failed to initialize repository'}`);
         }
         break;
       }
