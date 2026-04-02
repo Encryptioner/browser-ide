@@ -224,6 +224,29 @@ export function StatusBar() {
             {currentFile.split('.').pop() || 'text'}
           </div>
         )}
+
+        {/* Attribution */}
+        <span className="text-gray-500 select-none">
+          Free &amp; open source · Made by{' '}
+          <a
+            href="https://encryptioner.github.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Ankur Mursalin
+          </a>
+        </span>
+
+        {/* Support */}
+        <a
+          href="https://www.supportkori.com/mirmursalinankur"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-gray-500 hover:text-amber-400 transition-colors cursor-pointer select-none"
+        >
+          ☕ Buy me a coffee
+        </a>
       </div>
     </div>
   );
