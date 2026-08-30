@@ -18,7 +18,7 @@
 const GA_CONFIG = {
   /** Set to true only after a real Measurement ID is assigned. */
   enabled: false,
-  measurementId: 'G-XXXXXXXXXX',
+  measurementId: 'G-Q3TYEM420TE',
 };
 
 // ── Event taxonomy ──────────────────────────────────────────

@@ -13,6 +13,6 @@ function gtag() {
   dataLayer.push(arguments);
 }
 gtag('js', new Date());
-gtag('config', 'G-XXXXXXXXXX', {
+gtag('config', 'G-Q3TYEM420TE', {
   send_page_view: true,
 });
